@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ТОО "BLG" — Отчёт по ДТП</title>
+<meta name="description" content="Аналитический дашборд по ДТП автобусного парка: автоколонны Павлодар и Алматы.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%9A%8D%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/vendor/chart.umd.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-top">
+      <div class="brand">
+        <p class="eyebrow">ТОО "BLG"</p>
+        <h1>Отчёт по ДТП</h1>
+        <p class="subtitle" id="periodSubtitle">Загрузка данных…</p>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" title="Переключить тему">🌙</button>
+        <button class="print-btn" onclick="window.print()">🖨 Экспорт в PDF</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="filter-bar">
+    <div class="filter-item">
+      <label>Автоколонна</label>
+      <select id="fleetSelect">
+        <option value="Все">Все автоколонны</option>
+        <option value="Алматы">Алматы</option>
+        <option value="Павлодар">Павлодар</option>
+      </select>
+    </div>
+    <div class="filter-item">
+      <label>Период с</label>
+      <input type="date" id="dateFrom">
+    </div>
+    <div class="filter-item">
+      <label>По</label>
+      <input type="date" id="dateTo">
+    </div>
+    <button class="reset-btn" id="resetPeriod">Весь период</button>
+    <div class="filter-summary" id="periodLabel"></div>
+  </div>
+
+  <div class="coverage-banner">
+    <div class="icon">⚠️</div>
+    <div>
+      <b>Разный охват данных по автоколоннам</b>
+      <p>Алматы — 984 из 984 ДТП в системе (100% охват). Павлодар — только выборка 200 из 1448 ДТП (13,8% охват). Абсолютные суммы (ущерб, кол-во ДТП) между автоколоннами напрямую <b>не сравнивайте</b> — сравнивайте только относительные показатели (доли, средний ущерб на 1 ДТП, % возмещения).</p>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <section>
+    <div class="kpi-grid" id="kpiGrid"></div>
+  </section>
+
+  <!-- CAUSE DISTRIBUTION -->
+  <section>
+    <div class="section-title">Структура причин ДТП</div>
+    <div class="grid-2">
+      <div class="card chart-box">
+        <p class="chart-title">Количество ДТП по категории причины</p>
+        <canvas id="chartCauseBar" height="340"></canvas>
+      </div>
+      <div class="card chart-box">
+        <p class="chart-title">Доля каждой категории</p>
+        <canvas id="chartCauseDonut" height="340"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLEET COMPARISON -->
+  <section>
+    <div class="section-title">ДТП по автоколоннам <span class="note">за выбранный период, независимо от фильтра автоколонны</span></div>
+    <div class="fleet-cards" id="fleetCards"></div>
+    <div class="grid-2">
+      <div class="card chart-box">
+        <p class="chart-title">Доля причин ДТП: Алматы vs Павлодар</p>
+        <canvas id="chartFleetBar" height="360"></canvas>
+      </div>
+      <div class="card" style="overflow:auto;">
+        <p class="chart-title">Сравнение ключевых показателей</p>
+        <div id="fleetTableWrap"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOP DRIVERS -->
+  <section>
+    <div class="section-title">Топ-10 водителей по количеству ДТП</div>
+    <div class="card" style="overflow:auto;">
+      <div id="topDriversTableWrap"></div>
+      <p class="legend-note"><span class="badge badge-risk">риск</span> — водители с 3 и более ДТП. Нажмите на строку, чтобы увидеть детализацию по инцидентам.</p>
+    </div>
+  </section>
+
+  <!-- TOP BUSES -->
+  <section>
+    <div class="section-title">Топ-10 автобусов по аварийности</div>
+    <div class="card" style="overflow:auto;">
+      <div id="topBusesTableWrap"></div>
+      <p class="legend-note"><span class="badge badge-risk">риск</span> — автобусы с 5 и более ДТП. Нажмите на строку, чтобы увидеть детализацию по инцидентам.</p>
+    </div>
+  </section>
+
+  <!-- FINANCIAL -->
+  <section>
+    <div class="section-title">Финансовый анализ</div>
+    <div class="grid-2-eq" style="margin-bottom:16px;">
+      <div class="card chart-box">
+        <p class="chart-title">Сумма ущерба по категориям причин</p>
+        <canvas id="chartMoneyByCause" height="300"></canvas>
+      </div>
+      <div class="card chart-box">
+        <p class="chart-title">Сумма ущерба: Алматы vs Павлодар <span style="font-size:11px;color:var(--text-sec);font-weight:400;">(за период, все автоколонны)</span></p>
+        <canvas id="chartMoneyByFleet" height="300"></canvas>
+      </div>
+    </div>
+    <div class="card chart-box">
+      <p class="chart-title">Динамика суммы ущерба и возмещения по месяцам</p>
+      <canvas id="chartMoneyByMonth" height="260"></canvas>
+    </div>
+    <div class="grid-2-eq" style="margin-top:16px;">
+      <div class="card chart-box">
+        <p class="chart-title">Ущерб vs Возмещено по категориям причин</p>
+        <canvas id="chartReimbByCause" height="300"></canvas>
+      </div>
+      <div class="card chart-box">
+        <p class="chart-title">Динамика % возмещения по месяцам</p>
+        <canvas id="chartReimbTrend" height="300"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIME DYNAMICS -->
+  <section>
+    <div class="section-title">Динамика ДТП по месяцам <span class="note">разбивка по автоколоннам — за выбранный период</span></div>
+    <div class="card chart-box">
+      <canvas id="chartTimeSeries" height="260"></canvas>
+    </div>
+  </section>
+
+  <!-- RECOMMENDATIONS -->
+  <section>
+    <div class="section-title">Управленческие рекомендации</div>
+    <div class="card">
+      <div class="rec-list" id="recList"></div>
+    </div>
+  </section>
+
+  <footer>Дашборд сформирован на основе данных ДТП автобусного парка ТОО "BLG" (файл «Дашборд_ДТП_аналитика.xlsx»). Обновлено: <span id="genDate"></span>.</footer>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>

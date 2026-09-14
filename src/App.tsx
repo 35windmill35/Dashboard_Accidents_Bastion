@@ -4,21 +4,42 @@ import { RegisterPage } from '@/pages/register/RegisterPage'
 import { OverviewPage } from '@/pages/overview/OverviewPage'
 import { MotorcadePage } from '@/pages/motorcade/MotorcadePage'
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage'
+import { RequireAccidentsAccess } from '@/app/providers/RequireAccidentsAccess'
 
-// Каркас маршрутов трёх экранов дашборда (ТЗ §4) + логин/регистрация.
-// Экраны пока — заглушки (реализуются в следующих этапах, см. план
-// проекта); авторизационный guard (редирект неавторизованных на /login,
-// ProtectedLayout с сайдбаром/шапкой фильтров) добавляется на этапе
-// «Слой API и авторизация» и «Экран Обзор» — здесь его специально нет,
-// чтобы не тянуть в Этап 1 ещё не существующие authStore/periodsStore.
+// /register — заглушка, регистрацию по телефону не делаем (заказчик
+// пользуется своей формой), ссылки на неё в UI нет.
+//
+// Три защищённых экрана обёрнуты в RequireAccidentsAccess — проверка
+// сессии и прав по базам. Сайдбар и шапка с фильтрами добавятся позже.
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/" element={<OverviewPage />} />
-      <Route path="/motorcade" element={<MotorcadePage />} />
-      <Route path="/analytics" element={<AnalyticsPage />} />
+      <Route
+        path="/"
+        element={
+          <RequireAccidentsAccess>
+            <OverviewPage />
+          </RequireAccidentsAccess>
+        }
+      />
+      <Route
+        path="/motorcade"
+        element={
+          <RequireAccidentsAccess>
+            <MotorcadePage />
+          </RequireAccidentsAccess>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <RequireAccidentsAccess>
+            <AnalyticsPage />
+          </RequireAccidentsAccess>
+        }
+      />
     </Routes>
   )
 }

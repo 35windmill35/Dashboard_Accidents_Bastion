@@ -6,8 +6,7 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
-// Конфигурация повторяет eslint.config.js первого дашборда
-// (Dashboard_tochki_rosta_TypeScript) — см. ТЗ §8 «Кодовая база».
+// Та же конфигурация, что в первом дашборде.
 export default defineConfig([
   globalIgnores(['dist']),
   {

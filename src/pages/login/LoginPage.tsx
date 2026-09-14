@@ -1,8 +1,70 @@
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { observer } from 'mobx-react-lite'
+import { useNavigate } from 'react-router-dom'
+import { authStore } from '@/entities/user/model/authStore'
+import { formatPhoneInput } from '@/shared/lib/phoneMask'
+import { PasswordInput } from '@/shared/ui/PasswordInput/PasswordInput'
 import styles from './LoginPage.module.css'
 
-// TODO (Этап 2 «Слой API и авторизация»): форма Телефон/Пароль, маска
-// ввода, PasswordInput из shared/ui, обработка DB_GUID из query-строки,
-// вызов loginAppUser — см. ТЗ §2.1.
-export function LoginPage() {
-  return <div className={styles.placeholder}>Экран логина — в разработке</div>
-}
+// Регистрацию не делаем — у заказчика своя форма, поэтому ссылки на
+// /register здесь нет.
+export const LoginPage = observer(function LoginPage() {
+  const navigate = useNavigate()
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+
+  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setPhone(formatPhoneInput(e.target.value))
+  }
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    // login() сам запускает проверку прав по базам в фоне — переходим
+    // сразу после успешного входа, а состояние загрузки/отказа доступа
+    // покажет RequireAccidentsAccess.
+    const success = await authStore.login(phone, password)
+    if (success) {
+      navigate('/')
+    }
+  }
+
+  return (
+    <div className={styles.wrapper}>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <h1 className={styles.title}>Дашборд ДТП</h1>
+
+        <label className={styles.field}>
+          <span className={styles.label}>Телефон</span>
+          <input
+            className={styles.input}
+            type="tel"
+            inputMode="numeric"
+            placeholder="+7 (___) ___-__-__"
+            value={phone}
+            onChange={handlePhoneChange}
+            autoComplete="tel"
+            required
+          />
+        </label>
+
+        <label className={styles.field}>
+          <span className={styles.label}>Пароль</span>
+          <PasswordInput
+            className={styles.input}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+            required
+          />
+        </label>
+
+        {authStore.loginError && <p className={styles.error}>{authStore.loginError}</p>}
+
+        <button className={styles.submit} type="submit" disabled={authStore.isLoggingIn}>
+          {authStore.isLoggingIn ? 'Входим…' : 'Войти'}
+        </button>
+      </form>
+    </div>
+  )
+})

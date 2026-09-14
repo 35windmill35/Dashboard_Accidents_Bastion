@@ -15,14 +15,12 @@ export function formatNumber(value: number | null | undefined, decimals = 0): st
   }).format(value as number)
 }
 
-// Код валюты берётся из CURRENCY_CODE конкретной записи, в KPI — без копеек.
-export function formatCurrency(
-  value: number | null | undefined,
-  currencyCode?: string | null
-): string {
+// Валюта во всех базах — тенге, без копеек в KPI. CURRENCY_CODE из ответа
+// API не используется для отображения (заказчик подтвердил единую валюту),
+// поле в AccidentRow остаётся только справочно.
+export function formatCurrency(value: number | null | undefined): string {
   if (isEmpty(value)) return '—'
-  const amount = formatNumber(value, 0)
-  return currencyCode ? `${amount}${NBSP}${currencyCode}` : amount
+  return `${formatNumber(value, 0)}${NBSP}₸`
 }
 
 export function formatPercent(value: number | null | undefined, decimals = 0): string {

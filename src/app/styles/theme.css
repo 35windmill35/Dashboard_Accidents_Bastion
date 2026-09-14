@@ -1,0 +1,107 @@
+/*
+ * Единый файл дизайн-токенов проекта. Все компоненты (в т.ч. CSS-модули
+ * разработчиков экранов) должны использовать ТОЛЬКО эти переменные вместо
+ * хардкода цветов — единственный файл, который правится при доводке темы.
+ *
+ * Перенесено 1-в-1 из Dashboard_tochki_rosta_TypeScript (ТЗ §8: «визуальный
+ * стиль — как в Дашборде Точки роста», обязательны тёмная и светлая темы).
+ *
+ * Переключение темы: атрибут data-theme="dark"|"light" на <html>.
+ * Без явного переключателя в UI тема берётся из системных настроек
+ * (prefers-color-scheme), дефолт — тёмная.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root,
+[data-theme='dark'] {
+  --color-bg: #0a0a0b;
+  --color-surface: #17171a;
+  --color-surface-2: #1f1f23;
+  --color-border: #2a2a2f;
+  --color-text: #f4f4f5;
+  --color-text-secondary: #97979f;
+  --color-accent: #f5a623;
+  --color-positive: #22c55e;
+  --color-negative: #ef4444;
+
+  /* Цвет текста поверх плашек с фоном --color-accent (активный пункт меню,
+     активная вкладка/кнопка режима). */
+  --color-on-accent: #1a1206;
+
+  /* Дополнительные цвета для графиков (см. shared/lib/chartColors.ts —
+     там же продублировано как JS-константы, т.к. Recharts/SVG не умеет
+     читать CSS-переменные напрямую). */
+  --color-chart-blue: #38bdf8;
+  --color-chart-green: #22c55e;
+  --color-chart-purple: #c084fc;
+}
+
+[data-theme='light'] {
+  --color-bg: #f5f6f8;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef0f3;
+  --color-border: #dcdfe4;
+  --color-text: #17181c;
+  --color-text-secondary: #63676f;
+  --color-accent: #2f5fe0;
+  --color-positive: #1f9d5a;
+  --color-negative: #d93636;
+  --color-on-accent: #ffffff;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --color-bg: #f5f6f8;
+    --color-surface: #ffffff;
+    --color-surface-2: #eef0f3;
+    --color-border: #dcdfe4;
+    --color-text: #17181c;
+    --color-text-secondary: #63676f;
+    --color-accent: #2f5fe0;
+    --color-positive: #1f9d5a;
+    --color-negative: #d93636;
+    --color-on-accent: #ffffff;
+  }
+}
+
+:root {
+  /* Отступы и радиусы — единая шкала, не придумывать свои значения */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+}
+
+/* Скроллбар под тему. */
+* {
+  scrollbar-color: var(--color-border) var(--color-surface);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}

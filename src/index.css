@@ -1,0 +1,49 @@
+/* Глобальный сброс + базовые правила. Цвета/отступы — см. app/styles/theme.css,
+   сюда хардкод не добавлять. Перенесено 1-в-1 из Dashboard_tochki_rosta_TypeScript
+   (см. ТЗ §8: визуальный стиль общий с первым дашбордом). */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100svh;
+  font: 15px/1.45 var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--space-3);
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+a {
+  color: var(--color-accent);
+}

@@ -1,0 +1,9 @@
+.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  padding: var(--space-5);
+  color: var(--color-text-secondary);
+  text-align: center;
+}

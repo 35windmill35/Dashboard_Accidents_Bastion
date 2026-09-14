@@ -4,3 +4,8 @@
   gap: var(--space-3);
   padding: var(--space-6) var(--space-5);
 }
+
+.progress {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}

@@ -9,10 +9,8 @@ export const CAUSE_CATEGORY_LABELS: Record<CauseCategory, string> = {
   undetermined: 'Виновный не определён',
 }
 
-// Справочник ACCIDENT_CAUSE ещё не прислали, известен только один ID.
-// Когда придёт полный список — заполнить эти два множества, остальная
-// логика не меняется.
-const DRIVER_FAULT_CAUSE_IDS = new Set<number>([])
+
+const DRIVER_FAULT_CAUSE_IDS = new Set<number>([5])
 const NO_DAMAGE_CAUSE_IDS = new Set<number>([])
 const THIRD_PARTY_FAULT_CAUSE_ID = 4
 

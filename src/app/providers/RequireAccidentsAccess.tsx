@@ -6,6 +6,7 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { Skeleton } from '@/shared/ui/Skeleton/Skeleton'
 import { NoAccessPage } from '@/pages/no-access/NoAccessPage'
 import { DataErrorPage } from '@/pages/data-error/DataErrorPage'
+import { AppShell } from '@/widgets/app-shell/AppShell'
 import styles from './RequireAccidentsAccess.module.css'
 
 interface RequireAccidentsAccessProps {
@@ -20,8 +21,8 @@ interface RequireAccidentsAccessProps {
 // отказ шага 3 (accidentsStore.hasPartialFailure) контент не блокирует,
 // баннер об этом — отдельный виджет уровня экранов.
 //
-// Сайдбар и шапка с фильтрами сюда не добавлены — это отдельный виджет
-// уровня макета экранов.
+// Сайдбар и шапка с фильтрами (AppShell) оборачивают только готовый
+// контент — экраны загрузки/ошибки/отказа их не показывают.
 export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
   children,
 }: RequireAccidentsAccessProps) {
@@ -66,5 +67,5 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
     return <DataErrorPage />
   }
 
-  return <>{children}</>
+  return <AppShell>{children}</AppShell>
 })

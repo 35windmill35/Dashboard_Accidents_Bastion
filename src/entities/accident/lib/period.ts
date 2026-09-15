@@ -131,6 +131,21 @@ export function getAvailableQuarters(rows: AccidentRow[]): number[] {
   return Array.from(quarters).sort((a, b) => b - a)
 }
 
+// Период для сравнения дельты KPI — предыдущий месяц/квартал/год. Для
+// "весь период" сравнивать не с чем.
+export function getPreviousPeriod(period: Period): Period | null {
+  if (period.mode === 'all') return null
+  if (period.mode === 'year') return { mode: 'year', value: period.value - 1 }
+  if (period.mode === 'quarter') {
+    const year = Math.floor(period.value / 10)
+    const quarter = period.value % 10
+    return quarter === 1
+      ? { mode: 'quarter', value: (year - 1) * 10 + 4 }
+      : { mode: 'quarter', value: period.value - 1 }
+  }
+  return { mode: 'month', value: ymAddMonths(period.value, -1) }
+}
+
 // Графики "по месяцам" всегда показывают 12 месяцев, заканчивая выбранным
 // периодом — год даёт янв-дек этого года, весь период — все месяцы данных.
 export function getTrendMonths(period: Period, rows: AccidentRow[]): number[] {

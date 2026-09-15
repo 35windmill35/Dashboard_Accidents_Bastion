@@ -25,11 +25,15 @@
   /* Цвет текста поверх плашек с фоном --color-accent */
   --color-on-accent: #1a1206;
 
-  /* Цвета для графиков, продублированы в shared/lib/chartColors.ts как
-     JS-константы — Recharts не читает CSS-переменные напрямую */
-  --color-chart-blue: #38bdf8;
-  --color-chart-green: #22c55e;
-  --color-chart-purple: #c084fc;
+  /* Категориальная палитра графиков (5 слотов, порядок фиксирован —
+     проверено скриптом валидации на CVD-различимость), продублирована в
+     shared/lib/chartColors.ts как JS-константы — Recharts не читает
+     CSS-переменные напрямую. Тёмный вариант шагов. */
+  --color-chart-1: #3987e5;
+  --color-chart-2: #d95926;
+  --color-chart-3: #199e70;
+  --color-chart-4: #c98500;
+  --color-chart-5: #d55181;
 }
 
 [data-theme='light'] {
@@ -43,6 +47,15 @@
   --color-positive: #1f9d5a;
   --color-negative: #d93636;
   --color-on-accent: #ffffff;
+
+  /* Светлый вариант тех же 5 шагов — три из них ниже 3:1 к белому фону,
+     поэтому на графиках для этих серий обязательны прямые подписи значений
+     или таблица-альтернатива, не полагаться на сам цвет. */
+  --color-chart-1: #2a78d6;
+  --color-chart-2: #eb6834;
+  --color-chart-3: #1baf7a;
+  --color-chart-4: #eda100;
+  --color-chart-5: #e87ba4;
 }
 
 @media (prefers-color-scheme: light) {
@@ -57,6 +70,11 @@
     --color-positive: #1f9d5a;
     --color-negative: #d93636;
     --color-on-accent: #ffffff;
+    --color-chart-1: #2a78d6;
+    --color-chart-2: #eb6834;
+    --color-chart-3: #1baf7a;
+    --color-chart-4: #eda100;
+    --color-chart-5: #e87ba4;
   }
 }
 

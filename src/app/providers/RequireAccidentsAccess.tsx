@@ -16,7 +16,7 @@ interface RequireAccidentsAccessProps {
 // Guard для защищённых экранов, покрывает весь трёхшаговый сценарий
 // инициализации: нет сессии — редирект на /login; шаг 2 (права по базам)
 // не проверялся или идёт — скелетон; ни одной базы с доступом —
-// NoAccessPage; шаг 3 (данные) грузится — скелетон с прогрессом; ни одна
+// NoAccessPage; шаг 3 (данные) грузится — тот же скелетон; ни одна
 // база не отдала данные — DataErrorPage; иначе — контент экрана. Частичный
 // отказ шага 3 (accidentsStore.hasPartialFailure) контент не блокирует,
 // баннер об этом — отдельный виджет уровня экранов.
@@ -54,11 +54,6 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
     return (
       <div className={styles.loading}>
         <Skeleton height={32} count={4} />
-        {accidentsStore.totalCount > 0 && (
-          <p className={styles.progress}>
-            Загружено баз {accidentsStore.loadedCount} из {accidentsStore.totalCount}
-          </p>
-        )}
       </div>
     )
   }

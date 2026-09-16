@@ -43,6 +43,9 @@ class PdfReportStore {
     this.progress = { current: 0, total: 0 }
 
     try {
+      // Сборка PDF синхронная и на пару сотен миллисекунд блокирует поток —
+      // отдаём браузеру кадр, чтобы оверлей успел отрисоваться до этого.
+      await new Promise((resolve) => requestAnimationFrame(resolve))
       await this.exporter()
     } catch (err) {
       this.lastError = err instanceof Error ? err.message : 'Не удалось сформировать PDF-отчёт'

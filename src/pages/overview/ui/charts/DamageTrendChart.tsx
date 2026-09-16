@@ -1,19 +1,11 @@
-import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChartCard } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
-import { formatCurrency } from '@/shared/lib/formatters'
+import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
+import { CATEGORY_X_AXIS_PROPS } from '@/shared/lib/rechartsHelpers'
 import type { OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -36,11 +28,17 @@ export function DamageTrendChart({ data }: Props) {
   }
 
   return (
-    <ChartCard title="Динамика ущерба и возмещения по месяцам">
+    <ChartCard
+      title="Динамика ущерба и возмещения по месяцам"
+      legend={[
+        { label: 'Ущерб', color: CHART_1 },
+        { label: 'Возмещение', color: CHART_2 },
+      ]}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
-          margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+          margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
           onClick={(state) => {
             const point = (state as { activePayload?: { payload: { ym: number } }[] } | null)
               ?.activePayload?.[0]?.payload
@@ -48,8 +46,13 @@ export function DamageTrendChart({ data }: Props) {
           }}
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis dataKey="label" stroke="var(--color-text-secondary)" fontSize={12} />
-          <YAxis stroke="var(--color-text-secondary)" fontSize={12} />
+          <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...CATEGORY_X_AXIS_PROPS} />
+          <YAxis
+            stroke="var(--color-text-secondary)"
+            fontSize={12}
+            tickFormatter={formatCompactCurrency}
+            width={76}
+          />
           <Tooltip
             formatter={(value) => formatCurrency(Number(value))}
             contentStyle={{
@@ -59,7 +62,6 @@ export function DamageTrendChart({ data }: Props) {
               color: 'var(--color-text)',
             }}
           />
-          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--color-text-secondary)' }} />
           <Line
             type="monotone"
             dataKey="sumDamage"

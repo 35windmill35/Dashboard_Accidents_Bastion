@@ -12,6 +12,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { CHART_1 } from '@/shared/lib/chartColors'
+import { CATEGORY_X_AXIS_PROPS } from '@/shared/lib/rechartsHelpers'
 import type { OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -61,11 +62,11 @@ export function AccidentsTrendChart({ data }: Props) {
   }
 
   return (
-    <ChartCard title="Динамика ДТП по месяцам">
+    <ChartCard title="Динамика ДТП по месяцам" legend={[{ label: 'ДТП', color: CHART_1 }]}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis dataKey="label" stroke="var(--color-text-secondary)" fontSize={12} />
+          <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...CATEGORY_X_AXIS_PROPS} />
           <YAxis stroke="var(--color-text-secondary)" fontSize={12} allowDecimals={false} />
           <Tooltip
             contentStyle={{

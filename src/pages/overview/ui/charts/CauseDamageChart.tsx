@@ -1,19 +1,10 @@
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChartCard } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
-import { formatCurrency } from '@/shared/lib/formatters'
-import { barPayload } from '@/shared/lib/rechartsHelpers'
+import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
+import { barPayload, CATEGORY_X_AXIS_PROPS } from '@/shared/lib/rechartsHelpers'
 import type { CauseSlice, OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -33,20 +24,23 @@ export function CauseDamageChart({ data, period }: Props) {
   }
 
   return (
-    <ChartCard title="Ущерб и возмещение по категориям причин">
+    <ChartCard
+      title="Ущерб и возмещение по категориям причин"
+      legend={[
+        { label: 'Ущерб', color: CHART_1 },
+        { label: 'Возмещение', color: CHART_2 },
+      ]}
+    >
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+        <BarChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis
-            dataKey="label"
+          <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...CATEGORY_X_AXIS_PROPS} />
+          <YAxis
             stroke="var(--color-text-secondary)"
-            fontSize={11}
-            interval={0}
-            angle={-20}
-            textAnchor="end"
-            height={60}
+            fontSize={12}
+            tickFormatter={formatCompactCurrency}
+            width={76}
           />
-          <YAxis stroke="var(--color-text-secondary)" fontSize={12} />
           <Tooltip
             formatter={(value) => formatCurrency(Number(value))}
             contentStyle={{
@@ -56,7 +50,6 @@ export function CauseDamageChart({ data, period }: Props) {
               color: 'var(--color-text)',
             }}
           />
-          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--color-text-secondary)' }} />
           <Bar
             dataKey="sumDamage"
             name="Ущерб"

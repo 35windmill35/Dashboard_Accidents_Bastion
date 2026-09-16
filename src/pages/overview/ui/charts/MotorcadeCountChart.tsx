@@ -14,7 +14,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { CHART_1 } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
-import { barPayload } from '@/shared/lib/rechartsHelpers'
+import { barPayload, CATEGORY_X_AXIS_PROPS } from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -29,19 +29,11 @@ export function MotorcadeCountChart({ data, period }: Props) {
   const periodLabel = formatPeriodLabel(period)
 
   return (
-    <ChartCard title="ДТП по автоколоннам">
+    <ChartCard title="ДТП по автоколоннам" legend={[{ label: 'ДТП', color: CHART_1 }]}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data.motorcadeAgg} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis
-            dataKey="name"
-            stroke="var(--color-text-secondary)"
-            fontSize={11}
-            interval={0}
-            angle={-20}
-            textAnchor="end"
-            height={50}
-          />
+          <XAxis dataKey="name" stroke="var(--color-text-secondary)" {...CATEGORY_X_AXIS_PROPS} />
           <YAxis stroke="var(--color-text-secondary)" fontSize={12} allowDecimals={false} />
           <Tooltip
             formatter={(value) => formatNumber(Number(value))}

@@ -23,6 +23,19 @@ export function formatCurrency(value: number | null | undefined): string {
   return `${formatNumber(value, 0)}${NBSP}₸`
 }
 
+// Сокращённая подпись для оси Y денежных графиков — полная сумма
+// («60 000 ₸») не помещается в отведённую под подписи ширину и обрезается
+// слева; подсказка при наведении по-прежнему показывает точную сумму
+// через formatCurrency.
+export function formatCompactCurrency(value: number | null | undefined): string {
+  if (isEmpty(value)) return '—'
+  const num = value as number
+  const abs = Math.abs(num)
+  if (abs >= 1_000_000) return `${formatNumber(num / 1_000_000, 1)} млн ₸`
+  if (abs >= 1_000) return `${formatNumber(num / 1_000, abs >= 10_000 ? 0 : 1)} тыс ₸`
+  return formatCurrency(num)
+}
+
 export function formatPercent(value: number | null | undefined, decimals = 0): string {
   if (isEmpty(value)) return '—'
   return `${formatNumber((value as number) * 100, decimals)}%`

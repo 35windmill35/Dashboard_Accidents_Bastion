@@ -5,7 +5,13 @@ export interface DataTableColumn<T> {
   key: string
   label: string
   render: (row: T) => ReactNode
-  align?: 'left' | 'right'
+  align?: 'left' | 'center' | 'right'
+}
+
+function alignClass(align: DataTableColumn<unknown>['align']): string {
+  if (align === 'center') return styles.center
+  if (align === 'right') return styles.right
+  return ''
 }
 
 interface DataTableProps<T> {
@@ -65,7 +71,7 @@ export function DataTable<T>({
             <thead>
               <tr>
                 {columns.map((col) => (
-                  <th key={col.key} className={col.align === 'right' ? styles.right : ''}>
+                  <th key={col.key} className={alignClass(col.align)}>
                     {col.label}
                   </th>
                 ))}
@@ -79,7 +85,7 @@ export function DataTable<T>({
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col) => (
-                    <td key={col.key} className={col.align === 'right' ? styles.right : ''}>
+                    <td key={col.key} className={alignClass(col.align)}>
                       {col.render(row)}
                     </td>
                   ))}

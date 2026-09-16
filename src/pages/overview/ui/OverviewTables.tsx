@@ -13,24 +13,24 @@ interface OverviewTablesProps {
 
 const driverColumns: DataTableColumn<DriverAggregate>[] = [
   { key: 'name', label: 'Водитель', render: (r) => r.name },
-  { key: 'count', label: 'ДТП', align: 'right', render: (r) => formatNumber(r.count) },
-  { key: 'sumDamage', label: 'Ущерб', align: 'right', render: (r) => formatCurrency(r.sumDamage) },
+  { key: 'count', label: 'ДТП', align: 'center', render: (r) => formatNumber(r.count) },
+  { key: 'sumDamage', label: 'Ущерб', align: 'center', render: (r) => formatCurrency(r.sumDamage) },
 ]
 
 const vehicleColumns: DataTableColumn<VehicleAggregate>[] = [
   { key: 'name', label: 'ТС', render: (r) => r.name },
-  { key: 'count', label: 'ДТП', align: 'right', render: (r) => formatNumber(r.count) },
-  { key: 'sumDamage', label: 'Ущерб', align: 'right', render: (r) => formatCurrency(r.sumDamage) },
+  { key: 'count', label: 'ДТП', align: 'center', render: (r) => formatNumber(r.count) },
+  { key: 'sumDamage', label: 'Ущерб', align: 'center', render: (r) => formatCurrency(r.sumDamage) },
 ]
 
 const causeColumns: DataTableColumn<CauseSlice>[] = [
   { key: 'label', label: 'Категория', render: (r) => r.label },
-  { key: 'count', label: 'ДТП', align: 'right', render: (r) => formatNumber(r.count) },
-  { key: 'sumDamage', label: 'Ущерб', align: 'right', render: (r) => formatCurrency(r.sumDamage) },
+  { key: 'count', label: 'ДТП', align: 'center', render: (r) => formatNumber(r.count) },
+  { key: 'sumDamage', label: 'Ущерб', align: 'center', render: (r) => formatCurrency(r.sumDamage) },
   {
     key: 'sumCompensated',
     label: 'Возмещение',
-    align: 'right',
+    align: 'center',
     render: (r) => formatCurrency(r.sumCompensated),
   },
 ]

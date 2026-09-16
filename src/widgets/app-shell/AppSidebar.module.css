@@ -30,7 +30,8 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 9px;
+  letter-spacing: -0.3px;
   flex-shrink: 0;
 }
 

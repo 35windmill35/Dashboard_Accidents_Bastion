@@ -28,7 +28,7 @@ export function AppSidebar({ isOpen, onNavigate }: AppSidebarProps) {
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
       <div className={styles.brand}>
-        <span className={styles.logo}>Д</span>
+        <span className={styles.logo}>ДТП</span>
         <div className={styles.brandName}>Дашборд ДТП</div>
       </div>
 

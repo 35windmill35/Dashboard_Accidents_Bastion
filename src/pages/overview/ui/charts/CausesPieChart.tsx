@@ -1,4 +1,4 @@
-import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { ChartCard } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
@@ -11,15 +11,10 @@ interface Props {
   period: Period
 }
 
-interface CauseSliceLike {
-  label: string
-  count: number
-}
-
 // Структура причин ДТП за период, 5 категорий (см. shared/config/accidentCauses).
-// Прямые подписи со значением на каждом секторе — часть категорий по
-// цвету ниже контрастного порога на светлой теме, полагаться только на
-// цвет нельзя.
+// Подписи прямо на секторах (со сноской-линией) убраны — категория и цвет
+// уже видны в легенде под графиком, значение — во всплывающей подсказке
+// при наведении/клике.
 export function CausesPieChart({ data, period }: Props) {
   const slices = data.causeSlices.filter((s) => s.count > 0)
   const periodLabel = formatPeriodLabel(period)
@@ -35,7 +30,10 @@ export function CausesPieChart({ data, period }: Props) {
   }
 
   return (
-    <ChartCard title="Структура причин ДТП">
+    <ChartCard
+      title="Структура причин ДТП"
+      legend={slices.map((s) => ({ label: s.label, color: CAUSE_CATEGORY_COLORS[s.category] }))}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie
@@ -45,10 +43,6 @@ export function CausesPieChart({ data, period }: Props) {
             innerRadius="45%"
             outerRadius="75%"
             paddingAngle={2}
-            label={(entry) => {
-              const slice = entry.payload as CauseSliceLike
-              return `${slice.label}: ${formatNumber(slice.count)}`
-            }}
             onClick={(entry) => {
               const category = (entry as { category?: string }).category
               const slice = slices.find((s) => s.category === category)
@@ -60,7 +54,6 @@ export function CausesPieChart({ data, period }: Props) {
               <Cell key={slice.category} fill={CAUSE_CATEGORY_COLORS[slice.category]} />
             ))}
           </Pie>
-          <Legend wrapperStyle={{ fontSize: 12, color: 'var(--color-text-secondary)' }} />
           <Tooltip
             formatter={(value, name) => [formatNumber(Number(value)), name]}
             contentStyle={{

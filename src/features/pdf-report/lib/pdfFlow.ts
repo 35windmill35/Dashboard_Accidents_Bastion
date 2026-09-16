@@ -89,18 +89,13 @@ export function flowBlocks(
 }
 
 // Колонтитул рисуется в самом конце, когда известно общее число страниц.
-export function drawPageFooters(doc: jsPDF, sourceLine: string): void {
+export function drawPageFooters(doc: jsPDF): void {
   const total = doc.getNumberOfPages()
   const y = PAGE.height - PAGE.marginBottom + 22
 
   for (let page = 1; page <= total; page += 1) {
     doc.setPage(page)
     drawLine(doc, PAGE.marginX, y - 10, PAGE.width - PAGE.marginX, y - 10, COLOR.line, 0.5)
-    drawText(doc, sourceLine, PAGE.marginX, y, {
-      font: 'mono',
-      size: 6.2,
-      color: COLOR.muted,
-    })
     drawText(doc, `Стр. ${page} из ${total}`, PAGE.width - PAGE.marginX, y, {
       font: 'mono',
       size: 6.2,

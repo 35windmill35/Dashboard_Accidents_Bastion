@@ -30,11 +30,6 @@ export function formatMonthAxisLabel(ym: number): string {
   return formatMonthShortLabel(ym)
 }
 
-// Период в подвале идёт строчными: "Период: сентябрь 2026."
-export function toLowerFirst(text: string): string {
-  return text.charAt(0).toLowerCase() + text.slice(1)
-}
-
 // Часть имени файла dtp-<экран>-<период>-<YYYYMMDD-HHmm>.pdf, отвечающая за
 // период — короткая и без символов, проблемных для имени файла в Windows.
 export function periodSlug(period: Period): string {

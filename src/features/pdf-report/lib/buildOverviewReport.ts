@@ -11,7 +11,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import type { OverviewData } from '@/pages/overview/model/overviewData'
 import { COLOR, PAGE, registerPdfFonts } from './pdfKit'
 import { columns, drawPageFooters, flowBlocks, type BlockFactory } from './pdfFlow'
-import { kpiRow, reportHeader, signatureBlock, type KpiCardData } from './pdfChrome'
+import { kpiRow, reportHeader, type KpiCardData } from './pdfChrome'
 import {
   DISTRIBUTION_ROW_HEIGHT,
   DUAL_ROW_HEIGHT,
@@ -30,7 +30,6 @@ import {
   formatMonthAxisLabel,
   formatMoneyAxis,
   splitMonthLabel,
-  toLowerFirst,
 } from './pdfFormat'
 
 // Топ-N в отчёте совпадает со свёрнутым состоянием таблиц на экране; полный
@@ -329,7 +328,6 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
     columns([motorcadeCountCard, motorcadeDamageCard], [0.5, 0.5]),
     columns([driversTable, vehiclesTable], [0.5, 0.5]),
     causesTable,
-    signatureBlock(doc, ['Подготовил, подпись и дата', 'Согласовал, подпись и дата']),
   ]
 }
 
@@ -341,10 +339,7 @@ export function buildOverviewReport(input: OverviewReportInput): jsPDF {
   registerPdfFonts(doc)
 
   flowBlocks(doc, overviewBlocks(doc, input), PAGE.marginTop, { onSection: input.onSection })
-  drawPageFooters(
-    doc,
-    `Источник: дашборд ДТП, раздел «Обзор». Период: ${toLowerFirst(formatPeriodLabel(input.period))}.`
-  )
+  drawPageFooters(doc)
 
   return doc
 }

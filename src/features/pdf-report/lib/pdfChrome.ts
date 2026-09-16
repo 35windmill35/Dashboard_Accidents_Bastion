@@ -157,19 +157,3 @@ export function kpiRow(doc: jsPDF, cards: KpiCardData[]): BlockFactory {
     }
   }
 }
-
-// Строки для подписи — отчёт печатают и подшивают, поэтому место под подписи
-// в конце документа.
-export function signatureBlock(doc: jsPDF, labels: [string, string]): BlockFactory {
-  return (x, width) => ({
-    height: 36,
-    draw: (y) => {
-      const columnWidth = (width - 24) / 2
-      labels.forEach((label, index) => {
-        const columnX = x + index * (columnWidth + 24)
-        drawLine(doc, columnX, y + 18, columnX + columnWidth, y + 18, COLOR.lineStrong, 0.6)
-        drawText(doc, label, columnX, y + 28, { font: 'mono', size: 6.2, color: COLOR.secondary })
-      })
-    },
-  })
-}

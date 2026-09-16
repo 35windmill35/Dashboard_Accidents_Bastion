@@ -1,0 +1,12 @@
+{
+  // Список показывается VS Code как "Recommended" при открытии проекта.
+  // Этот файл единственный из .vscode/*, который коммитится в git
+  // (см. .gitignore) — остальные настройки личные и в репозиторий не идут.
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "clinyong.vscode-css-modules",
+    "christian-kohler.path-intellisense",
+    "editorconfig.editorconfig"
+  ]
+}

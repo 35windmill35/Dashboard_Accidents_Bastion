@@ -6,6 +6,7 @@ import { MotorcadePage } from '@/pages/motorcade/MotorcadePage'
 import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage'
 import { RequireAccidentsAccess } from '@/app/providers/RequireAccidentsAccess'
 import { AccidentDrilldownModal } from '@/widgets/accident-drilldown/AccidentDrilldownModal'
+import { PdfGeneratingOverlay } from '@/features/pdf-report/ui/PdfGeneratingOverlay'
 
 // /register — заглушка, регистрацию по телефону не делаем (заказчик
 // пользуется своей формой), ссылки на неё в UI нет.
@@ -46,6 +47,7 @@ function App() {
         />
       </Routes>
       <AccidentDrilldownModal />
+      <PdfGeneratingOverlay />
     </>
   )
 }

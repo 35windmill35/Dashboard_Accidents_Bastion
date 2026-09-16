@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
+import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
 import {
   getAvailableMonths,
   getAvailableQuarters,
@@ -116,11 +117,20 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
       <button
         type="button"
         className={styles.actionButton}
-        disabled
-        title="Появится на следующем этапе"
+        onClick={() => void pdfReportStore.trigger()}
+        disabled={!pdfReportStore.isAvailable || pdfReportStore.isGenerating}
+        title={
+          pdfReportStore.isAvailable
+            ? 'Сформировать PDF-отчёт по текущему экрану'
+            : 'На этом экране PDF-отчёт пока недоступен'
+        }
       >
         <IconPdf />
-        <span className={styles.actionLabel}>PDF отчёт</span>
+        <span className={styles.actionLabel}>
+          {pdfReportStore.isGenerating
+            ? `Формирование… ${pdfReportStore.progress.current}/${pdfReportStore.progress.total}`
+            : 'PDF отчёт'}
+        </span>
       </button>
 
       <button type="button" className={styles.logout} onClick={handleLogout}>

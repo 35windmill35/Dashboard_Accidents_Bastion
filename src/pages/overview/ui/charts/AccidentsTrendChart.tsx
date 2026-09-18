@@ -12,7 +12,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { CHART_1 } from '@/shared/lib/chartColors'
-import { CATEGORY_X_AXIS_PROPS } from '@/shared/lib/rechartsHelpers'
+import { useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -61,32 +61,36 @@ export function AccidentsTrendChart({ data }: Props) {
     drilldownStore.open(`Все ДТП — ${formatMonthLabel(ym)}`, rows)
   }
 
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.length)
+
   return (
     <ChartCard title="Динамика ДТП по месяцам" legend={[{ label: 'ДТП', color: CHART_1 }]}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...CATEGORY_X_AXIS_PROPS} />
-          <YAxis stroke="var(--color-text-secondary)" fontSize={12} allowDecimals={false} />
-          <Tooltip
-            contentStyle={{
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 8,
-              color: 'var(--color-text)',
-            }}
-          />
-          <Line
-            type="monotone"
-            dataKey="count"
-            name="ДТП"
-            stroke={CHART_1}
-            strokeWidth={2}
-            dot={<TrendDot onPointClick={handleClick} />}
-            activeDot={{ r: 6 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+            <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
+            <YAxis stroke="var(--color-text-secondary)" fontSize={12} allowDecimals={false} />
+            <Tooltip
+              contentStyle={{
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                color: 'var(--color-text)',
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="count"
+              name="ДТП"
+              stroke={CHART_1}
+              strokeWidth={2}
+              dot={<TrendDot onPointClick={handleClick} />}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </ChartCard>
   )
 }

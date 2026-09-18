@@ -5,7 +5,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { barPayload, CATEGORY_X_AXIS_PROPS } from '@/shared/lib/rechartsHelpers'
+import { barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -26,6 +26,8 @@ export function MotorcadeDamageChart({ data, period }: Props) {
     drilldownStore.open(`${agg.name} — ${periodLabel}`, rows)
   }
 
+  const { containerRef, xAxisProps } = useCategoryXAxis(data.motorcadeAgg.length)
+
   return (
     <ChartCard
       title="Ущерб и возмещение по автоколоннам"
@@ -34,43 +36,45 @@ export function MotorcadeDamageChart({ data, period }: Props) {
         { label: 'Возмещение', color: CHART_2 },
       ]}
     >
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data.motorcadeAgg} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis dataKey="name" stroke="var(--color-text-secondary)" {...CATEGORY_X_AXIS_PROPS} />
-          <YAxis
-            stroke="var(--color-text-secondary)"
-            fontSize={12}
-            tickFormatter={formatCompactCurrency}
-            width={76}
-          />
-          <Tooltip
-            formatter={(value) => formatCurrency(Number(value))}
-            contentStyle={{
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 8,
-              color: 'var(--color-text)',
-            }}
-          />
-          <Bar
-            dataKey="sumDamage"
-            name="Ущерб"
-            fill={CHART_1}
-            radius={[4, 4, 0, 0]}
-            style={{ cursor: 'pointer' }}
-            onClick={(entry) => openMotorcade(barPayload<MotorcadeAggregate>(entry).key)}
-          />
-          <Bar
-            dataKey="sumCompensated"
-            name="Возмещение"
-            fill={CHART_2}
-            radius={[4, 4, 0, 0]}
-            style={{ cursor: 'pointer' }}
-            onClick={(entry) => openMotorcade(barPayload<MotorcadeAggregate>(entry).key)}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data.motorcadeAgg} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+            <XAxis dataKey="name" stroke="var(--color-text-secondary)" {...xAxisProps} />
+            <YAxis
+              stroke="var(--color-text-secondary)"
+              fontSize={12}
+              tickFormatter={formatCompactCurrency}
+              width={76}
+            />
+            <Tooltip
+              formatter={(value) => formatCurrency(Number(value))}
+              contentStyle={{
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                color: 'var(--color-text)',
+              }}
+            />
+            <Bar
+              dataKey="sumDamage"
+              name="Ущерб"
+              fill={CHART_1}
+              radius={[4, 4, 0, 0]}
+              style={{ cursor: 'pointer' }}
+              onClick={(entry) => openMotorcade(barPayload<MotorcadeAggregate>(entry).key)}
+            />
+            <Bar
+              dataKey="sumCompensated"
+              name="Возмещение"
+              fill={CHART_2}
+              radius={[4, 4, 0, 0]}
+              style={{ cursor: 'pointer' }}
+              onClick={(entry) => openMotorcade(barPayload<MotorcadeAggregate>(entry).key)}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
     </ChartCard>
   )
 }

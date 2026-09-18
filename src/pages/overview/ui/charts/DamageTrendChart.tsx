@@ -5,7 +5,7 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { CATEGORY_X_AXIS_PROPS } from '@/shared/lib/rechartsHelpers'
+import { useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -27,6 +27,8 @@ export function DamageTrendChart({ data }: Props) {
     drilldownStore.open(`Все ДТП — ${formatMonthLabel(ym)}`, rows)
   }
 
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.length)
+
   return (
     <ChartCard
       title="Динамика ущерба и возмещения по месяцам"
@@ -35,51 +37,53 @@ export function DamageTrendChart({ data }: Props) {
         { label: 'Возмещение', color: CHART_2 },
       ]}
     >
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
-          onClick={(state) => {
-            const point = (state as { activePayload?: { payload: { ym: number } }[] } | null)
-              ?.activePayload?.[0]?.payload
-            if (point) handleClick(point.ym)
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...CATEGORY_X_AXIS_PROPS} />
-          <YAxis
-            stroke="var(--color-text-secondary)"
-            fontSize={12}
-            tickFormatter={formatCompactCurrency}
-            width={76}
-          />
-          <Tooltip
-            formatter={(value) => formatCurrency(Number(value))}
-            contentStyle={{
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 8,
-              color: 'var(--color-text)',
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={chartData}
+            margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
+            onClick={(state) => {
+              const point = (state as { activePayload?: { payload: { ym: number } }[] } | null)
+                ?.activePayload?.[0]?.payload
+              if (point) handleClick(point.ym)
             }}
-          />
-          <Line
-            type="monotone"
-            dataKey="sumDamage"
-            name="Ущерб"
-            stroke={CHART_1}
-            strokeWidth={2}
-            dot={{ r: 3, cursor: 'pointer' }}
-          />
-          <Line
-            type="monotone"
-            dataKey="sumCompensated"
-            name="Возмещение"
-            stroke={CHART_2}
-            strokeWidth={2}
-            dot={{ r: 3, cursor: 'pointer' }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+            <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
+            <YAxis
+              stroke="var(--color-text-secondary)"
+              fontSize={12}
+              tickFormatter={formatCompactCurrency}
+              width={76}
+            />
+            <Tooltip
+              formatter={(value) => formatCurrency(Number(value))}
+              contentStyle={{
+                background: 'var(--color-surface-2)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 8,
+                color: 'var(--color-text)',
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="sumDamage"
+              name="Ущерб"
+              stroke={CHART_1}
+              strokeWidth={2}
+              dot={{ r: 3, cursor: 'pointer' }}
+            />
+            <Line
+              type="monotone"
+              dataKey="sumCompensated"
+              name="Возмещение"
+              stroke={CHART_2}
+              strokeWidth={2}
+              dot={{ r: 3, cursor: 'pointer' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </ChartCard>
   )
 }

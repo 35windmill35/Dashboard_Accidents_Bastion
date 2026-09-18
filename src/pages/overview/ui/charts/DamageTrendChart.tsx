@@ -27,7 +27,7 @@ export function DamageTrendChart({ data }: Props) {
     drilldownStore.open(`Все ДТП — ${formatMonthLabel(ym)}`, rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.length)
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
   return (
     <ChartCard

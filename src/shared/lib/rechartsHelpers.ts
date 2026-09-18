@@ -8,6 +8,9 @@ export function barPayload<T>(entry: unknown): T {
   return (entry as { payload: T }).payload
 }
 
+const TICK_FONT_SIZE = 11
+const LABEL_ANGLE_DEG = 20
+
 // Насколько узкой может стать карточка графика, прежде чем подпись перестаёт
 // помещаться — при угле -20° реальный горизонтальный след короткой подписи
 // (месяц, короткое имя автоколонны) меньше её полной ширины, поэтому берём
@@ -34,20 +37,48 @@ function resolveCategoryInterval(width: number, count: number): number {
   return Math.ceil(count / maxVisible) - 1
 }
 
+let measureCanvas: HTMLCanvasElement | null = null
+
+function measureLabelWidth(text: string, fontSize: number): number {
+  if (typeof document === 'undefined') return text.length * fontSize * 0.6
+  if (!measureCanvas) measureCanvas = document.createElement('canvas')
+  const ctx = measureCanvas.getContext('2d')
+  if (!ctx) return text.length * fontSize * 0.6
+  ctx.font = `${fontSize}px sans-serif`
+  return ctx.measureText(text).width
+}
+
+// Первая подпись категориальной оси — единственная, которая рисуется всегда,
+// при любом интервале пропуска, и стоит у самого левого края графика. При
+// повороте на -20° и textAnchor="end" её текст уходит влево от опорной
+// точки — если места не хватает, он вылезает за пределы SVG (у которого по
+// умолчанию overflow: hidden) и обрезается. Резервируем под неё нужное
+// горизонтальное место через padding оси, считая от фактической ширины
+// текста — тогда она не срезается ни при какой ширине карточки.
+function resolveLeftPadding(firstLabel: string | undefined): number {
+  if (!firstLabel) return 0
+  const width = measureLabelWidth(firstLabel, TICK_FONT_SIZE)
+  const angleRad = (LABEL_ANGLE_DEG * Math.PI) / 180
+  return Math.ceil(width * Math.cos(angleRad)) + 10
+}
+
 export interface CategoryXAxisProps {
   interval: number
   angle: -20
   textAnchor: 'end'
   height: number
   fontSize: number
+  padding: { left: number }
 }
 
 // Единый хук для категориальной оси X всех графиков "Обзора": высота под
 // подписи (угол, кегль, отведённое место) одинакова для всех карточек
 // намеренно — иначе у соседних карточек в сетке "плывут" линия оси X и сетка
-// по Y (см. ChartCard). А вот сколько подписей реально показать — считается
-// отдельно для каждой карточки по её измеренной через ResizeObserver ширине.
-export function useCategoryXAxis(pointCount: number): {
+// по Y (см. ChartCard). А вот сколько подписей реально показать и сколько
+// места зарезервировать слева под первую из них — считается отдельно для
+// каждой карточки: ширина — по её измеренной через ResizeObserver ширине,
+// отступ слева — по фактической ширине первой подписи.
+export function useCategoryXAxis(labels: string[]): {
   containerRef: (node: HTMLDivElement | null) => void
   xAxisProps: CategoryXAxisProps
 } {
@@ -74,11 +105,12 @@ export function useCategoryXAxis(pointCount: number): {
   return {
     containerRef,
     xAxisProps: {
-      interval: resolveCategoryInterval(width, pointCount),
+      interval: resolveCategoryInterval(width, labels.length),
       angle: -20,
       textAnchor: 'end',
       height: 60,
-      fontSize: 11,
+      fontSize: TICK_FONT_SIZE,
+      padding: { left: resolveLeftPadding(labels[0]) },
     },
   }
 }

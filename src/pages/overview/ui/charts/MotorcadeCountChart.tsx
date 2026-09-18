@@ -27,7 +27,7 @@ interface Props {
 // указана" — это единственный экран, где она участвует в графиках.
 export function MotorcadeCountChart({ data, period }: Props) {
   const periodLabel = formatPeriodLabel(period)
-  const { containerRef, xAxisProps } = useCategoryXAxis(data.motorcadeAgg.length)
+  const { containerRef, xAxisProps } = useCategoryXAxis(data.motorcadeAgg.map((a) => a.name))
 
   return (
     <ChartCard title="ДТП по автоколоннам" legend={[{ label: 'ДТП', color: CHART_1 }]}>

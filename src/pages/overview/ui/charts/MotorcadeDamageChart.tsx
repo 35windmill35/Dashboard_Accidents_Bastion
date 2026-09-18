@@ -26,7 +26,7 @@ export function MotorcadeDamageChart({ data, period }: Props) {
     drilldownStore.open(`${agg.name} — ${periodLabel}`, rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(data.motorcadeAgg.length)
+  const { containerRef, xAxisProps } = useCategoryXAxis(data.motorcadeAgg.map((a) => a.name))
 
   return (
     <ChartCard

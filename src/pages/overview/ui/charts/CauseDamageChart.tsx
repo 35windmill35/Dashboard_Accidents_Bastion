@@ -23,7 +23,7 @@ export function CauseDamageChart({ data, period }: Props) {
     if (slice) drilldownStore.open(`${slice.label} — ${periodLabel}`, slice.rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.length)
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((s) => s.label))
 
   return (
     <ChartCard

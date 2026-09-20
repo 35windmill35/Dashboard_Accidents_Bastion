@@ -9,7 +9,6 @@ export const CAUSE_CATEGORY_LABELS: Record<CauseCategory, string> = {
   undetermined: 'Виновный не определён',
 }
 
-
 const DRIVER_FAULT_CAUSE_IDS = new Set<number>([5])
 const NO_DAMAGE_CAUSE_IDS = new Set<number>([])
 const THIRD_PARTY_FAULT_CAUSE_ID = 4

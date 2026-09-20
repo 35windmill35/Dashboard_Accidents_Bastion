@@ -62,23 +62,59 @@ function resolveLeftPadding(firstLabel: string | undefined): number {
   return Math.ceil(width * Math.cos(angleRad)) + 10
 }
 
+// Единая ширина оси Y для всех графиков одного экрана — раньше она
+// подбиралась под контент каждого графика отдельно (76 для тенге, 48 для
+// процентов, авто ~60 для целых чисел), из-за чего вертикальная линия оси Y
+// у соседних карточек в сетке стояла на разной высоте/смещении и "не была
+// параллельна" между графиками. Теперь ширина одна для всех — по самому
+// широкому подписанному значению (компактная сумма в тенге).
+export const Y_AXIS_WIDTH = 76
+
+// Единые отступы графика — по той же причине: разные margin.left/right у
+// графиков с "узкой" (целые числа) и "широкой" (тенге) осью Y компенсировали
+// разницу в Y_AXIS_WIDTH по-разному. Раз ширина оси теперь одна везде, и
+// отступы должны быть одинаковыми.
+export const CHART_MARGIN = { top: 8, right: 4, left: 0, bottom: 0 } as const
+
+// Высота полосы оси X — тоже общая для всех графиков экрана. У графиков с
+// повёрнутыми подписями категорий (см. useCategoryXAxis) она обязательно
+// 60, под наклонный текст. У графиков с двумя простыми подписями (сравнение
+// "Автоколонна А"/"Автоколонна Б") подписи не повёрнуты и своя высота у
+// XAxis не задавалась — Recharts брал дефолт (30), и на графиках рядом в
+// одной строке сетки сама область графика (а с ней и ось X) оказывалась на
+// разной высоте. Задаём и там ту же высоту 60, чтобы оси стояли на одном
+// уровне у всех карточек экрана, а не только у тех, что используют хук.
+export const CATEGORY_AXIS_HEIGHT = 60
+
 export interface CategoryXAxisProps {
   interval: number
   angle: -20
   textAnchor: 'end'
   height: number
   fontSize: number
-  padding: { left: number }
+  padding: { left: number; right: number }
 }
 
-// Единый хук для категориальной оси X всех графиков "Обзора": высота под
+export interface UseCategoryXAxisOptions {
+  // Для столбчатых графиков: слева от первого столбца ось резервирует место
+  // под повёрнутую подпись (см. resolveLeftPadding) — без такого же отступа
+  // справа область графика съезжает влево, между осью Y и первым столбцом
+  // остаётся заметный зазор, а справа места не остаётся вовсе. Зеркалим
+  // левый отступ в правый, чтобы столбцы стояли по центру карточки.
+  mirrorPadding?: boolean
+}
+
+// Единый хук для категориальной оси X всех графиков (всех трёх экранов): высота под
 // подписи (угол, кегль, отведённое место) одинакова для всех карточек
 // намеренно — иначе у соседних карточек в сетке "плывут" линия оси X и сетка
 // по Y (см. ChartCard). А вот сколько подписей реально показать и сколько
 // места зарезервировать слева под первую из них — считается отдельно для
 // каждой карточки: ширина — по её измеренной через ResizeObserver ширине,
 // отступ слева — по фактической ширине первой подписи.
-export function useCategoryXAxis(labels: string[]): {
+export function useCategoryXAxis(
+  labels: string[],
+  options?: UseCategoryXAxisOptions
+): {
   containerRef: (node: HTMLDivElement | null) => void
   xAxisProps: CategoryXAxisProps
 } {
@@ -102,15 +138,17 @@ export function useCategoryXAxis(labels: string[]): {
     return () => observer.disconnect()
   }, [])
 
+  const leftPadding = resolveLeftPadding(labels[0])
+
   return {
     containerRef,
     xAxisProps: {
       interval: resolveCategoryInterval(width, labels.length),
       angle: -20,
       textAnchor: 'end',
-      height: 60,
+      height: CATEGORY_AXIS_HEIGHT,
       fontSize: TICK_FONT_SIZE,
-      padding: { left: resolveLeftPadding(labels[0]) },
+      padding: { left: leftPadding, right: options?.mirrorPadding ? leftPadding : 0 },
     },
   }
 }

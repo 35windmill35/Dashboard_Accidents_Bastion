@@ -4,7 +4,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatPercent } from '@/shared/lib/formatters'
-import { barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { CHART_MARGIN, Y_AXIS_WIDTH, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { AnalyticsData, CauseComparisonRow } from '../../model/analyticsData'
 
 interface Props {
@@ -29,7 +29,9 @@ export function CausesComparisonChart({ data, period }: Props) {
     drilldownStore.open(`${row.label} — ${name}, ${periodLabel}`, rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((r) => r.label))
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((r) => r.label), {
+    mirrorPadding: true,
+  })
 
   return (
     <ChartCard
@@ -41,14 +43,14 @@ export function CausesComparisonChart({ data, period }: Props) {
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+          <BarChart data={chartData} margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
             <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
             <YAxis
               stroke="var(--color-text-secondary)"
               fontSize={12}
               tickFormatter={(v: number) => formatPercent(v)}
-              width={48}
+              width={Y_AXIS_WIDTH}
             />
             <Tooltip
               formatter={(value) => formatPercent(Number(value))}

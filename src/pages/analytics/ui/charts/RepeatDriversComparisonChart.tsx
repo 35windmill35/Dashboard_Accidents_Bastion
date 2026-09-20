@@ -2,6 +2,7 @@ import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis
 import { ChartCard } from '@/widgets/chart-card/ChartCard'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
+import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN, Y_AXIS_WIDTH } from '@/shared/lib/rechartsHelpers'
 import type { AnalyticsData } from '../../model/analyticsData'
 
 interface Props {
@@ -26,10 +27,20 @@ export function RepeatDriversComparisonChart({ data }: Props) {
   return (
     <ChartCard title="Водителей с 3 и более ДТП">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={chartData} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
+        <BarChart data={chartData} margin={CHART_MARGIN}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis dataKey="name" stroke="var(--color-text-secondary)" fontSize={12} />
-          <YAxis stroke="var(--color-text-secondary)" fontSize={12} allowDecimals={false} />
+          <XAxis
+            dataKey="name"
+            stroke="var(--color-text-secondary)"
+            fontSize={12}
+            height={CATEGORY_AXIS_HEIGHT}
+          />
+          <YAxis
+            stroke="var(--color-text-secondary)"
+            fontSize={12}
+            allowDecimals={false}
+            width={Y_AXIS_WIDTH}
+          />
           <Tooltip
             formatter={(value) => formatNumber(Number(value))}
             contentStyle={{

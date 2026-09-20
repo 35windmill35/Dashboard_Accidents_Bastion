@@ -4,7 +4,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { CHART_MARGIN, Y_AXIS_WIDTH, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { AnalyticsData } from '../../model/analyticsData'
 
@@ -46,7 +46,7 @@ export function CompensatedSumTrendChart({ data, rowsA, rowsB }: Props) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
+            margin={CHART_MARGIN}
             onClick={(state) => {
               const point = (state as { activePayload?: { payload: { ym: number } }[] } | null)
                 ?.activePayload?.[0]?.payload
@@ -59,7 +59,7 @@ export function CompensatedSumTrendChart({ data, rowsA, rowsB }: Props) {
               stroke="var(--color-text-secondary)"
               fontSize={12}
               tickFormatter={formatCompactCurrency}
-              width={76}
+              width={Y_AXIS_WIDTH}
             />
             <Tooltip
               formatter={(value) => formatCurrency(Number(value))}

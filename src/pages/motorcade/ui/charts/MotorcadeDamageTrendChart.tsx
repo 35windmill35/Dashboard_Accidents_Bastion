@@ -12,7 +12,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { CHART_MARGIN, Y_AXIS_WIDTH, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
@@ -50,7 +50,7 @@ export function MotorcadeDamageTrendChart({ data, motorcadeRows }: Props) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 8, right: 4, left: 0, bottom: 0 }}
+            margin={CHART_MARGIN}
             onClick={(state) => {
               const point = (state as { activePayload?: { payload: { ym: number } }[] } | null)
                 ?.activePayload?.[0]?.payload
@@ -63,7 +63,7 @@ export function MotorcadeDamageTrendChart({ data, motorcadeRows }: Props) {
               stroke="var(--color-text-secondary)"
               fontSize={12}
               tickFormatter={formatCompactCurrency}
-              width={76}
+              width={Y_AXIS_WIDTH}
             />
             <Tooltip
               formatter={(value) => formatCurrency(Number(value))}

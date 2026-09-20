@@ -4,7 +4,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { CHART_MARGIN, Y_AXIS_WIDTH, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { CauseSlice } from '@/entities/accident/lib/metrics'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
@@ -24,7 +24,9 @@ export function MotorcadeCauseDamageChart({ data, period }: Props) {
     if (slice) drilldownStore.open(`${slice.label} — ${periodLabel}`, slice.rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((s) => s.label))
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((s) => s.label), {
+    mirrorPadding: true,
+  })
 
   return (
     <ChartCard
@@ -36,14 +38,14 @@ export function MotorcadeCauseDamageChart({ data, period }: Props) {
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+          <BarChart data={chartData} margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
             <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
             <YAxis
               stroke="var(--color-text-secondary)"
               fontSize={12}
               tickFormatter={formatCompactCurrency}
-              width={76}
+              width={Y_AXIS_WIDTH}
             />
             <Tooltip
               formatter={(value) => formatCurrency(Number(value))}

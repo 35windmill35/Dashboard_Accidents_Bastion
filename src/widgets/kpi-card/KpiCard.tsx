@@ -41,15 +41,16 @@ export function KpiCard({
     >
       <div className={styles.label}>{label}</div>
       <div className={styles.value}>{value}</div>
-      {delta !== undefined && delta !== null && (
-        <div
-          className={`${styles.delta} ${
-            positive === null ? '' : positive ? styles.deltaUp : styles.deltaDown
-          }`}
-        >
-          {formatDelta(delta)} {deltaLabel}
-        </div>
-      )}
+      {/* Строка дельты рисуется всегда, даже пустой — иначе карточки без
+          дельты (или с null-дельтой, как у автоколонны без ДТП) в одной
+          сетке оказываются ниже соседних и ряд карточек "плывёт" по высоте. */}
+      <div
+        className={`${styles.delta} ${
+          positive === null ? '' : positive ? styles.deltaUp : styles.deltaDown
+        }`}
+      >
+        {delta !== undefined && delta !== null ? `${formatDelta(delta)} ${deltaLabel}` : ' '}
+      </div>
       {children}
     </div>
   )

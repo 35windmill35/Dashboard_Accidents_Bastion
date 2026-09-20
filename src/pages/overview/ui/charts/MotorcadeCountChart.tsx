@@ -14,7 +14,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { CHART_1 } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
-import { barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { CHART_MARGIN, Y_AXIS_WIDTH, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -27,16 +27,24 @@ interface Props {
 // указана" — это единственный экран, где она участвует в графиках.
 export function MotorcadeCountChart({ data, period }: Props) {
   const periodLabel = formatPeriodLabel(period)
-  const { containerRef, xAxisProps } = useCategoryXAxis(data.motorcadeAgg.map((a) => a.name))
+  const { containerRef, xAxisProps } = useCategoryXAxis(
+    data.motorcadeAgg.map((a) => a.name),
+    { mirrorPadding: true }
+  )
 
   return (
     <ChartCard title="ДТП по автоколоннам" legend={[{ label: 'ДТП', color: CHART_1 }]}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data.motorcadeAgg} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+          <BarChart data={data.motorcadeAgg} margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
             <XAxis dataKey="name" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis stroke="var(--color-text-secondary)" fontSize={12} allowDecimals={false} />
+            <YAxis
+              stroke="var(--color-text-secondary)"
+              fontSize={12}
+              allowDecimals={false}
+              width={Y_AXIS_WIDTH}
+            />
             <Tooltip
               formatter={(value) => formatNumber(Number(value))}
               contentStyle={{

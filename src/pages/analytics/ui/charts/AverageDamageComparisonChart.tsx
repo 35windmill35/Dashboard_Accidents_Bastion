@@ -1,4 +1,13 @@
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { ChartCard } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
@@ -69,7 +78,10 @@ export function AverageDamageComparisonChart({ data, period }: Props) {
             onClick={(entry) => handleClick(barPayload<Point>(entry).side)}
           >
             {chartData.map((point) => (
-              <Cell key={point.side} fill={point.side === 'a' ? COMPARISON_COLOR_A : COMPARISON_COLOR_B} />
+              <Cell
+                key={point.side}
+                fill={point.side === 'a' ? COMPARISON_COLOR_A : COMPARISON_COLOR_B}
+              />
             ))}
           </Bar>
         </BarChart>

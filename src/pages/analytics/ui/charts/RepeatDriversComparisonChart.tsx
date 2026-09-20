@@ -1,4 +1,13 @@
-import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { ChartCard } from '@/widgets/chart-card/ChartCard'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
@@ -52,7 +61,10 @@ export function RepeatDriversComparisonChart({ data }: Props) {
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]}>
             {chartData.map((point) => (
-              <Cell key={point.side} fill={point.side === 'a' ? COMPARISON_COLOR_A : COMPARISON_COLOR_B} />
+              <Cell
+                key={point.side}
+                fill={point.side === 'a' ? COMPARISON_COLOR_A : COMPARISON_COLOR_B}
+              />
             ))}
           </Bar>
         </BarChart>

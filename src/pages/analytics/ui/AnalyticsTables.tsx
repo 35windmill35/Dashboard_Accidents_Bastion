@@ -41,8 +41,18 @@ export function AnalyticsTables({ data, period }: AnalyticsTablesProps) {
 
   const summaryColumns: DataTableColumn<SummaryRow>[] = [
     { key: 'label', label: 'Показатель', render: (r) => r.label },
-    { key: 'valueA', label: data.a.name, align: 'center', render: (r) => formatByKind(r.kind, r.valueA) },
-    { key: 'valueB', label: data.b.name, align: 'center', render: (r) => formatByKind(r.kind, r.valueB) },
+    {
+      key: 'valueA',
+      label: data.a.name,
+      align: 'center',
+      render: (r) => formatByKind(r.kind, r.valueA),
+    },
+    {
+      key: 'valueB',
+      label: data.b.name,
+      align: 'center',
+      render: (r) => formatByKind(r.kind, r.valueB),
+    },
     {
       key: 'diff',
       label: 'Разница',
@@ -66,7 +76,9 @@ export function AnalyticsTables({ data, period }: AnalyticsTablesProps) {
         rows={data.worstDrivers}
         getRowKey={(r) => r.key}
         initialLimit={data.worstDrivers.length}
-        onRowClick={(r) => drilldownStore.open(`${r.name} — ${r.motorcadeName}, ${periodLabel}`, r.rows)}
+        onRowClick={(r) =>
+          drilldownStore.open(`${r.name} — ${r.motorcadeName}, ${periodLabel}`, r.rows)
+        }
       />
     </div>
   )

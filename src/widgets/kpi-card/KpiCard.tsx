@@ -7,19 +7,24 @@ interface KpiCardProps {
   value: string
   delta?: number | null
   deltaHigherIsBetter?: boolean
+  // Подпись под дельтой. По умолчанию "к пред. периоду" (Обзор/Автоколонна);
+  // "Аналитика" сравнивает не с прошлым периодом, а со второй автоколонной
+  // ("к Павлодару" и т.п.), поэтому подпись настраиваемая.
+  deltaLabel?: string
   tooltip?: string
   onClick?: () => void
   children?: ReactNode
 }
 
-// Универсальная KPI-карточка для всех трёх экранов: значение + дельта к
-// предыдущему периоду (зелёная/красная в зависимости от того, хорошо ли
-// расти именно этой метрике), клик открывает detalизацию.
+// Универсальная KPI-карточка для всех трёх экранов: значение + дельта
+// (зелёная/красная в зависимости от того, хорошо ли расти именно этой
+// метрике), клик открывает детализацию.
 export function KpiCard({
   label,
   value,
   delta,
   deltaHigherIsBetter = true,
+  deltaLabel = 'к пред. периоду',
   tooltip,
   onClick,
   children,
@@ -42,7 +47,7 @@ export function KpiCard({
             positive === null ? '' : positive ? styles.deltaUp : styles.deltaDown
           }`}
         >
-          {formatDelta(delta)} к пред. периоду
+          {formatDelta(delta)} {deltaLabel}
         </div>
       )}
       {children}

@@ -27,6 +27,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
   const location = useLocation()
   const rows = accidentsStore.rows
   const isMotorcadeScreen = location.pathname === '/motorcade'
+  const isAnalyticsScreen = location.pathname === '/analytics'
 
   const months = getAvailableMonths(rows)
   const quarters = getAvailableQuarters(rows)
@@ -115,6 +116,33 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
             </option>
           ))}
         </select>
+      )}
+
+      {isAnalyticsScreen && (
+        <>
+          <select
+            className={styles.select}
+            value={filtersStore.selectedAnalyticsKeyA ?? ''}
+            onChange={(e) => filtersStore.setAnalyticsMotorcadeA(e.target.value)}
+          >
+            {filtersStore.motorcadeOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className={styles.select}
+            value={filtersStore.selectedAnalyticsKeyB ?? ''}
+            onChange={(e) => filtersStore.setAnalyticsMotorcadeB(e.target.value)}
+          >
+            {filtersStore.motorcadeOptions.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.name}
+              </option>
+            ))}
+          </select>
+        </>
       )}
 
       <div className={styles.spacer} />

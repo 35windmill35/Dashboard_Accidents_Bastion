@@ -81,7 +81,9 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           label="Доля возмещения"
           value={formatPercent(kpi.compensationShare)}
           delta={
-            compareTo ? delta(kpi.compensationShare, compareTo.scope.kpi.compensationShare) : undefined
+            compareTo
+              ? delta(kpi.compensationShare, compareTo.scope.kpi.compensationShare)
+              : undefined
           }
           deltaLabel={deltaLabel}
           tooltip="Качество претензионной работы. Сравнимо между автоколоннами"
@@ -90,7 +92,9 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
         <KpiCard
           label="Средний ущерб на 1 ДТП"
           value={formatCurrency(kpi.averageDamage)}
-          delta={compareTo ? delta(kpi.averageDamage, compareTo.scope.kpi.averageDamage) : undefined}
+          delta={
+            compareTo ? delta(kpi.averageDamage, compareTo.scope.kpi.averageDamage) : undefined
+          }
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Типичная тяжесть инцидента в этой автоколонне"

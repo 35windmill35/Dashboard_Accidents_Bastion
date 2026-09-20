@@ -44,7 +44,11 @@ export function reportHeader(doc: jsPDF, meta: ReportHeaderMeta): BlockFactory {
           color: COLOR.secondary,
           charSpace: 1.1,
         })
-        drawText(doc, meta.title, x, y + 29, { weight: 'bold', size: 15, color: COLOR.ink })
+        // fitText — заголовок не всегда короткая константа (напр. на
+        // "Автоколонне" в него подставляется имя автоколонны), поэтому он не
+        // должен наезжать на период/фильтры справа.
+        const titleStyle: TextStyle = { weight: 'bold', size: 15, color: COLOR.ink }
+        drawText(doc, fitText(doc, meta.title, width * 0.6, titleStyle), x, y + 29, titleStyle)
 
         const rightX = x + width
         drawText(doc, meta.periodLabel, rightX, y + 10, {

@@ -1,5 +1,6 @@
-import { formatNumber } from '@/shared/lib/formatters'
+import { formatNumber, formatPercent } from '@/shared/lib/formatters'
 import { formatMonthShortLabel, ymToYear, type Period } from '@/entities/accident/lib/period'
+import type { CauseSlice } from '@/entities/accident/lib/metrics'
 
 // Компактные подписи денежной оси: на графике не нужны полные суммы, иначе
 // подписи делений шире самого графика.
@@ -28,6 +29,20 @@ export function splitMonthLabel(ym: number): { label: string; sublabel: string }
 
 export function formatMonthAxisLabel(ym: number): string {
   return formatMonthShortLabel(ym)
+}
+
+// Короткий вывод под карточкой "Структура причин ДТП" — не аналитика "на
+// глаз", а пересказ чисел, которые уже показаны на графике. Общий для
+// "Обзора" и "Автоколонны" (см. buildOverviewReport/buildMotorcadeReport).
+export function causesNote(causeSlices: CauseSlice[], total: number): string {
+  if (total === 0) return 'За выбранный период ДТП не зарегистрировано.'
+
+  const top = [...causeSlices].sort((a, b) => b.count - a.count)[0]
+  if (!top || top.count === 0) return 'Причины ДТП за период не классифицированы.'
+  if (top.count === total) {
+    return `Все ДТП периода отнесены к категории «${top.label}» — 100% случаев.`
+  }
+  return `Больше всего ДТП в категории «${top.label}» — ${formatNumber(top.count)} из ${formatNumber(total)} (${formatPercent(top.count / total)}).`
 }
 
 // Часть имени файла dtp-<экран>-<период>-<YYYYMMDD-HHmm>.pdf, отвечающая за

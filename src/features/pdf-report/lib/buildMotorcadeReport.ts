@@ -8,20 +8,16 @@ import {
   isDeltaPositive,
 } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
-import type { OverviewData } from '@/pages/overview/model/overviewData'
+import type { MotorcadeData } from '@/pages/motorcade/model/motorcadeData'
 import { COLOR, PAGE, registerPdfFonts } from './pdfKit'
 import { columns, drawPageFooters, flowBlocks, type BlockFactory } from './pdfFlow'
 import { kpiRow, reportHeader, type KpiCardData } from './pdfChrome'
 import {
   DISTRIBUTION_ROW_HEIGHT,
-  DUAL_ROW_HEIGHT,
-  RANKED_ROW_HEIGHT,
   barChartBody,
   card,
   distributionBody,
-  dualBarsBody,
   groupedBarChartBody,
-  rankedBarsBody,
   tableCard,
 } from './pdfBlocks'
 import {
@@ -33,23 +29,28 @@ import {
   splitMonthLabel,
 } from './pdfFormat'
 
-// Топ-N в отчёте совпадает со свёрнутым состоянием таблиц на экране; полный
-// список пользователь берёт выгрузкой CSV, об этом подпись под таблицей.
+// Топ-N совпадает со свёрнутым состоянием таблиц на экране, как и на
+// "Обзоре" (см. buildOverviewReport) — полный список пользователь берёт
+// выгрузкой CSV.
 const DRIVERS_TOP_N = 8
 const VEHICLES_TOP_N = 8
-const MOTORCADES_TOP_N = 10
 
 const TREND_CHART_HEIGHT = 102
 const DAMAGE_CHART_HEIGHT = 76
 
-export interface OverviewReportInput {
-  data: OverviewData
+export interface MotorcadeReportInput {
+  data: MotorcadeData
   period: Period
-  firmNames: string[]
+  motorcadeName: string
+  firmName: string
   onSection?: (done: number, total: number) => void
 }
 
-function kpiCards(data: OverviewData): KpiCardData[] {
+// 8 KPI, не 5, как на "Обзоре" (три доли по вине — только у одной
+// автоколонны они информативны, у компании целиком это уже структура
+// причин). deltaHigherIsBetter расставлены так же, как в MotorcadeKpiRow на
+// экране.
+function kpiCards(data: MotorcadeData): KpiCardData[] {
   const { kpi, previousKpi } = data
 
   const build = (
@@ -70,7 +71,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
   }
 
   return [
-    build('Всего ДТП', formatNumber(kpi.count), kpi.count, previousKpi?.count, false),
+    build('Количество ДТП', formatNumber(kpi.count), kpi.count, previousKpi?.count, false),
     build(
       'Сумма ущерба',
       formatCurrency(kpi.sumDamage),
@@ -93,35 +94,42 @@ function kpiCards(data: OverviewData): KpiCardData[] {
       true
     ),
     build(
-      'Средний ущерб на ДТП',
+      'Средний ущерб на 1 ДТП',
       formatCurrency(kpi.averageDamage),
       kpi.averageDamage,
       previousKpi?.averageDamage,
       false
     ),
+    build(
+      'Доля ДТП по вине водителя',
+      formatPercent(kpi.driverFaultShare),
+      kpi.driverFaultShare,
+      previousKpi?.driverFaultShare,
+      false
+    ),
+    build(
+      'Доля ДТП по вине третьей стороны',
+      formatPercent(kpi.thirdPartyFaultShare),
+      kpi.thirdPartyFaultShare,
+      previousKpi?.thirdPartyFaultShare,
+      false
+    ),
+    build(
+      'Доля ДТП без повреждений',
+      formatPercent(kpi.noDamageShare),
+      kpi.noDamageShare,
+      previousKpi?.noDamageShare,
+      false
+    ),
   ]
 }
 
-// Короткий вывод под карточкой "ДТП по автоколоннам" — той же природы, что
-// и causesNote (см. pdfFormat), но специфичен для "Обзора" (сравнение
-// автоколонн между собой), поэтому здесь, а не в общем pdfFormat.
-function motorcadeNote(data: OverviewData): string | undefined {
-  const aggregates = data.motorcadeAgg
-  if (aggregates.length === 0) return 'За выбранный период ДТП не зарегистрировано.'
-  if (aggregates.length === 1) return 'Данные за период поступили только по одной автоколонне.'
-
-  const top = aggregates[0]
-  const total = data.kpi.count
-  if (!total) return undefined
-  return `Лидирует «${top.name}» — ${formatNumber(top.count)} из ${formatNumber(total)} ДТП (${formatPercent(top.count / total)}).`
-}
-
-function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] {
+function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[] {
   const { data, period } = input
   const periodLabel = formatPeriodLabel(period)
-  const motorcades = data.motorcadeAgg.slice(0, MOTORCADES_TOP_N)
   const drivers = data.driversRanking.slice(0, DRIVERS_TOP_N)
   const vehicles = data.vehiclesRanking.slice(0, VEHICLES_TOP_N)
+  const cards = kpiCards(data)
   const causeTotal = data.causeSlices.reduce(
     (acc, slice) => ({
       count: acc.count + slice.count,
@@ -191,43 +199,6 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
           formatTick: formatMoneyAxis,
           labelLines: 1,
         }
-      ),
-    })
-
-  const motorcadeCountCard: BlockFactory = (x, width) =>
-    card(doc, x, width, {
-      title: 'ДТП по автоколоннам',
-      bodyHeight: Math.max(1, motorcades.length) * RANKED_ROW_HEIGHT,
-      note: motorcadeNote(data),
-      drawBody: rankedBarsBody(
-        doc,
-        motorcades.map((item) => ({
-          label: item.name,
-          value: item.count,
-          formatted: formatNumber(item.count),
-        })),
-        { color: COLOR.accent }
-      ),
-    })
-
-  const motorcadeDamageCard: BlockFactory = (x, width) =>
-    card(doc, x, width, {
-      title: 'Ущерб и возмещение по автоколоннам',
-      legend: [
-        { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.teal },
-      ],
-      bodyHeight: Math.max(1, motorcades.length) * DUAL_ROW_HEIGHT,
-      note: motorcades.length === 0 ? 'За выбранный период ДТП не зарегистрировано.' : undefined,
-      drawBody: dualBarsBody(
-        doc,
-        motorcades.map((item) => ({
-          label: item.name,
-          primary: item.sumDamage,
-          secondary: item.sumCompensated,
-          formatted: formatCurrency(item.sumDamage),
-        })),
-        { colors: [COLOR.accent, COLOR.teal] }
       ),
     })
 
@@ -303,37 +274,39 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   return [
     reportHeader(doc, {
-      kicker: 'Дашборд ДТП · Обзор',
-      title: 'Отчёт по общим показателям',
+      kicker: 'Дашборд ДТП · Автоколонна',
+      title: `Отчёт по автоколонне «${input.motorcadeName}»`,
       periodLabel,
       generatedAt: new Date(),
       // Перечисление баз, из которых собраны данные, в шапке не нужно
-      // пользователю — это внутренняя деталь интеграции, не фильтр отчёта.
-      filterLines: ['Автоколонны: все'],
+      // пользователю — это внутренняя деталь интеграции, не фильтр отчёта
+      // (см. buildOverviewReport).
+      filterLines: [],
     }),
-    kpiRow(doc, kpiCards(data)),
+    kpiRow(doc, cards.slice(0, 4)),
+    kpiRow(doc, cards.slice(4, 8)),
     columns([trendCard, causesCard], [0.58, 0.42]),
     damageTrendCard,
-    columns([motorcadeCountCard, motorcadeDamageCard], [0.5, 0.5]),
     columns([driversTable, vehiclesTable], [0.5, 0.5]),
     causesTable,
   ]
 }
 
-// Собирает отчёт «Обзор» целиком векторной отрисовкой — без снимков экрана,
-// поэтому текст в PDF остаётся текстом (ищется и выделяется), файл весит
-// сотни килобайт, а вёрстка не зависит от размера окна пользователя.
-export function buildOverviewReport(input: OverviewReportInput): jsPDF {
+// Собирает отчёт "Автоколонна" тем же способом, что и "Обзор"
+// (buildOverviewReport) — векторной отрисовкой, без снимков экрана. Блоков
+// меньше: у одной автоколонны нет смысла в сравнении "ДТП/ущерб по
+// автоколоннам" — это графики только "Обзора".
+export function buildMotorcadeReport(input: MotorcadeReportInput): jsPDF {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
   registerPdfFonts(doc)
 
-  flowBlocks(doc, overviewBlocks(doc, input), PAGE.marginTop, { onSection: input.onSection })
+  flowBlocks(doc, motorcadeBlocks(doc, input), PAGE.marginTop, { onSection: input.onSection })
   drawPageFooters(doc)
 
   return doc
 }
 
-export function saveOverviewReport(input: OverviewReportInput): void {
-  const doc = buildOverviewReport(input)
-  doc.save(buildReportFilename('obzor', input.period, new Date()))
+export function saveMotorcadeReport(input: MotorcadeReportInput): void {
+  const doc = buildMotorcadeReport(input)
+  doc.save(buildReportFilename('avtokolonna', input.period, new Date()))
 }

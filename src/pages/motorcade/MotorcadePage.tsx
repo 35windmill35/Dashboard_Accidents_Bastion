@@ -1,8 +1,11 @@
+import { useCallback, useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
+import { authStore } from '@/entities/user/model/authStore'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { ErrorState } from '@/shared/ui/ErrorState/ErrorState'
+import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
 import { computeMotorcade } from './model/motorcadeData'
 import { MotorcadeKpiRow } from './ui/MotorcadeKpiRow'
 import { MotorcadeCharts } from './ui/MotorcadeCharts'
@@ -14,16 +17,40 @@ import styles from './MotorcadePage.module.css'
 // виден только на этом маршруте), период — общий с "Обзором"
 // (filtersStore).
 //
-// PDF-отчёт на этом экране пока не реализуем (см. задачу) — экран не
-// регистрирует обработчик в pdfReportStore, поэтому кнопка "PDF отчёт" в
-// шапке остаётся неактивной сама по себе (см. AppTopBar/pdfReportStore).
-// Когда дойдёт очередь — подключается так же, как на "Обзоре"
-// (OverviewPage): экспортёр строится по computeMotorcade и регистрируется
-// в pdfReportStore через useEffect при монтировании.
+// PDF-отчёт подключается так же, как на "Обзоре" (см. OverviewPage):
+// экспортёр регистрируется в pdfReportStore через useEffect при
+// монтировании, кнопка "PDF отчёт" в шапке (AppTopBar) вызывает его через
+// стор, сам стор не знает о конкретных экранах.
 export const MotorcadePage = observer(function MotorcadePage() {
   const period = filtersStore.period
   const selectedKey = filtersStore.selectedMotorcadeKey
   const selectedOption = filtersStore.motorcadeOptions.find((o) => o.key === selectedKey)
+
+  // exportPdf сам заново берёт период/автоколонну/строки из сторов в момент
+  // вызова (а не из замыкания на рендер), как и exportPdf на "Обзоре" — к
+  // моменту клика по кнопке в шапке они могли уже смениться.
+  const exportPdf = useCallback(async () => {
+    const currentPeriod = filtersStore.period
+    const currentKey = filtersStore.selectedMotorcadeKey
+    const currentOption = filtersStore.motorcadeOptions.find((o) => o.key === currentKey)
+    if (!currentKey || !currentOption) return
+
+    const { saveMotorcadeReport } = await import('@/features/pdf-report/lib/buildMotorcadeReport')
+    const currentRows = accidentsStore.rows.filter((row) => getMotorcadeKey(row) === currentKey)
+    saveMotorcadeReport({
+      data: computeMotorcade(currentRows, currentPeriod),
+      period: currentPeriod,
+      motorcadeName: currentOption.name,
+      firmName:
+        authStore.firms[currentOption.dbIndex]?.FIRM_SHORT_NAME || `база #${currentOption.dbIndex}`,
+      onSection: (done, total) => pdfReportStore.setProgress(done, total),
+    })
+  }, [])
+
+  useEffect(() => {
+    pdfReportStore.register(exportPdf)
+    return () => pdfReportStore.unregister(exportPdf)
+  }, [exportPdf])
 
   if (!selectedKey || !selectedOption) {
     return (

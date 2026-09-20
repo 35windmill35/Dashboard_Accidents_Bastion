@@ -10,6 +10,8 @@ import {
   rankDrivers,
   rankVehicles,
   monthlyTrend,
+  buildCauseSlices,
+  type CauseSlice,
 } from '@/entities/accident/lib/metrics'
 import {
   countAccidents,
@@ -17,9 +19,11 @@ import {
   sumCompensated,
   compensationShare,
   averageDamagePerAccident,
-  groupByCauseCategory,
 } from '@/entities/accident/lib/metrics'
-import { CAUSE_CATEGORY_LABELS, type CauseCategory } from '@/shared/config/accidentCauses'
+
+// Реэкспорт — тип общий с "Автоколонной" (см. entities/accident/lib/metrics),
+// но здесь он давно на виду у остального кода экрана "Обзор".
+export type { CauseSlice } from '@/entities/accident/lib/metrics'
 
 export interface OverviewKpi {
   count: number
@@ -27,15 +31,6 @@ export interface OverviewKpi {
   sumCompensated: number
   compensationShare: number | null
   averageDamage: number | null
-}
-
-export interface CauseSlice {
-  category: CauseCategory
-  label: string
-  count: number
-  sumDamage: number
-  sumCompensated: number
-  rows: AccidentRow[]
 }
 
 export interface OverviewData {
@@ -59,14 +54,6 @@ function buildKpi(rows: AccidentRow[]): OverviewKpi {
   }
 }
 
-const CAUSE_ORDER: CauseCategory[] = [
-  'driverFault',
-  'thirdPartyFault',
-  'noDamage',
-  'undetermined',
-  'underReview',
-]
-
 export function computeOverview(allRows: AccidentRow[], period: Period): OverviewData {
   const periodRows = allRows.filter((row) => isInPeriod(row, period))
 
@@ -75,26 +62,13 @@ export function computeOverview(allRows: AccidentRow[], period: Period): Overvie
     ? allRows.filter((row) => isInPeriod(row, previousPeriod))
     : null
 
-  const grouped = groupByCauseCategory(periodRows)
-  const causeSlices: CauseSlice[] = CAUSE_ORDER.map((category) => {
-    const rows = grouped[category]
-    return {
-      category,
-      label: CAUSE_CATEGORY_LABELS[category],
-      count: rows.length,
-      sumDamage: sumDamage(rows),
-      sumCompensated: sumCompensated(rows),
-      rows,
-    }
-  })
-
   const trendMonths = getTrendMonths(period, allRows)
 
   return {
     periodRows,
     kpi: buildKpi(periodRows),
     previousKpi: previousRows ? buildKpi(previousRows) : null,
-    causeSlices,
+    causeSlices: buildCauseSlices(periodRows),
     motorcadeAgg: groupByMotorcade(periodRows).sort((a, b) => b.count - a.count),
     driversRanking: rankDrivers(periodRows),
     vehiclesRanking: rankVehicles(periodRows),

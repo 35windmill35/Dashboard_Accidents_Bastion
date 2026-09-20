@@ -1,5 +1,5 @@
 import { observer } from 'mobx-react-lite'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
@@ -24,7 +24,9 @@ interface AppTopBarProps {
 // всех трёх экранов), кнопки "Обновить данные"/"Сформировать PDF" и выход.
 export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTopBarProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const rows = accidentsStore.rows
+  const isMotorcadeScreen = location.pathname === '/motorcade'
 
   const months = getAvailableMonths(rows)
   const quarters = getAvailableQuarters(rows)
@@ -100,6 +102,20 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
           </select>
         )}
       </div>
+
+      {isMotorcadeScreen && (
+        <select
+          className={styles.select}
+          value={filtersStore.selectedMotorcadeKey ?? ''}
+          onChange={(e) => filtersStore.setMotorcadeKey(e.target.value)}
+        >
+          {filtersStore.motorcadeOptions.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+      )}
 
       <div className={styles.spacer} />
 

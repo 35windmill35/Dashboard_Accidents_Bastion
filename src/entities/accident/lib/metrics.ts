@@ -1,5 +1,9 @@
 import type { AccidentRow } from '../model/types'
-import { getCauseCategory, type CauseCategory } from '@/shared/config/accidentCauses'
+import {
+  getCauseCategory,
+  CAUSE_CATEGORY_LABELS,
+  type CauseCategory,
+} from '@/shared/config/accidentCauses'
 import { getMotorcadeKey, getMotorcadeName } from './motorcade'
 import { accidentDateToYm } from './period'
 
@@ -60,6 +64,53 @@ export function groupByCauseCategory(rows: AccidentRow[]): Record<CauseCategory,
   })
 
   return groups
+}
+
+export interface CauseSlice {
+  category: CauseCategory
+  label: string
+  count: number
+  sumDamage: number
+  sumCompensated: number
+  rows: AccidentRow[]
+}
+
+const CAUSE_ORDER: CauseCategory[] = [
+  'driverFault',
+  'thirdPartyFault',
+  'noDamage',
+  'undetermined',
+  'underReview',
+]
+
+// Разбивка на 5 категорий причин с суммами — общая для "Обзора" и
+// "Автоколонны" (порядок категорий фиксирован, см. CAUSE_ORDER).
+export function buildCauseSlices(rows: AccidentRow[]): CauseSlice[] {
+  const grouped = groupByCauseCategory(rows)
+
+  return CAUSE_ORDER.map((category) => {
+    const categoryRows = grouped[category]
+    return {
+      category,
+      label: CAUSE_CATEGORY_LABELS[category],
+      count: categoryRows.length,
+      sumDamage: sumDamage(categoryRows),
+      sumCompensated: sumCompensated(categoryRows),
+      rows: categoryRows,
+    }
+  })
+}
+
+// Доля ДТП конкретной категории причин от общего числа в срезе. null при
+// пустом срезе — как и остальные доли, не 0%.
+export function causeCategoryShare(
+  slices: CauseSlice[],
+  totalCount: number,
+  category: CauseCategory
+): number | null {
+  if (totalCount === 0) return null
+  const slice = slices.find((s) => s.category === category)
+  return (slice?.count ?? 0) / totalCount
 }
 
 export interface MotorcadeAggregate {

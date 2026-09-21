@@ -54,9 +54,13 @@ button.main:focus-visible,
 
 .value {
   font-size: 22px;
+  line-height: 1.25;
   font-weight: 600;
   color: var(--color-text);
   font-variant-numeric: tabular-nums;
+  /* страховка для узких карточек: длинная сумма переносится, а не
+     вылезает за рамку */
+  overflow-wrap: anywhere;
 }
 
 .delta {
@@ -88,4 +92,10 @@ button.main:focus-visible,
 
 .drillDown:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .value {
+    font-size: 18px;
+  }
 }

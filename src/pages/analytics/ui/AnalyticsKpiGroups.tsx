@@ -3,6 +3,8 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatCurrency, formatNumber, formatPercent, calcDelta } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
+import { rowsNotFullyCompensated, rowsWithDamage } from '@/entities/accident/lib/metrics'
+import type { AccidentRow } from '@/entities/accident/model/types'
 import type { AnalyticsData, AnalyticsSide } from '../model/analyticsData'
 import styles from './AnalyticsKpiGroups.module.css'
 
@@ -18,8 +20,8 @@ interface AnalyticsKpiGroupsProps {
 export function AnalyticsKpiGroups({ data, period }: AnalyticsKpiGroupsProps) {
   const periodLabel = formatPeriodLabel(period)
 
-  const openSide = (side: AnalyticsSide, title: string) =>
-    drilldownStore.open(`${title} — ${side.name}, ${periodLabel}`, side.scope.periodRows)
+  const openSide = (side: AnalyticsSide, title: string, rows: AccidentRow[]) =>
+    drilldownStore.open(`${title} — ${side.name}, ${periodLabel}`, rows)
 
   return (
     <div className={styles.groups}>
@@ -27,13 +29,13 @@ export function AnalyticsKpiGroups({ data, period }: AnalyticsKpiGroupsProps) {
         side={data.a}
         color={COMPARISON_COLOR_A}
         compareTo={null}
-        onOpen={(title) => openSide(data.a, title)}
+        onOpen={(title, rows) => openSide(data.a, title, rows)}
       />
       <KpiGroup
         side={data.b}
         color={COMPARISON_COLOR_B}
         compareTo={data.a}
-        onOpen={(title) => openSide(data.b, title)}
+        onOpen={(title, rows) => openSide(data.b, title, rows)}
       />
     </div>
   )
@@ -43,11 +45,12 @@ interface KpiGroupProps {
   side: AnalyticsSide
   color: string
   compareTo: AnalyticsSide | null
-  onOpen: (title: string) => void
+  onOpen: (title: string, rows: AccidentRow[]) => void
 }
 
 function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
   const kpi = side.scope.kpi
+  const rows = side.scope.periodRows
   const deltaLabel = compareTo ? `к ${compareTo.name}` : undefined
 
   const delta = (value: number | null, otherValue: number | null) =>
@@ -66,7 +69,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Масштаб аварийности автоколонны"
-          onClick={() => onOpen('Все ДТП')}
+          onClick={() => onOpen('Все ДТП', rows)}
         />
         <KpiCard
           label="Сумма ущерба"
@@ -75,7 +78,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Финансовый эффект ДТП этой автоколонны"
-          onClick={() => onOpen('Все ДТП')}
+          onClick={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
         />
         <KpiCard
           label="Доля возмещения"
@@ -87,7 +90,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           }
           deltaLabel={deltaLabel}
           tooltip="Качество претензионной работы. Сравнимо между автоколоннами"
-          onClick={() => onOpen('Все ДТП')}
+          onClick={() => onOpen('ДТП, возмещённые не полностью', rowsNotFullyCompensated(rows))}
         />
         <KpiCard
           label="Средний ущерб на 1 ДТП"
@@ -98,7 +101,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Типичная тяжесть инцидента в этой автоколонне"
-          onClick={() => onOpen('Все ДТП')}
+          onClick={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
         />
       </div>
     </div>

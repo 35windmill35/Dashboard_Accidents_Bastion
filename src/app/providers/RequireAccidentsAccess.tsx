@@ -16,10 +16,11 @@ interface RequireAccidentsAccessProps {
 // Guard для защищённых экранов, покрывает весь трёхшаговый сценарий
 // инициализации: нет сессии — редирект на /login; шаг 2 (права по базам)
 // не проверялся или идёт — скелетон; ни одной базы с доступом —
-// NoAccessPage; шаг 3 (данные) грузится — тот же скелетон; ни одна
+// NoAccessPage (или экран ошибки с повтором, если проверка прав упала по
+// сети, а не вернула false); шаг 3 (данные) грузится — скелетон с
+// прогрессом "Загружено баз N из M"; ни одна
 // база не отдала данные — DataErrorPage; иначе — контент экрана. Частичный
-// отказ шага 3 (accidentsStore.hasPartialFailure) контент не блокирует,
-// баннер об этом — отдельный виджет уровня экранов.
+// отказ шагов 2/3 контент не блокирует — баннер DataStatusBanner в AppShell.
 //
 // Сайдбар и шапка с фильтрами (AppShell) оборачивают только готовый
 // контент — экраны загрузки/ошибки/отказа их не показывают.
@@ -29,6 +30,9 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
   const location = useLocation()
 
   useEffect(() => {
+    // сессия истекла по времени, пока вкладка была закрыта/спала —
+    // разлогиниваем с сообщением на экране входа
+    authStore.checkSessionExpiry()
     if (authStore.rightsNeedCheck) {
       void authStore.checkAccidentsAccess()
     }
@@ -38,11 +42,23 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
     return <Navigate to={`/login${location.search}`} replace />
   }
 
-  if (authStore.isInitializing || authStore.allowedDbIndexes === null) {
+  // Повторная проверка прав при уже известном результате (кнопка
+  // "Повторить") экран не прячет — только самая первая.
+  if (authStore.isLoggingIn || authStore.allowedDbIndexes === null) {
     return (
       <div className={styles.loading}>
+        <p className={styles.progress}>Проверяем доступ к базам…</p>
         <Skeleton height={32} count={4} />
       </div>
+    )
+  }
+
+  if (authStore.rightsCheckFailed) {
+    return (
+      <DataErrorPage
+        message={`Не удалось проверить доступ к базам (${authStore.rightsCheckErrors.join(', ')}). Проверьте соединение и повторите.`}
+        onRetry={() => void accidentsStore.retry()}
+      />
     )
   }
 
@@ -53,6 +69,11 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
   if (accidentsStore.isInitialLoad) {
     return (
       <div className={styles.loading}>
+        <p className={styles.progress} role="status">
+          {accidentsStore.totalCount > 0
+            ? `Загружено баз ${accidentsStore.loadedCount} из ${accidentsStore.totalCount}`
+            : 'Загружаем данные…'}
+        </p>
         <Skeleton height={32} count={4} />
       </div>
     )

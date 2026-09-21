@@ -7,23 +7,21 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
-import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
-import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
+import { filtersStore } from '@/entities/accident/model/filtersStore'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
+import { formatMonthShortLabel, formatMonthLabel } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
 import { CHART_MARGIN, Y_AXIS_WIDTH, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
-import type { AccidentRow } from '@/entities/accident/model/types'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
 interface Props {
   data: MotorcadeData
-  motorcadeRows: AccidentRow[]
 }
 
 // Динамика суммы ущерба/возмещения по месяцам для выбранной автоколонны —
 // та же ось, что и у графика количества ДТП (см. MotorcadeTrendChart).
-export function MotorcadeDamageTrendChart({ data, motorcadeRows }: Props) {
+export function MotorcadeDamageTrendChart({ data }: Props) {
   const chartData = data.monthlyCounts.map((m) => ({
     ym: m.ym,
     label: formatMonthShortLabel(m.ym),
@@ -31,15 +29,23 @@ export function MotorcadeDamageTrendChart({ data, motorcadeRows }: Props) {
     sumCompensated: m.sumCompensated,
   }))
 
-  const handleClick = (ym: number) => {
-    const rows = motorcadeRows.filter((row) => isInPeriod(row, { mode: 'month', value: ym }))
-    drilldownStore.open(`Все ДТП — ${formatMonthLabel(ym)}`, rows)
-  }
+  // ТЗ §4.3: клик по точке — период дашборда = этот месяц
+  const handleClick = (ym: number) => filtersStore.setPeriod({ mode: 'month', value: ym })
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
+  const table: ChartDataTable = {
+    columns: ['Месяц', 'Ущерб', 'Возмещение'],
+    rows: chartData.map((d) => [
+      formatMonthLabel(d.ym),
+      formatCurrency(d.sumDamage),
+      formatCurrency(d.sumCompensated),
+    ]),
+  }
+
   return (
     <ChartCard
+      table={table}
       title="Динамика ущерба и возмещения по месяцам"
       legend={[
         { label: 'Ущерб', color: CHART_1 },

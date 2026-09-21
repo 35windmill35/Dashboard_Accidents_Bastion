@@ -1,7 +1,7 @@
 // Единые утилиты форматирования — использовать только их в компонентах,
 // чтобы формат чисел/дат не расходился между экранами.
 
-const NBSP = ' '
+const NBSP = '\u00a0' // неразрывный пробел: сумма и знак валюты не разрываются переносом
 
 function isEmpty(value: number | null | undefined): boolean {
   return value === null || value === undefined || Number.isNaN(value)
@@ -15,12 +15,43 @@ export function formatNumber(value: number | null | undefined, decimals = 0): st
   }).format(value as number)
 }
 
-// Валюта во всех базах — тенге, без копеек в KPI. CURRENCY_CODE из ответа
-// API не используется для отображения (заказчик подтвердил единую валюту),
-// поле в AccidentRow остаётся только справочно.
+// Валюта берётся из CURRENCY_CODE загруженных данных (ТЗ §8):
+// accidentsStore после загрузки вызывает setCurrencyCode с единственной
+// валютой датасета. Если валют несколько или данных нет — подписи без
+// знака валюты (экран отдельно предупреждает о смешанных валютах).
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  KZT: '₸',
+  RUB: '₽',
+  USD: '$',
+  EUR: '€',
+  KGS: 'сом',
+  UZS: 'сўм',
+}
+
+let currencyCode: string | null = null
+let currencySuffix = ''
+
+export function setCurrencyCode(code: string | null | undefined): void {
+  const normalized = code?.trim().toUpperCase() || null
+  currencyCode = normalized
+  currencySuffix = normalized ? (CURRENCY_SYMBOLS[normalized] ?? normalized) : ''
+}
+
+export function getCurrencyCode(): string | null {
+  return currencyCode
+}
+
+export function getCurrencySymbol(): string {
+  return currencySuffix
+}
+
+function withCurrency(text: string): string {
+  return currencySuffix ? `${text}${NBSP}${currencySuffix}` : text
+}
+
 export function formatCurrency(value: number | null | undefined): string {
   if (isEmpty(value)) return '—'
-  return `${formatNumber(value, 0)}${NBSP}₸`
+  return withCurrency(formatNumber(value, 0))
 }
 
 // Сокращённая подпись для оси Y денежных графиков — полная сумма
@@ -31,8 +62,8 @@ export function formatCompactCurrency(value: number | null | undefined): string 
   if (isEmpty(value)) return '—'
   const num = value as number
   const abs = Math.abs(num)
-  if (abs >= 1_000_000) return `${formatNumber(num / 1_000_000, 1)} млн ₸`
-  if (abs >= 1_000) return `${formatNumber(num / 1_000, abs >= 10_000 ? 0 : 1)} тыс ₸`
+  if (abs >= 1_000_000) return withCurrency(`${formatNumber(num / 1_000_000, 1)} млн`)
+  if (abs >= 1_000) return withCurrency(`${formatNumber(num / 1_000, abs >= 10_000 ? 0 : 1)} тыс`)
   return formatCurrency(num)
 }
 

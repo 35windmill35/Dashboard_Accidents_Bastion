@@ -49,10 +49,10 @@ export async function loginAppUser({
 // Проверка права на дашборд ДТП по одной базе. Вызывается для каждой
 // базы из ответа loginAppUser — база попадает в рабочий список только при
 // Dashboard_Accidents === true.
-export async function checkAccidentsRight(dbIndex: number): Promise<boolean> {
+export async function checkAccidentsRight(dbIndex: number, signal?: AbortSignal): Promise<boolean> {
   const { data } = await getAuthorized<Record<string, boolean>>(
     `/api-v2/SpecialRequests/UserRight/${ACCIDENTS_RIGHT_CODE}`,
-    { params: { DBIndex: dbIndex } }
+    { params: { DBIndex: dbIndex }, signal }
   )
 
   return Boolean(data?.[ACCIDENTS_RIGHT_CODE])

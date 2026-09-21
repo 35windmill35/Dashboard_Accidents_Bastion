@@ -7,7 +7,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { formatNumber } from '@/shared/lib/formatters'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
@@ -42,8 +43,14 @@ export function AccidentsCountTrendChart({ data, rowsA, rowsB }: Props) {
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
+  const table: ChartDataTable = {
+    columns: ['Месяц', data.a.name, data.b.name],
+    rows: chartData.map((d) => [formatMonthLabel(d.ym), formatNumber(d.a), formatNumber(d.b)]),
+  }
+
   return (
     <ChartCard
+      table={table}
       title="Динамика ДТП по месяцам"
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },

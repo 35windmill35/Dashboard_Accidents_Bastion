@@ -14,6 +14,7 @@ import type { CauseCategory } from '@/shared/config/accidentCauses'
 export interface AnalyticsSide {
   key: string
   name: string
+  dbIndex: number
   scope: AccidentScopeData
   repeatDriversCount: number
 }
@@ -26,6 +27,9 @@ export interface SummaryRow {
   kind: SummaryMetricKind
   valueA: number | null
   valueB: number | null
+  // "Комментарий о сопоставимости" (ТЗ §4.5) — колонка временно скрыта
+  // по решению заказчика (экран и PDF), значение по-прежнему считается
+  comment: string
 }
 
 export interface CauseComparisonRow {
@@ -61,13 +65,29 @@ export interface AnalyticsData {
   causeComparison: CauseComparisonRow[]
   summaryRows: SummaryRow[]
   worstDrivers: WorstDriverRow[]
+  // Предупреждения о сопоставимости — баннер на экране и в PDF (ТЗ §4.5, §6)
+  comparabilityWarnings: string[]
 }
 
-function buildSide(key: string, name: string, rows: AccidentRow[], period: Period): AnalyticsSide {
+// Меньше этого числа ДТП за период доли и средние слишком шумные, чтобы
+// делать по ним выводы.
+export const MIN_COMPARABLE_SAMPLE = 10
+// Во сколько раз должно различаться число ДТП, чтобы суммы уже нельзя было
+// сравнивать "в лоб".
+const SCALE_GAP_RATIO = 3
+
+function buildSide(
+  key: string,
+  name: string,
+  dbIndex: number,
+  rows: AccidentRow[],
+  period: Period
+): AnalyticsSide {
   const scope = computeAccidentScope(rows, period)
   return {
     key,
     name,
+    dbIndex,
     scope,
     repeatDriversCount: driversWithThreeOrMoreAccidents(scope.periodRows),
   }
@@ -121,53 +141,133 @@ function buildCauseComparison(a: AnalyticsSide, b: AnalyticsSide): CauseComparis
   })
 }
 
+// Размера парка и пробега в данных нет — абсолютные числа не нормированы.
+const SCALE_DEPENDENT_COMMENT = 'Зависит от размера парка — не сравнивать'
+
+// Комментарий для относительных показателей (доли, средние): сопоставимы,
+// если у обеих сторон достаточно ДТП и есть знаменатель.
+function relativeComment(
+  a: AnalyticsSide,
+  b: AnalyticsSide,
+  valueA: number | null,
+  valueB: number | null
+): string {
+  if (valueA === null || valueB === null) return 'Нет данных для расчёта у одной из сторон'
+  const small = [a, b].filter((side) => side.scope.kpi.count < MIN_COMPARABLE_SAMPLE)
+  if (small.length > 0) {
+    return `Мало ДТП (${small.map((side) => `${side.name}: ${side.scope.kpi.count}`).join(', ')}) — неустойчиво`
+  }
+  return 'Сопоставимо (относительный показатель)'
+}
+
 function buildSummaryRows(a: AnalyticsSide, b: AnalyticsSide): SummaryRow[] {
+  const ka = a.scope.kpi
+  const kb = b.scope.kpi
   return [
     {
       key: 'count',
       label: 'Количество ДТП',
       kind: 'count',
-      valueA: a.scope.kpi.count,
-      valueB: b.scope.kpi.count,
+      valueA: ka.count,
+      valueB: kb.count,
+      comment: SCALE_DEPENDENT_COMMENT,
     },
     {
       key: 'sumDamage',
       label: 'Сумма ущерба',
       kind: 'currency',
-      valueA: a.scope.kpi.sumDamage,
-      valueB: b.scope.kpi.sumDamage,
+      valueA: ka.sumDamage,
+      valueB: kb.sumDamage,
+      comment: SCALE_DEPENDENT_COMMENT,
     },
     {
       key: 'compensationShare',
       label: 'Доля возмещения',
       kind: 'percent',
-      valueA: a.scope.kpi.compensationShare,
-      valueB: b.scope.kpi.compensationShare,
+      valueA: ka.compensationShare,
+      valueB: kb.compensationShare,
+      comment: relativeComment(a, b, ka.compensationShare, kb.compensationShare),
     },
     {
       key: 'averageDamage',
       label: 'Средний ущерб на 1 ДТП',
       kind: 'currency',
-      valueA: a.scope.kpi.averageDamage,
-      valueB: b.scope.kpi.averageDamage,
+      valueA: ka.averageDamage,
+      valueB: kb.averageDamage,
+      comment: relativeComment(a, b, ka.averageDamage, kb.averageDamage),
     },
   ]
+}
+
+function currencyCodesOf(rows: AccidentRow[]): string[] {
+  const codes = new Set<string>()
+  rows.forEach((row) => {
+    const code = row.CURRENCY_CODE?.trim()
+    if (code) codes.add(code)
+  })
+  return Array.from(codes).sort()
+}
+
+// Почему сравнение двух автоколонн может вводить в заблуждение. Первая
+// строка — всегда: размера парка/пробега в данных нет, поэтому абсолютные
+// числа (ДТП, суммы) не нормированы.
+function buildComparabilityWarnings(a: AnalyticsSide, b: AnalyticsSide): string[] {
+  const warnings = [
+    'Количество ДТП и суммы не нормированы на размер парка и пробег — для сравнения используйте доли и средние.',
+  ]
+
+  const countA = a.scope.kpi.count
+  const countB = b.scope.kpi.count
+  const min = Math.min(countA, countB)
+  const max = Math.max(countA, countB)
+  if (min > 0 && max / min >= SCALE_GAP_RATIO) {
+    warnings.push(
+      `Число ДТП различается в ${Math.round((max / min) * 10) / 10} раза (${a.name}: ${countA}, ${b.name}: ${countB}) — автоколонны разного масштаба.`
+    )
+  }
+
+  const small = [a, b].filter((side) => side.scope.kpi.count < MIN_COMPARABLE_SAMPLE)
+  if (small.length > 0) {
+    warnings.push(
+      `Мало ДТП за период (${small.map((side) => `${side.name}: ${side.scope.kpi.count}`).join(', ')}) — доли и средние неустойчивы, выводы делать рано.`
+    )
+  }
+
+  if (a.dbIndex !== b.dbIndex) {
+    warnings.push(
+      'Автоколонны из разных баз — справочники причин и правила заполнения могут отличаться.'
+    )
+  }
+
+  const currencies = currencyCodesOf([...a.scope.periodRows, ...b.scope.periodRows])
+  if (currencies.length > 1) {
+    warnings.push(
+      `Суммы в разных валютах (${currencies.join(', ')}) — денежные показатели не сравнимы.`
+    )
+  }
+
+  return warnings
 }
 
 // rowsA/rowsB — уже отфильтрованы по своей автоколонне (см. AnalyticsPage,
 // getMotorcadeKey), но не по периоду — период применяется здесь же, как на
 // "Автоколонне" (computeAccidentScope).
+export interface AnalyticsSideInput {
+  key: string
+  name: string
+  dbIndex: number
+  rows: AccidentRow[]
+}
+
 export function computeAnalytics(
-  keyA: string,
-  nameA: string,
-  rowsA: AccidentRow[],
-  keyB: string,
-  nameB: string,
-  rowsB: AccidentRow[],
+  inputA: AnalyticsSideInput,
+  inputB: AnalyticsSideInput,
   period: Period
 ): AnalyticsData {
-  const a = buildSide(keyA, nameA, rowsA, period)
-  const b = buildSide(keyB, nameB, rowsB, period)
+  const rowsA = inputA.rows
+  const rowsB = inputB.rows
+  const a = buildSide(inputA.key, inputA.name, inputA.dbIndex, rowsA, period)
+  const b = buildSide(inputB.key, inputB.name, inputB.dbIndex, rowsB, period)
 
   const trendMonths = getTrendMonths(period, [...rowsA, ...rowsB])
 
@@ -180,5 +280,6 @@ export function computeAnalytics(
     causeComparison: buildCauseComparison(a, b),
     summaryRows: buildSummaryRows(a, b),
     worstDrivers: buildWorstDrivers(a, b),
+    comparabilityWarnings: buildComparabilityWarnings(a, b),
   }
 }

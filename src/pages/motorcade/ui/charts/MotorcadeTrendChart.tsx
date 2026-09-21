@@ -7,17 +7,16 @@ import {
   YAxis,
   CartesianGrid,
 } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
-import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
-import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
+import { formatNumber } from '@/shared/lib/formatters'
+import { filtersStore } from '@/entities/accident/model/filtersStore'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
+import { formatMonthShortLabel, formatMonthLabel } from '@/entities/accident/lib/period'
 import { CHART_1 } from '@/shared/lib/chartColors'
 import { CHART_MARGIN, Y_AXIS_WIDTH, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
-import type { AccidentRow } from '@/entities/accident/model/types'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
 interface Props {
   data: MotorcadeData
-  motorcadeRows: AccidentRow[]
 }
 
 interface TrendPoint {
@@ -51,22 +50,29 @@ function TrendDot({ cx, cy, payload, onPointClick }: DotProps) {
 
 // Динамика ДТП по месяцам для выбранной автоколонны — те же 12 месяцев, что
 // и на "Обзоре" (см. getTrendMonths), но по её собственной истории.
-export function MotorcadeTrendChart({ data, motorcadeRows }: Props) {
+export function MotorcadeTrendChart({ data }: Props) {
   const chartData: TrendPoint[] = data.monthlyCounts.map((m) => ({
     ym: m.ym,
     label: formatMonthShortLabel(m.ym),
     count: m.count,
   }))
 
-  const handleClick = (ym: number) => {
-    const rows = motorcadeRows.filter((row) => isInPeriod(row, { mode: 'month', value: ym }))
-    drilldownStore.open(`Все ДТП — ${formatMonthLabel(ym)}`, rows)
-  }
+  // ТЗ §4.3: клик по точке — период дашборда = этот месяц
+  const handleClick = (ym: number) => filtersStore.setPeriod({ mode: 'month', value: ym })
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
+  const table: ChartDataTable = {
+    columns: ['Месяц', 'ДТП'],
+    rows: chartData.map((d) => [formatMonthLabel(d.ym), formatNumber(d.count)]),
+  }
+
   return (
-    <ChartCard title="Динамика ДТП по месяцам" legend={[{ label: 'ДТП', color: CHART_1 }]}>
+    <ChartCard
+      table={table}
+      title="Динамика ДТП по месяцам"
+      legend={[{ label: 'ДТП', color: CHART_1 }]}
+    >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={CHART_MARGIN}>

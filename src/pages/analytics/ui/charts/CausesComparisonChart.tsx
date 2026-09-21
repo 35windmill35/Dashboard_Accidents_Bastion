@@ -1,10 +1,15 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatPercent } from '@/shared/lib/formatters'
-import { CHART_MARGIN, Y_AXIS_WIDTH, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import {
+  CHART_MARGIN,
+  Y_AXIS_WIDTH,
+  barPayload,
+  useCategoryXAxis,
+} from '@/shared/lib/rechartsHelpers'
 import type { AnalyticsData, CauseComparisonRow } from '../../model/analyticsData'
 
 interface Props {
@@ -29,12 +34,21 @@ export function CausesComparisonChart({ data, period }: Props) {
     drilldownStore.open(`${row.label} — ${name}, ${periodLabel}`, rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((r) => r.label), {
-    mirrorPadding: true,
-  })
+  const { containerRef, xAxisProps } = useCategoryXAxis(
+    chartData.map((r) => r.label),
+    {
+      mirrorPadding: true,
+    }
+  )
+
+  const table: ChartDataTable = {
+    columns: ['Категория', data.a.name, data.b.name],
+    rows: chartData.map((r) => [r.label, formatPercent(r.shareA), formatPercent(r.shareB)]),
+  }
 
   return (
     <ChartCard
+      table={table}
       title="Сравнение структуры причин ДТП"
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },

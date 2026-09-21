@@ -1,7 +1,6 @@
 import { jsPDF } from 'jspdf'
 import {
   calcDelta,
-  formatCurrency,
   formatDelta,
   formatNumber,
   formatPercent,
@@ -30,6 +29,7 @@ import {
   formatCountAxis,
   formatMonthAxisLabel,
   formatMoneyAxis,
+  formatPdfCurrency,
   splitMonthLabel,
 } from './pdfFormat'
 
@@ -73,14 +73,14 @@ function kpiCards(data: OverviewData): KpiCardData[] {
     build('Всего ДТП', formatNumber(kpi.count), kpi.count, previousKpi?.count, false),
     build(
       'Сумма ущерба',
-      formatCurrency(kpi.sumDamage),
+      formatPdfCurrency(kpi.sumDamage),
       kpi.sumDamage,
       previousKpi?.sumDamage,
       false
     ),
     build(
       'Сумма возмещения',
-      formatCurrency(kpi.sumCompensated),
+      formatPdfCurrency(kpi.sumCompensated),
       kpi.sumCompensated,
       previousKpi?.sumCompensated,
       true
@@ -94,7 +94,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
     ),
     build(
       'Средний ущерб на ДТП',
-      formatCurrency(kpi.averageDamage),
+      formatPdfCurrency(kpi.averageDamage),
       kpi.averageDamage,
       previousKpi?.averageDamage,
       false
@@ -225,7 +225,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
           label: item.name,
           primary: item.sumDamage,
           secondary: item.sumCompensated,
-          formatted: formatCurrency(item.sumDamage),
+          formatted: formatPdfCurrency(item.sumDamage),
         })),
         { colors: [COLOR.accent, COLOR.teal] }
       ),
@@ -240,7 +240,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
         { header: 'Ущерб', ratio: 0.3, align: 'right', mono: true },
       ],
       rows: drivers.map((row) => ({
-        cells: [row.name, formatNumber(row.count), formatCurrency(row.sumDamage)],
+        cells: [row.name, formatNumber(row.count), formatPdfCurrency(row.sumDamage)],
       })),
       note:
         data.driversRanking.length > DRIVERS_TOP_N
@@ -257,7 +257,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
         { header: 'Ущерб', ratio: 0.3, align: 'right', mono: true },
       ],
       rows: vehicles.map((row) => ({
-        cells: [row.name, formatNumber(row.count), formatCurrency(row.sumDamage)],
+        cells: [row.name, formatNumber(row.count), formatPdfCurrency(row.sumDamage)],
       })),
       note:
         data.vehiclesRanking.length > VEHICLES_TOP_N
@@ -280,8 +280,8 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
           cells: [
             slice.label,
             formatNumber(slice.count),
-            formatCurrency(slice.sumDamage),
-            formatCurrency(slice.sumCompensated),
+            formatPdfCurrency(slice.sumDamage),
+            formatPdfCurrency(slice.sumCompensated),
             slice.sumDamage > 0 ? formatPercent(slice.sumCompensated / slice.sumDamage) : '—',
           ],
           highlighted: index === topCauseIndex && slice.count > 0,
@@ -290,8 +290,8 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
           cells: [
             'Итого',
             formatNumber(causeTotal.count),
-            formatCurrency(causeTotal.sumDamage),
-            formatCurrency(causeTotal.sumCompensated),
+            formatPdfCurrency(causeTotal.sumDamage),
+            formatPdfCurrency(causeTotal.sumCompensated),
             causeTotal.sumDamage > 0
               ? formatPercent(causeTotal.sumCompensated / causeTotal.sumDamage)
               : '—',

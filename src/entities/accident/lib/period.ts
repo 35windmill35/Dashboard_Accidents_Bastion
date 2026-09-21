@@ -167,3 +167,44 @@ export function getTrendMonths(period: Period, rows: AccidentRow[]): number[] {
 
   return Array.from({ length: 12 }, (_, i) => ymAddMonths(endYm, i - 11))
 }
+
+// Доступные значения периода для режима — по убыванию (первый — самый
+// свежий). Для 'all' значений нет.
+export function getAvailablePeriodValues(mode: PeriodMode, rows: AccidentRow[]): number[] {
+  if (mode === 'month') return getAvailableMonths(rows)
+  if (mode === 'quarter') return getAvailableQuarters(rows)
+  if (mode === 'year') return getAvailableYears(rows)
+  return []
+}
+
+// Период в query-строке ссылки: "2026-08", "2026-Q3", "2026", "all".
+export function periodToParam(period: Period): string {
+  if (period.mode === 'all') return 'all'
+  if (period.mode === 'year') return String(period.value)
+  if (period.mode === 'quarter') {
+    return `${Math.floor(period.value / 10)}-Q${period.value % 10}`
+  }
+  const month = period.value % 100
+  return `${ymToYear(period.value)}-${String(month).padStart(2, '0')}`
+}
+
+export function parsePeriodParam(raw: string | null | undefined): Period | null {
+  if (!raw) return null
+  const value = raw.trim()
+  if (value === 'all') return { mode: 'all' }
+
+  let match = /^(\d{4})-(\d{2})$/.exec(value)
+  if (match) {
+    const month = Number(match[2])
+    if (month < 1 || month > 12) return null
+    return { mode: 'month', value: Number(match[1]) * 100 + month }
+  }
+
+  match = /^(\d{4})-Q([1-4])$/i.exec(value)
+  if (match) return { mode: 'quarter', value: Number(match[1]) * 10 + Number(match[2]) }
+
+  match = /^(\d{4})$/.exec(value)
+  if (match) return { mode: 'year', value: Number(match[1]) }
+
+  return null
+}

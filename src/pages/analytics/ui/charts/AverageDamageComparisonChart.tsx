@@ -8,12 +8,17 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN, Y_AXIS_WIDTH, barPayload } from '@/shared/lib/rechartsHelpers'
+import {
+  CATEGORY_AXIS_HEIGHT,
+  CHART_MARGIN,
+  Y_AXIS_WIDTH,
+  barPayload,
+} from '@/shared/lib/rechartsHelpers'
 import type { AnalyticsData } from '../../model/analyticsData'
 
 interface Props {
@@ -45,8 +50,16 @@ export function AverageDamageComparisonChart({ data, period }: Props) {
     )
   }
 
+  const table: ChartDataTable = {
+    columns: ['Автоколонна', 'Средний ущерб на 1 ДТП'],
+    rows: [
+      [data.a.name, formatCurrency(data.a.scope.kpi.averageDamage)],
+      [data.b.name, formatCurrency(data.b.scope.kpi.averageDamage)],
+    ],
+  }
+
   return (
-    <ChartCard title="Средний ущерб на 1 ДТП">
+    <ChartCard table={table} title="Средний ущерб на 1 ДТП">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={CHART_MARGIN}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />

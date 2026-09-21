@@ -1,10 +1,15 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { CHART_MARGIN, Y_AXIS_WIDTH, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import {
+  CHART_MARGIN,
+  Y_AXIS_WIDTH,
+  barPayload,
+  useCategoryXAxis,
+} from '@/shared/lib/rechartsHelpers'
 import type { CauseSlice, OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -23,12 +28,25 @@ export function CauseDamageChart({ data, period }: Props) {
     if (slice) drilldownStore.open(`${slice.label} — ${periodLabel}`, slice.rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((s) => s.label), {
-    mirrorPadding: true,
-  })
+  const { containerRef, xAxisProps } = useCategoryXAxis(
+    chartData.map((s) => s.label),
+    {
+      mirrorPadding: true,
+    }
+  )
+
+  const table: ChartDataTable = {
+    columns: ['Категория', 'Ущерб', 'Возмещение'],
+    rows: chartData.map((s) => [
+      s.label,
+      formatCurrency(s.sumDamage),
+      formatCurrency(s.sumCompensated),
+    ]),
+  }
 
   return (
     <ChartCard
+      table={table}
       title="Ущерб и возмещение по категориям причин"
       legend={[
         { label: 'Ущерб', color: CHART_1 },

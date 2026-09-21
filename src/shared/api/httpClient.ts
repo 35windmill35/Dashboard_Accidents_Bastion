@@ -1,5 +1,5 @@
 import { BASE_URL } from '@/shared/config/api'
-import { getSessionId } from '@/shared/api/session'
+import { getSessionId, touchSession } from '@/shared/api/session'
 
 // Ошибка API — хранит код статуса ответа и данные, которые сервер мог
 // прислать вместе с ним.
@@ -120,24 +120,61 @@ export async function getWithBasicAuth<T = unknown>(
 
 interface AuthorizedOptions {
   params?: QueryParams
+  signal?: AbortSignal
+}
+
+// Статусы, означающие "сессии больше нет": HTTP 401 и такой же код в
+// result.Status. Если у API есть другие коды истёкшей сессии — добавить сюда.
+const AUTH_ERROR_STATUSES = new Set<number>([401])
+
+export function isAuthError(err: unknown): boolean {
+  return err instanceof ApiError && AUTH_ERROR_STATUSES.has(err.status)
+}
+
+// Обработчик потери сессии регистрирует authStore (shared не импортирует
+// entities — слой FSD ниже).
+let unauthorizedHandler: (() => void) | null = null
+
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler
 }
 
 // Bearer SESSIONID — для всех запросов после логина.
 export async function getAuthorized<T = unknown>(
   path: string,
-  { params }: AuthorizedOptions = {}
+  { params, signal }: AuthorizedOptions = {}
 ): Promise<ApiResult<T>> {
   const sessionId = getSessionId()
 
   if (!sessionId) {
-    throw new ApiError(401, 'Нет активной сессии — требуется повторный вход')
+    const err = new ApiError(401, 'Нет активной сессии — требуется повторный вход')
+    unauthorizedHandler?.()
+    throw err
   }
 
-  const response = await fetch(buildUrl(path, params), {
-    headers: {
-      Authorization: `Bearer ${sessionId}`,
-    },
-  })
+  const url = buildUrl(path, params)
 
-  return parseResponse<T>(response)
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${sessionId}`,
+      },
+      signal,
+    })
+
+    const result = await parseResponse<T>(response)
+    touchSession()
+    return result
+  } catch (err) {
+    // Отменённый запрос (выход/повторная загрузка) — не ошибка API.
+    if (signal?.aborted) throw err
+
+    console.error(
+      '[api]',
+      { path, params, status: err instanceof ApiError ? err.status : null },
+      err
+    )
+    if (isAuthError(err)) unauthorizedHandler?.()
+    throw err
+  }
 }

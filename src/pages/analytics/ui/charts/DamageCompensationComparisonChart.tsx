@@ -1,10 +1,15 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN, Y_AXIS_WIDTH, barPayload } from '@/shared/lib/rechartsHelpers'
+import {
+  CATEGORY_AXIS_HEIGHT,
+  CHART_MARGIN,
+  Y_AXIS_WIDTH,
+  barPayload,
+} from '@/shared/lib/rechartsHelpers'
 import type { AnalyticsData } from '../../model/analyticsData'
 
 interface Props {
@@ -45,8 +50,18 @@ export function DamageCompensationComparisonChart({ data, period }: Props) {
     drilldownStore.open(`Все ДТП — ${target.name}, ${periodLabel}`, target.scope.periodRows)
   }
 
+  const table: ChartDataTable = {
+    columns: ['Автоколонна', 'Ущерб', 'Возмещение'],
+    rows: chartData.map((p) => [
+      p.name,
+      formatCurrency(p.sumDamage),
+      formatCurrency(p.sumCompensated),
+    ]),
+  }
+
   return (
     <ChartCard
+      table={table}
       title="Сумма ущерба и возмещения"
       legend={[
         { label: 'Ущерб', color: CHART_1 },

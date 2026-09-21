@@ -5,9 +5,6 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
 import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
 import {
-  getAvailableMonths,
-  getAvailableQuarters,
-  getAvailableYears,
   formatMonthLabel,
   formatQuarterLabel,
   formatYearLabel,
@@ -15,6 +12,22 @@ import {
 } from '@/entities/accident/lib/period'
 import { IconMenu, IconRefresh, IconPdf } from './icons'
 import styles from './AppTopBar.module.css'
+
+function formatPeriodValue(mode: Exclude<PeriodMode, 'all'>, value: number): string {
+  if (mode === 'quarter') return formatQuarterLabel(value)
+  if (mode === 'year') return formatYearLabel(value)
+  return formatMonthLabel(value)
+}
+
+function formatLoadedAt(date: Date | null): string {
+  if (!date) return ''
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
 
 interface AppTopBarProps {
   onToggleSidebar: () => void
@@ -25,13 +38,9 @@ interface AppTopBarProps {
 export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTopBarProps) {
   const navigate = useNavigate()
   const location = useLocation()
-  const rows = accidentsStore.rows
+  const period = filtersStore.period
   const isMotorcadeScreen = location.pathname === '/motorcade'
   const isAnalyticsScreen = location.pathname === '/analytics'
-
-  const months = getAvailableMonths(rows)
-  const quarters = getAvailableQuarters(rows)
-  const years = getAvailableYears(rows)
 
   const handleLogout = () => {
     authStore.logout()
@@ -52,6 +61,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
       <div className={styles.periodGroup}>
         <select
           className={styles.select}
+          aria-label="Гранулярность периода"
           value={filtersStore.periodMode}
           onChange={(e) => filtersStore.setPeriodMode(e.target.value as PeriodMode)}
         >
@@ -61,43 +71,16 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
           <option value="all">Весь период</option>
         </select>
 
-        {filtersStore.periodMode === 'month' && (
+        {period.mode !== 'all' && (
           <select
             className={styles.select}
-            value={filtersStore.period.mode === 'month' ? filtersStore.period.value : ''}
+            aria-label="Период"
+            value={period.value}
             onChange={(e) => filtersStore.setPeriodValue(Number(e.target.value))}
           >
-            {months.map((ym) => (
-              <option key={ym} value={ym}>
-                {formatMonthLabel(ym)}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {filtersStore.periodMode === 'quarter' && (
-          <select
-            className={styles.select}
-            value={filtersStore.period.mode === 'quarter' ? filtersStore.period.value : ''}
-            onChange={(e) => filtersStore.setPeriodValue(Number(e.target.value))}
-          >
-            {quarters.map((yq) => (
-              <option key={yq} value={yq}>
-                {formatQuarterLabel(yq)}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {filtersStore.periodMode === 'year' && (
-          <select
-            className={styles.select}
-            value={filtersStore.period.mode === 'year' ? filtersStore.period.value : ''}
-            onChange={(e) => filtersStore.setPeriodValue(Number(e.target.value))}
-          >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {formatYearLabel(year)}
+            {filtersStore.periodValues.map((value) => (
+              <option key={value} value={value}>
+                {formatPeriodValue(period.mode, value)}
               </option>
             ))}
           </select>
@@ -107,6 +90,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
       {isMotorcadeScreen && (
         <select
           className={styles.select}
+          aria-label="Автоколонна"
           value={filtersStore.selectedMotorcadeKey ?? ''}
           onChange={(e) => filtersStore.setMotorcadeKey(e.target.value)}
         >
@@ -122,22 +106,32 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
         <>
           <select
             className={styles.select}
+            aria-label="Автоколонна 1"
             value={filtersStore.selectedAnalyticsKeyA ?? ''}
             onChange={(e) => filtersStore.setAnalyticsMotorcadeA(e.target.value)}
           >
             {filtersStore.motorcadeOptions.map((option) => (
-              <option key={option.key} value={option.key}>
+              <option
+                key={option.key}
+                value={option.key}
+                disabled={option.key === filtersStore.selectedAnalyticsKeyB}
+              >
                 {option.name}
               </option>
             ))}
           </select>
           <select
             className={styles.select}
+            aria-label="Автоколонна 2"
             value={filtersStore.selectedAnalyticsKeyB ?? ''}
             onChange={(e) => filtersStore.setAnalyticsMotorcadeB(e.target.value)}
           >
             {filtersStore.motorcadeOptions.map((option) => (
-              <option key={option.key} value={option.key}>
+              <option
+                key={option.key}
+                value={option.key}
+                disabled={option.key === filtersStore.selectedAnalyticsKeyA}
+              >
                 {option.name}
               </option>
             ))}
@@ -151,11 +145,19 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
         type="button"
         className={styles.actionButton}
         onClick={() => accidentsStore.reload()}
-        disabled={accidentsStore.isInitialLoad}
-        title="Перезагрузить данные по всем базам"
+        disabled={accidentsStore.isBusy}
+        title={
+          accidentsStore.loadedAt
+            ? `Перезагрузить данные по всем базам. Данные на ${formatLoadedAt(accidentsStore.loadedAt)}`
+            : 'Перезагрузить данные по всем базам'
+        }
       >
         <IconRefresh />
-        <span className={styles.actionLabel}>Обновить данные</span>
+        <span className={styles.actionLabel}>
+          {accidentsStore.isRefreshing
+            ? `Загружено баз ${accidentsStore.loadedCount} из ${accidentsStore.totalCount}`
+            : 'Обновить данные'}
+        </span>
       </button>
 
       <button
@@ -166,7 +168,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
         title={
           pdfReportStore.isAvailable
             ? 'Сформировать PDF-отчёт по текущему экрану'
-            : 'На этом экране PDF-отчёт пока недоступен'
+            : 'PDF-отчёт недоступен: на экране нет данных для отчёта'
         }
       >
         <IconPdf />

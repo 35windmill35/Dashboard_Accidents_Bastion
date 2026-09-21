@@ -2,6 +2,13 @@ import { KpiCard } from '@/widgets/kpi-card/KpiCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatCurrency, formatNumber, formatPercent, calcDelta } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
+import {
+  groupByCauseCategory,
+  rowsNotFullyCompensated,
+  rowsWithCompensation,
+  rowsWithDamage,
+} from '@/entities/accident/lib/metrics'
+import type { AccidentRow } from '@/entities/accident/model/types'
 import type { MotorcadeData } from '../model/motorcadeData'
 import styles from './MotorcadeKpiRow.module.css'
 
@@ -14,7 +21,9 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
   const { kpi, previousKpi, periodRows } = data
   const periodLabel = formatPeriodLabel(period)
 
-  const openAll = (title: string) => drilldownStore.open(`${title} — ${periodLabel}`, periodRows)
+  const open = (title: string, rows: AccidentRow[]) =>
+    drilldownStore.open(`${title} — ${periodLabel}`, rows)
+  const byCause = groupByCauseCategory(periodRows)
 
   return (
     <div className={styles.row}>
@@ -24,7 +33,7 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         delta={previousKpi ? calcDelta(kpi.count, previousKpi.count) : null}
         deltaHigherIsBetter={false}
         tooltip="Масштаб аварийности автоколонны"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('Все ДТП', periodRows)}
       />
       <KpiCard
         label="Сумма ущерба"
@@ -32,21 +41,21 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         delta={previousKpi ? calcDelta(kpi.sumDamage, previousKpi.sumDamage) : null}
         deltaHigherIsBetter={false}
         tooltip="Финансовый эффект ДТП этой автоколонны"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
       />
       <KpiCard
         label="Сумма возмещения"
         value={formatCurrency(kpi.sumCompensated)}
         delta={previousKpi ? calcDelta(kpi.sumCompensated, previousKpi.sumCompensated) : null}
         tooltip="Насколько эффективно автоколонна взыскивает ущерб"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('ДТП с возмещением', rowsWithCompensation(periodRows))}
       />
       <KpiCard
         label="Доля возмещения"
         value={formatPercent(kpi.compensationShare)}
         delta={previousKpi ? calcDelta(kpi.compensationShare, previousKpi.compensationShare) : null}
         tooltip="Качество претензионной работы. Сравнимо между автоколоннами"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('ДТП, возмещённые не полностью', rowsNotFullyCompensated(periodRows))}
       />
       <KpiCard
         label="Средний ущерб на 1 ДТП"
@@ -54,7 +63,7 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         delta={previousKpi ? calcDelta(kpi.averageDamage, previousKpi.averageDamage) : null}
         deltaHigherIsBetter={false}
         tooltip="Типичная тяжесть инцидента в этой автоколонне"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
       />
       <KpiCard
         label="Доля ДТП по вине водителя"
@@ -62,7 +71,7 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         delta={previousKpi ? calcDelta(kpi.driverFaultShare, previousKpi.driverFaultShare) : null}
         deltaHigherIsBetter={false}
         tooltip="Ключевой показатель управляемого риска"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('ДТП по вине водителя', byCause.driverFault)}
       />
       <KpiCard
         label="Доля ДТП по вине третьей стороны"
@@ -72,7 +81,7 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         }
         deltaHigherIsBetter={false}
         tooltip="Аварии вне контроля водителей автоколонны"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('ДТП по вине третьей стороны', byCause.thirdPartyFault)}
       />
       <KpiCard
         label="Доля ДТП без повреждений"
@@ -80,7 +89,7 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         delta={previousKpi ? calcDelta(kpi.noDamageShare, previousKpi.noDamageShare) : null}
         deltaHigherIsBetter={false}
         tooltip="Доля инцидентов без материального ущерба"
-        onClick={() => openAll('Все ДТП')}
+        onClick={() => open('ДТП без повреждений', byCause.noDamage)}
       />
     </div>
   )

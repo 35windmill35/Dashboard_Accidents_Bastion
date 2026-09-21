@@ -1,20 +1,40 @@
-import { formatNumber, formatPercent } from '@/shared/lib/formatters'
+import {
+  formatNumber,
+  formatPercent,
+  getCurrencyCode,
+  getCurrencySymbol,
+} from '@/shared/lib/formatters'
 import { formatMonthShortLabel, ymToYear, type Period } from '@/entities/accident/lib/period'
 import type { CauseSlice } from '@/entities/accident/lib/metrics'
 
 // Компактные подписи денежной оси: на графике не нужны полные суммы, иначе
 // подписи делений шире самого графика.
+// Во встроенных шрифтах PDF есть только ₸ и $ — для остальных валют
+// пишем код (RUB, EUR), иначе вместо знака будет пустой квадрат.
+const PDF_SAFE_SYMBOLS = new Set(['₸', '$'])
+
+export function pdfCurrencySuffix(): string {
+  const symbol = getCurrencySymbol()
+  if (!symbol) return ''
+  return PDF_SAFE_SYMBOLS.has(symbol) ? symbol : (getCurrencyCode() ?? '')
+}
+
+function withPdfCurrency(text: string): string {
+  const suffix = pdfCurrencySuffix()
+  return suffix ? `${text} ${suffix}` : text
+}
+
 export function formatMoneyAxis(value: number): string {
-  if (value === 0) return '0 ₸'
+  if (value === 0) return withPdfCurrency('0')
   if (Math.abs(value) >= 1_000_000) {
     const millions = value / 1_000_000
-    return `${formatNumber(millions, Number.isInteger(millions) ? 0 : 1)} млн ₸`
+    return withPdfCurrency(`${formatNumber(millions, Number.isInteger(millions) ? 0 : 1)} млн`)
   }
   if (Math.abs(value) >= 1000) {
     const thousands = value / 1000
-    return `${formatNumber(thousands, Number.isInteger(thousands) ? 0 : 1)} тыс ₸`
+    return withPdfCurrency(`${formatNumber(thousands, Number.isInteger(thousands) ? 0 : 1)} тыс`)
   }
-  return `${formatNumber(value, 0)} ₸`
+  return withPdfCurrency(formatNumber(value, 0))
 }
 
 export function formatCountAxis(value: number): string {
@@ -66,4 +86,11 @@ export function buildReportFilename(screenSlug: string, period: Period, now: Dat
     `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
     `-${pad(now.getHours())}${pad(now.getMinutes())}`
   return `dtp-${screenSlug}-${periodSlug(period)}-${stamp}.pdf`
+}
+
+// Полная сумма для PDF — как formatCurrency, но только со знаками,
+// которые есть во встроенных шрифтах.
+export function formatPdfCurrency(value: number | null | undefined): string {
+  if (value === null || value === undefined || Number.isNaN(value)) return '—'
+  return withPdfCurrency(formatNumber(value, 0))
 }

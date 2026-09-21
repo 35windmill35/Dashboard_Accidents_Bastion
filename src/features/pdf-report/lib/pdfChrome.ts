@@ -6,6 +6,7 @@ import {
   drawText,
   fitText,
   measureText,
+  wrapText,
   type Rgb,
   type TextStyle,
 } from './pdfKit'
@@ -156,6 +157,41 @@ export function kpiRow(doc: jsPDF, cards: KpiCardData[]): BlockFactory {
               deltaStyle
             )
           }
+        })
+      },
+    }
+  }
+}
+
+const NOTICE_PAD_X = 10
+const NOTICE_LINE = 9.5
+
+// Плашка-предупреждение во всю ширину: заголовок и пункты с переносом.
+// Используется для баннера о сопоставимости на "Аналитике" (ТЗ §6).
+export function noticeBlock(doc: jsPDF, title: string, lines: string[]): BlockFactory {
+  return (x, width) => {
+    const style: TextStyle = { size: 7, color: COLOR.ink }
+    const innerWidth = width - NOTICE_PAD_X * 2
+    const wrapped = lines.flatMap((line) => wrapText(doc, `• ${line}`, innerWidth, style, 3))
+    const height = 24 + wrapped.length * NOTICE_LINE + 4
+
+    return {
+      height,
+      draw: (y) => {
+        drawRect(doc, x, y, width, height, {
+          fill: COLOR.highlight,
+          stroke: COLOR.line,
+          lineWidth: 0.5,
+          radius: 2,
+        })
+        drawRect(doc, x, y, 2.4, height, { fill: COLOR.accent })
+        drawText(doc, title, x + NOTICE_PAD_X, y + 14, {
+          weight: 'bold',
+          size: 8.4,
+          color: COLOR.ink,
+        })
+        wrapped.forEach((line, index) => {
+          drawText(doc, line, x + NOTICE_PAD_X, y + 26 + index * NOTICE_LINE, style)
         })
       },
     }

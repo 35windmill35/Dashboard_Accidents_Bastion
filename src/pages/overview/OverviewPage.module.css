@@ -3,12 +3,3 @@
   flex-direction: column;
   gap: var(--space-4);
 }
-
-.banner {
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
-  font-size: 13px;
-  color: var(--color-text);
-}

@@ -1,7 +1,7 @@
 import { makeAutoObservable, reaction } from 'mobx'
 import { accidentsStore } from './accidentsStore'
 import { authStore } from '@/entities/user/model/authStore'
-import { getLatestMonth, type Period, type PeriodMode } from '../lib/period'
+import { getAvailablePeriodValues, type Period, type PeriodMode } from '../lib/period'
 import {
   getSelectableMotorcadeOptions,
   sortByAccidentCountDesc,
@@ -12,6 +12,12 @@ import {
 // Период общий для всех трёх экранов, автоколонны у каждого экрана свои
 // (motorcadeKey — «Статистика по автоколонне», analyticsMotorcadeKeyA/B —
 // «Аналитика»).
+//
+// Явный выбор пользователя хранится как есть, а "эффективное" значение
+// (то, что реально на экране) считается геттерами: если выбора нет или он
+// не существует в данных (опечатка в ссылке, другая учётка) — берётся
+// значение по умолчанию. Так селектор в шапке и цифры на экране не могут
+// разойтись (P0-2).
 class FiltersStore {
   periodMode: PeriodMode = 'month'
   periodValue: number | null = null
@@ -25,24 +31,33 @@ class FiltersStore {
     makeAutoObservable(this)
 
     reaction(
-      () => authStore.isAuthenticated,
-      (isAuthenticated) => {
-        if (!isAuthenticated) this.reset()
-      }
+      () => authStore.sessionEpoch,
+      () => this.reset()
     )
   }
 
-  get period(): Period {
-    if (this.periodMode === 'all') return { mode: 'all' }
-    if (this.periodValue !== null)
-      return { mode: this.periodMode, value: this.periodValue } as Period
-
-    // пока пользователь не выбрал период сам — последний месяц с данными
-    const latest = getLatestMonth(accidentsStore.rows)
-    return latest ? { mode: 'month', value: latest } : { mode: 'all' }
+  // Доступные значения для текущего режима, по убыванию.
+  get periodValues(): number[] {
+    return getAvailablePeriodValues(this.periodMode, accidentsStore.rows)
   }
 
+  get period(): Period {
+    const mode = this.periodMode
+    if (mode === 'all') return { mode: 'all' }
+
+    const values = this.periodValues
+    const value =
+      this.periodValue !== null && values.includes(this.periodValue) ? this.periodValue : values[0] // по умолчанию — последний период этого режима с данными
+
+    // данных нет вовсе — показывать нечего, "весь период" даст пустой срез
+    if (value === undefined) return { mode: 'all' }
+    return { mode, value } as Period
+  }
+
+  // Смена режима сразу выбирает последний доступный период этого режима —
+  // "Квартал" показывает квартал, а не месяц.
   setPeriodMode(mode: PeriodMode): void {
+    if (mode === this.periodMode) return
     this.periodMode = mode
     this.periodValue = null
   }
@@ -51,13 +66,23 @@ class FiltersStore {
     this.periodValue = value
   }
 
+  setPeriod(period: Period): void {
+    this.periodMode = period.mode
+    this.periodValue = period.mode === 'all' ? null : period.value
+  }
+
   get motorcadeOptions(): MotorcadeOption[] {
     return sortByNameAsc(getSelectableMotorcadeOptions(accidentsStore.rows))
   }
 
+  private hasOption(key: string | null): key is string {
+    return key !== null && this.motorcadeOptions.some((option) => option.key === key)
+  }
+
   // по умолчанию — первая по алфавиту
   get selectedMotorcadeKey(): string | null {
-    return this.motorcadeKey ?? this.motorcadeOptions[0]?.key ?? null
+    if (this.hasOption(this.motorcadeKey)) return this.motorcadeKey
+    return this.motorcadeOptions[0]?.key ?? null
   }
 
   setMotorcadeKey(key: string): void {
@@ -71,11 +96,26 @@ class FiltersStore {
   }
 
   get selectedAnalyticsKeyA(): string | null {
-    return this.analyticsMotorcadeKeyA ?? this.analyticsDefaultKeys[0]
+    if (this.hasOption(this.analyticsMotorcadeKeyA)) return this.analyticsMotorcadeKeyA
+    const [first, second] = this.analyticsDefaultKeys
+    // явный выбор B мог совпасть с дефолтом A — тогда A берёт другую
+    return this.hasOption(this.analyticsMotorcadeKeyB) && this.analyticsMotorcadeKeyB === first
+      ? second
+      : first
   }
 
   get selectedAnalyticsKeyB(): string | null {
-    return this.analyticsMotorcadeKeyB ?? this.analyticsDefaultKeys[1]
+    if (
+      this.hasOption(this.analyticsMotorcadeKeyB) &&
+      this.analyticsMotorcadeKeyB !== this.selectedAnalyticsKeyA
+    ) {
+      return this.analyticsMotorcadeKeyB
+    }
+    const keyA = this.selectedAnalyticsKeyA
+    const fallback = sortByAccidentCountDesc(this.motorcadeOptions).find(
+      (option) => option.key !== keyA
+    )
+    return fallback?.key ?? null
   }
 
   // выбор одинаковой автоколонны в обоих селекторах запрещён

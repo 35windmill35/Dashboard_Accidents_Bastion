@@ -59,6 +59,12 @@ export const LoginPage = observer(function LoginPage() {
           />
         </label>
 
+        {authStore.sessionNotice && !authStore.loginError && (
+          <p className={styles.notice} role="status">
+            {authStore.sessionNotice}
+          </p>
+        )}
+
         {authStore.loginError && <p className={styles.error}>{authStore.loginError}</p>}
 
         <button className={styles.submit} type="submit" disabled={authStore.isLoggingIn}>

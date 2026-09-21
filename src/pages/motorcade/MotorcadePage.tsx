@@ -68,7 +68,7 @@ export const MotorcadePage = observer(function MotorcadePage() {
       <h1 className={styles.title}>{selectedOption.name}</h1>
 
       <MotorcadeKpiRow data={data} period={period} />
-      <MotorcadeCharts data={data} period={period} motorcadeRows={motorcadeRows} />
+      <MotorcadeCharts data={data} period={period} />
       <MotorcadeTables data={data} period={period} />
     </div>
   )

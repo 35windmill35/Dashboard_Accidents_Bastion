@@ -253,3 +253,22 @@ export function monthlyTrend(rows: AccidentRow[], months: number[]): MonthlyAggr
     }
   })
 }
+
+// Срезы для drill-through из KPI (ТЗ §4.3): "список ДТП с ущербом",
+// "с возмещением", "непокрытые".
+export function rowsWithDamage(rows: AccidentRow[]): AccidentRow[] {
+  return rows.filter((row) => (row.ACCIDENT_DAMAGE ?? 0) > 0)
+}
+
+export function rowsWithCompensation(rows: AccidentRow[]): AccidentRow[] {
+  return rows.filter((row) => (row.ACCIDENT_COMPENSATED_DAMAGE ?? 0) > 0)
+}
+
+// Ущерб есть, а возмещено меньше ущерба (в т.ч. ничего).
+export function rowsNotFullyCompensated(rows: AccidentRow[]): AccidentRow[] {
+  return rows.filter(
+    (row) =>
+      (row.ACCIDENT_DAMAGE ?? 0) > 0 &&
+      (row.ACCIDENT_COMPENSATED_DAMAGE ?? 0) < (row.ACCIDENT_DAMAGE ?? 0)
+  )
+}

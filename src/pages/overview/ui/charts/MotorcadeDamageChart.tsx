@@ -1,11 +1,16 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
-import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { CHART_MARGIN, Y_AXIS_WIDTH, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { formatCurrency, formatCompactCurrency, formatPercent } from '@/shared/lib/formatters'
+import {
+  CHART_MARGIN,
+  Y_AXIS_WIDTH,
+  barPayload,
+  useCategoryXAxis,
+} from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -31,8 +36,19 @@ export function MotorcadeDamageChart({ data, period }: Props) {
     { mirrorPadding: true }
   )
 
+  const table: ChartDataTable = {
+    columns: ['Автоколонна', 'Ущерб', 'Возмещение', 'Доля возмещения'],
+    rows: data.motorcadeAgg.map((m) => [
+      m.name,
+      formatCurrency(m.sumDamage),
+      formatCurrency(m.sumCompensated),
+      formatPercent(m.sumDamage > 0 ? m.sumCompensated / m.sumDamage : null),
+    ]),
+  }
+
   return (
     <ChartCard
+      table={table}
       title="Ущерб и возмещение по автоколоннам"
       legend={[
         { label: 'Ущерб', color: CHART_1 },

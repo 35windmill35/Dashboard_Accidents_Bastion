@@ -1,9 +1,9 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { CAUSE_CATEGORY_COLORS } from '@/shared/lib/chartColors'
-import { formatNumber } from '@/shared/lib/formatters'
+import { formatNumber, formatPercent } from '@/shared/lib/formatters'
 import type { OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -29,8 +29,19 @@ export function CausesPieChart({ data, period }: Props) {
     )
   }
 
+  const slicesTotal = slices.reduce((sum, s) => sum + s.count, 0)
+  const table: ChartDataTable = {
+    columns: ['Категория', 'ДТП', 'Доля'],
+    rows: slices.map((s) => [
+      s.label,
+      formatNumber(s.count),
+      formatPercent(slicesTotal > 0 ? s.count / slicesTotal : null),
+    ]),
+  }
+
   return (
     <ChartCard
+      table={table}
       title="Структура причин ДТП"
       legend={slices.map((s) => ({ label: s.label, color: CAUSE_CATEGORY_COLORS[s.category] }))}
     >

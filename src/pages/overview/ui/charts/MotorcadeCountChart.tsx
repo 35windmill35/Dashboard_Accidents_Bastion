@@ -8,13 +8,18 @@ import {
   YAxis,
   Cell,
 } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { CHART_1 } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
-import { CHART_MARGIN, Y_AXIS_WIDTH, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import {
+  CHART_MARGIN,
+  Y_AXIS_WIDTH,
+  barPayload,
+  useCategoryXAxis,
+} from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -32,8 +37,17 @@ export function MotorcadeCountChart({ data, period }: Props) {
     { mirrorPadding: true }
   )
 
+  const table: ChartDataTable = {
+    columns: ['Автоколонна', 'ДТП'],
+    rows: data.motorcadeAgg.map((m) => [m.name, formatNumber(m.count)]),
+  }
+
   return (
-    <ChartCard title="ДТП по автоколоннам" legend={[{ label: 'ДТП', color: CHART_1 }]}>
+    <ChartCard
+      table={table}
+      title="ДТП по автоколоннам"
+      legend={[{ label: 'ДТП', color: CHART_1 }]}
+    >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data.motorcadeAgg} margin={CHART_MARGIN}>

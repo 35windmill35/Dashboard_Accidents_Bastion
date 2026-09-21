@@ -8,7 +8,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { ChartCard } from '@/widgets/chart-card/ChartCard'
+import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
 import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN, Y_AXIS_WIDTH } from '@/shared/lib/rechartsHelpers'
@@ -33,8 +33,13 @@ export function RepeatDriversComparisonChart({ data }: Props) {
     { side: 'b', name: data.b.name, count: data.b.repeatDriversCount },
   ]
 
+  const table: ChartDataTable = {
+    columns: ['Автоколонна', 'Водителей с ≥3 ДТП'],
+    rows: chartData.map((p) => [p.name, formatNumber(p.count)]),
+  }
+
   return (
-    <ChartCard title="Водителей с 3 и более ДТП">
+    <ChartCard table={table} title="Водителей с 3 и более ДТП">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={CHART_MARGIN}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />

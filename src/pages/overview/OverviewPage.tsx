@@ -43,13 +43,6 @@ export const OverviewPage = observer(function OverviewPage() {
 
   return (
     <div className={styles.page}>
-      {accidentsStore.hasPartialFailure && (
-        <div className={styles.banner}>
-          Не удалось загрузить данные по базам: {accidentsStore.failedFirms.join(', ')}. Показатели
-          посчитаны по остальным базам.
-        </div>
-      )}
-
       <OverviewKpiRow data={data} period={period} />
       <OverviewCharts data={data} period={period} />
       <OverviewTables data={data} period={period} />

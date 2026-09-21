@@ -1,6 +1,13 @@
 import { makeAutoObservable, observableRef, runInAction } from 'mobx'
 import { loginAppUser, checkAccidentsRight, type Firm } from '../api/authApi'
-import { getSessionId, setSession, clearSession } from '@/shared/api/session'
+import {
+  getSessionId,
+  setSession,
+  clearSession,
+  hasStoredSession,
+  isSessionExpired,
+} from '@/shared/api/session'
+import { setUnauthorizedHandler } from '@/shared/api/httpClient'
 import { getDbGuidFromUrl } from '@/shared/config/dbGuid'
 import { getErrorMessage } from '@/shared/api/errorMessage'
 import { mapWithConcurrencyLimit } from '@/shared/lib/concurrencyLimit'
@@ -23,9 +30,29 @@ class AuthStore {
   isCheckingRights = false
   loginError: string | null = null
 
+  // Сообщение для экрана входа, почему пользователя разлогинило
+  // (сессия истекла по времени или сервер ответил 401).
+  sessionNotice: string | null = null
+
+  // Номер "поколения" сессии: растёт при каждом входе и выходе. Асинхронные
+  // операции запоминают его на старте и не пишут результат, если за время
+  // запроса пользователь вышел или вошёл заново (P0-1).
+  sessionEpoch = 0
+  private rightsAbort: AbortController | null = null
+
   constructor() {
-    makeAutoObservable(this, { firms: observableRef, allowedDbIndexes: observableRef })
+    makeAutoObservable(this, {
+      firms: observableRef,
+      allowedDbIndexes: observableRef,
+    })
     this.restoreFirms()
+
+    // Сохранённая сессия уже истекла — не притворяемся залогиненными.
+    if (this.firms.length > 0 && hasStoredSession() && isSessionExpired()) {
+      this.expireSession()
+    }
+
+    setUnauthorizedHandler(() => this.expireSession())
   }
 
   get isAuthenticated(): boolean {
@@ -77,9 +104,11 @@ class AuthStore {
       setSession({ sessionId: sessionId ?? null, remaining: remaining ?? null })
 
       runInAction(() => {
+        this.sessionEpoch += 1
         this.firms = firms
         this.allowedDbIndexes = null
         this.rightsCheckErrors = []
+        this.sessionNotice = null
         this.isLoggingIn = false
       })
 
@@ -105,17 +134,25 @@ class AuthStore {
 
   // Проверяет право на дашборд ДТП по каждой базе параллельно (лимит 5
   // одновременных запросов), отказ одной базы не влияет на остальные.
+  // Повторный вызов (кнопка "Повторить") отменяет предыдущую проверку.
   async checkAccidentsAccess(): Promise<void> {
-    if (this.isCheckingRights || this.firms.length === 0) return
+    if (this.firms.length === 0) return
+
+    this.rightsAbort?.abort()
+    const abort = new AbortController()
+    this.rightsAbort = abort
+    const epoch = this.sessionEpoch
 
     this.isCheckingRights = true
 
     const dbIndexes = this.firms.map((_firm, index) => index)
-    const results = await mapWithConcurrencyLimit(
-      dbIndexes,
-      RIGHTS_CHECK_CONCURRENCY,
-      checkAccidentsRight
+    const results = await mapWithConcurrencyLimit(dbIndexes, RIGHTS_CHECK_CONCURRENCY, (dbIndex) =>
+      checkAccidentsRight(dbIndex, abort.signal)
     )
+
+    // Пока шли запросы, пользователь вышел/вошёл заново или проверку
+    // перезапустили — этот результат уже не про текущую сессию.
+    if (abort.signal.aborted || epoch !== this.sessionEpoch) return
 
     runInAction(() => {
       const allowed: number[] = []
@@ -125,31 +162,76 @@ class AuthStore {
         if (result.status === 'fulfilled') {
           if (result.value) allowed.push(index)
         } else {
-          errored.push(this.firms[index]?.FIRM_SHORT_NAME || `база #${index}`)
+          errored.push(this.getFirmName(index))
         }
       })
 
       this.allowedDbIndexes = allowed
       this.rightsCheckErrors = errored
       this.isCheckingRights = false
+      this.rightsAbort = null
     })
   }
 
+  // Ни одной базы с правом, но часть проверок упала — это не "нет доступа",
+  // а "не удалось проверить" (сеть/бэкенд), показываем экран с повтором.
+  get rightsCheckFailed(): boolean {
+    return (
+      this.allowedDbIndexes !== null &&
+      this.allowedDbIndexes.length === 0 &&
+      this.rightsCheckErrors.length > 0
+    )
+  }
+
+  getFirmName(dbIndex: number): string {
+    return this.firms[dbIndex]?.FIRM_SHORT_NAME || `база #${dbIndex}`
+  }
+
   logout(): void {
+    this.rightsAbort?.abort()
+    this.rightsAbort = null
+    this.sessionEpoch += 1
     this.firms = []
     this.allowedDbIndexes = null
     this.rightsCheckErrors = []
+    this.isCheckingRights = false
     this.loginError = null
     clearSession()
-    localStorage.removeItem(FIRMS_STORAGE_KEY)
+    try {
+      localStorage.removeItem(FIRMS_STORAGE_KEY)
+    } catch {
+      // хранилище недоступно — чистить нечего
+    }
+  }
+
+  // Сессия истекла (по таймеру или сервер ответил 401) — выходим и
+  // объясняем причину на экране входа.
+  expireSession(): void {
+    if (this.firms.length === 0 && !hasStoredSession()) return
+    this.logout()
+    this.sessionNotice = 'Сессия истекла — войдите заново'
+  }
+
+  // Периодическая проверка срока сессии (10 ч / 30 мин без запросов).
+  checkSessionExpiry(): void {
+    if (this.firms.length > 0 && isSessionExpired()) this.expireSession()
   }
 
   persistFirms(): void {
-    localStorage.setItem(FIRMS_STORAGE_KEY, JSON.stringify(this.firms))
+    try {
+      localStorage.setItem(FIRMS_STORAGE_KEY, JSON.stringify(this.firms))
+    } catch {
+      // хранилище недоступно — список баз живёт до перезагрузки вкладки
+    }
   }
 
   restoreFirms(): void {
-    const raw = localStorage.getItem(FIRMS_STORAGE_KEY)
+    let raw: string | null
+    try {
+      raw = localStorage.getItem(FIRMS_STORAGE_KEY)
+    } catch {
+      return
+    }
     if (!raw) return
 
     try {

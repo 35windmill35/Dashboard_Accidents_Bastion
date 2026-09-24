@@ -1,4 +1,5 @@
 .card {
+  position: relative;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -7,21 +8,20 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-}
-
-.clickable {
   transition:
     border-color 0.15s,
     background-color 0.15s;
 }
 
-.clickable:hover,
-.clickable:focus-within {
+/* Карточка подсвечивается, только когда по ней есть что нажать */
+.card:has(.mainButton:hover),
+.card:has(.mainButton:focus-visible),
+.card:has(.mainClickable:hover) {
   border-color: var(--color-accent);
   background: var(--color-surface-2);
 }
 
-/* Кнопка-обёртка значения — сброс стилей <button>, внешне как раньше */
+/* Область значения: у карточки с переходом — <button>, без него — <div> */
 .main {
   display: flex;
   flex-direction: column;
@@ -36,20 +36,59 @@
   text-align: left;
 }
 
-button.main {
+.mainButton,
+.mainClickable {
   cursor: pointer;
 }
 
-button.main:focus-visible,
-.drillDown:focus-visible {
+.mainButton:focus-visible {
+  /* кольцо по всей карточке, а не по тексту внутри */
+  outline: none;
+}
+
+.card:has(.mainButton:focus-visible) {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+/* Кнопка «таблица ДТП» — маленький квадрат в правом верхнем углу */
+.listButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-accent);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+.listButton:hover {
+  border-color: var(--color-accent);
+}
+
+.listButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .label {
   font-size: 12px;
   color: var(--color-text-secondary);
+  line-height: 16px;
+  /* место под кнопку в углу; высота в две строки — значения во всех карточках
+     ряда стоят на одной линии, даже если подпись одной из них переносится */
+  padding-right: 32px;
+  min-height: 32px;
 }
 
 .value {
@@ -75,23 +114,6 @@ button.main:focus-visible,
 
 .deltaDown {
   color: var(--color-negative);
-}
-
-.drillDown {
-  align-self: flex-start;
-  margin-top: 2px;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--color-accent);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  text-align: left;
-}
-
-.drillDown:hover {
-  text-decoration: underline;
 }
 
 @media (max-width: 720px) {

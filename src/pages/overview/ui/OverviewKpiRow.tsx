@@ -23,11 +23,11 @@ interface OverviewKpiRowProps {
   period: Period
 }
 
-// Пять KPI "Обзора" (ТЗ §4.3). У каждой карточки два перехода:
-// - клик по карточке (drill-through) — список именно тех ДТП, из которых
-//   сложилось число (все / с ущербом / с возмещением / непокрытые);
-// - ссылка под значением (drill-down) — связанный экран, период
-//   сохраняется (он общий для всех экранов).
+// Пять KPI "Обзора" (ТЗ §4.3). У каждой карточки два действия:
+// - клик по карточке (drill-down) — связанный экран, период сохраняется
+//   (он общий для всех экранов);
+// - иконка в правом верхнем углу (drill-through) — таблица именно тех ДТП,
+//   из которых сложилось число (все / с ущербом / с возмещением / непокрытые).
 export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
   const navigate = useNavigate()
   const { kpi, previousKpi, periodRows } = data
@@ -36,8 +36,11 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
   const open = (title: string, rows: AccidentRow[]) =>
     drilldownStore.open(`${title} — ${periodLabel}`, rows)
 
-  const toMotorcade = { label: 'Статистика по автоколонне', onClick: () => navigate('/motorcade') }
-  const toAnalytics = { label: 'Аналитика', onClick: () => navigate('/analytics') }
+  const toMotorcade = {
+    label: 'переход к статистике по автоколонне',
+    onClick: () => navigate('/motorcade'),
+  }
+  const toAnalytics = { label: 'переход к аналитике', onClick: () => navigate('/analytics') }
 
   const countDelta = previousKpi ? calcDelta(kpi.count, previousKpi.count) : null
 
@@ -49,8 +52,8 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
         delta={countDelta}
         deltaHigherIsBetter={false}
         tooltip={`Общее число ДТП за период. Δ к прошлому периоду: ${formatDelta(countDelta)}`}
-        onClick={() => open('Все ДТП', periodRows)}
-        drillDown={toMotorcade}
+        onOpenList={() => open('Все ДТП', periodRows)}
+        navigate={toMotorcade}
       />
       <KpiCard
         label="Общая сумма ущерба"
@@ -58,24 +61,26 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
         delta={previousKpi ? calcDelta(kpi.sumDamage, previousKpi.sumDamage) : null}
         deltaHigherIsBetter={false}
         tooltip="Совокупный финансовый эффект ДТП — основа ремонтного бюджета"
-        onClick={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
-        drillDown={toAnalytics}
+        onOpenList={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
+        navigate={toAnalytics}
       />
       <KpiCard
         label="Сумма возмещения"
         value={formatCurrency(kpi.sumCompensated)}
         delta={previousKpi ? calcDelta(kpi.sumCompensated, previousKpi.sumCompensated) : null}
         tooltip="Сколько из ущерба фактически покрыто виновником/страховой"
-        onClick={() => open('ДТП с возмещением', rowsWithCompensation(periodRows))}
-        drillDown={toAnalytics}
+        onOpenList={() => open('ДТП с возмещением', rowsWithCompensation(periodRows))}
+        navigate={toAnalytics}
       />
       <KpiCard
         label="Доля возмещения"
         value={formatPercent(kpi.compensationShare)}
         delta={previousKpi ? calcDelta(kpi.compensationShare, previousKpi.compensationShare) : null}
         tooltip="Возмещено ÷ ущерб. Низкое значение — сигнал юридическому отделу"
-        onClick={() => open('ДТП, возмещённые не полностью', rowsNotFullyCompensated(periodRows))}
-        drillDown={toAnalytics}
+        onOpenList={() =>
+          open('ДТП, возмещённые не полностью', rowsNotFullyCompensated(periodRows))
+        }
+        navigate={toAnalytics}
       />
       <KpiCard
         label="Средний ущерб на 1 ДТП"
@@ -83,8 +88,8 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
         delta={previousKpi ? calcDelta(kpi.averageDamage, previousKpi.averageDamage) : null}
         deltaHigherIsBetter={false}
         tooltip="Тяжесть одного инцидента: ущерб ÷ число ДТП с ущербом"
-        onClick={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
-        drillDown={toAnalytics}
+        onOpenList={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
+        navigate={toAnalytics}
       />
     </div>
   )

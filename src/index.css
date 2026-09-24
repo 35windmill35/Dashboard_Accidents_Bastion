@@ -46,3 +46,20 @@ select {
 a {
   color: var(--color-accent);
 }
+
+/* Графики Recharts. Обёртка-svg получает tabindex=0 (accessibilityLayer),
+   и браузер обводил весь график толстой рамкой после обычного клика мышью.
+   Клик рамки не показывает; при навигации с клавиатуры (Tab) остаётся
+   аккуратное кольцо в цвет акцента. Табличная альтернатива графику —
+   кнопка «Показать данные» в его шапке. */
+.recharts-wrapper,
+.recharts-wrapper *:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+.recharts-surface:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
+}

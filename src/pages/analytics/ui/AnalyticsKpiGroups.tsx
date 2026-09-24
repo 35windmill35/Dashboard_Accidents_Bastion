@@ -69,7 +69,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Масштаб аварийности автоколонны"
-          onClick={() => onOpen('Все ДТП', rows)}
+          onOpenList={() => onOpen('Все ДТП', rows)}
         />
         <KpiCard
           label="Сумма ущерба"
@@ -78,7 +78,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Финансовый эффект ДТП этой автоколонны"
-          onClick={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
+          onOpenList={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
         />
         <KpiCard
           label="Доля возмещения"
@@ -90,7 +90,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           }
           deltaLabel={deltaLabel}
           tooltip="Качество претензионной работы. Сравнимо между автоколоннами"
-          onClick={() => onOpen('ДТП, возмещённые не полностью', rowsNotFullyCompensated(rows))}
+          onOpenList={() => onOpen('ДТП, возмещённые не полностью', rowsNotFullyCompensated(rows))}
         />
         <KpiCard
           label="Средний ущерб на 1 ДТП"
@@ -101,7 +101,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Типичная тяжесть инцидента в этой автоколонне"
-          onClick={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
+          onOpenList={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
         />
       </div>
     </div>

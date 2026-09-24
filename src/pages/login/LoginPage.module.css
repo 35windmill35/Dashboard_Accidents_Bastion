@@ -39,11 +39,6 @@
   color: var(--color-title);
 }
 
-.subtitle {
-  font-size: 13px;
-  color: var(--color-text-secondary);
-}
-
 .field {
   display: flex;
   flex-direction: column;

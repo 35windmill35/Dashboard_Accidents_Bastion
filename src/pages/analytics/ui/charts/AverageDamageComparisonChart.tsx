@@ -86,6 +86,7 @@ export function AverageDamageComparisonChart({ data, period }: Props) {
             maxBarSize={BAR_SIZE_SINGLE}
             {...ANIMATION}
             dataKey="averageDamage"
+            name="Средний ущерб"
             radius={BAR_RADIUS}
             style={{ cursor: 'pointer' }}
             onClick={(entry) => handleClick(barPayload<Point>(entry).side)}

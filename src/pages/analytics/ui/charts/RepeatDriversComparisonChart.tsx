@@ -67,7 +67,13 @@ export function RepeatDriversComparisonChart({ data }: Props) {
           <XAxis {...X_AXIS_PROPS} dataKey="name" height={CATEGORY_AXIS_HEIGHT} />
           <YAxis {...Y_AXIS_PROPS} allowDecimals={false} />
           <Tooltip cursor={BAR_CURSOR} content={<ChartTooltip />} />
-          <Bar maxBarSize={BAR_SIZE_SINGLE} {...ANIMATION} dataKey="count" radius={BAR_RADIUS}>
+          <Bar
+            maxBarSize={BAR_SIZE_SINGLE}
+            {...ANIMATION}
+            dataKey="count"
+            name="Водителей"
+            radius={BAR_RADIUS}
+          >
             {chartData.map((point) => (
               <Cell
                 key={point.side}

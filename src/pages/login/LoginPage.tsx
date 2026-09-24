@@ -39,7 +39,6 @@ export const LoginPage = observer(function LoginPage() {
         <div className={styles.brand}>
           <BrandLogo size={56} />
           <h1 className={styles.title}>Дашборд ДТП</h1>
-          <span className={styles.subtitle}>Вход для сотрудников</span>
         </div>
 
         <label className={styles.field}>

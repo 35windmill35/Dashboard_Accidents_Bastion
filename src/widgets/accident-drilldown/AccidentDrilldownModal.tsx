@@ -115,7 +115,9 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     return sorted
   }, [rows, search, sortKey, sortDir])
 
-  if (!isOpen) return null
+  // Вторая линия защиты: без действующей сессии список с ПДн не рисуем,
+  // даже если стор по какой-то причине не успел закрыться.
+  if (!isOpen || !authStore.isAuthenticated) return null
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE))
   const pageRows =

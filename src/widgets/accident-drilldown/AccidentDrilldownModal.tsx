@@ -7,13 +7,11 @@ import { getMotorcadeName } from '@/entities/accident/lib/motorcade'
 import { getCauseCategory, CAUSE_CATEGORY_LABELS } from '@/shared/config/accidentCauses'
 import { formatCurrency, formatDate, formatTime } from '@/shared/lib/formatters'
 import { downloadCsv } from '@/shared/lib/csvExport'
+import { SortHeader, type SortDir, type SortKey } from './SortHeader'
 import styles from './AccidentDrilldownModal.module.css'
 
 const PAGE_SIZE = 50
 const VIRTUALIZE_THRESHOLD = 200
-
-type SortKey = 'date' | 'motorcade' | 'vehicle' | 'driver' | 'damage' | 'compensated'
-type SortDir = 'asc' | 'desc'
 
 function vehicleLabel(row: AccidentRow): string {
   const parts = [row.GARAGE_NUM ? `№${row.GARAGE_NUM}` : null, row.CAR_MAKE_MODEL].filter(Boolean)
@@ -37,6 +35,9 @@ function sortValue(row: AccidentRow, key: SortKey): number | string {
   }
 }
 
+// Модалка «Список ДТП» (drill-through) по эталону: крупный заголовок с
+// надзаголовком, поиск с иконкой, выгрузка CSV, таблица с закреплённой
+// шапкой; статус дела — чипом (открытое дело — акцентом, закрытое — серым).
 export const AccidentDrilldownModal = observer(function AccidentDrilldownModal() {
   const dialogRef = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState('')
@@ -131,6 +132,8 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     }
   }
 
+  const sortProps = { sortKey, sortDir, onSort: toggleSort }
+
   const handleExport = () => {
     const headers = [
       'Дата',
@@ -182,7 +185,8 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
-          <div>
+          <div className={styles.titles}>
+            <span className={styles.eyebrow}>Список ДТП</span>
             <h2 className={styles.title}>{title}</h2>
             <p className={styles.subtitle}>Найдено записей: {filteredSorted.length}</p>
           </div>
@@ -192,22 +196,66 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
             onClick={() => drilldownStore.close()}
             aria-label="Закрыть"
           >
-            ✕
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M6 6l12 12" />
+              <path d="M18 6 6 18" />
+            </svg>
           </button>
         </div>
 
         <div className={styles.toolbar}>
-          <input
-            className={styles.search}
-            type="text"
-            placeholder="Поиск: водитель, гаражный номер, адрес"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value)
-              setPage(0)
-            }}
-          />
+          <div className={styles.searchWrap}>
+            <svg
+              className={styles.searchIcon}
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              className={styles.search}
+              type="search"
+              aria-label="Поиск по списку ДТП"
+              placeholder="Поиск: водитель, гаражный номер, адрес"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(0)
+              }}
+            />
+          </div>
           <button type="button" className={styles.exportButton} onClick={handleExport}>
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 4v11" />
+              <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+              <path d="M5 20h14" />
+            </svg>
             Выгрузить CSV
           </button>
         </div>
@@ -219,21 +267,26 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th />
-                  <th onClick={() => toggleSort('date')}>Дата/время</th>
-                  <th onClick={() => toggleSort('motorcade')}>Автоколонна</th>
-                  <th onClick={() => toggleSort('vehicle')}>ТС</th>
-                  <th onClick={() => toggleSort('driver')}>Водитель</th>
-                  <th>Маршрут</th>
-                  <th>Адрес</th>
-                  <th>Причина</th>
-                  <th>Виновник</th>
-                  <th onClick={() => toggleSort('damage')}>Ущерб</th>
-                  <th onClick={() => toggleSort('compensated')}>Возмещение</th>
-                  <th>Статус</th>
-                  <th>Страховая</th>
-                  <th>Пострадавшие</th>
-                  {showBaseColumn && <th>База</th>}
+                  <th scope="col" aria-label="Подробности" />
+                  <SortHeader label="Дата/время" column="date" {...sortProps} />
+                  <SortHeader label="Автоколонна" column="motorcade" {...sortProps} />
+                  <SortHeader label="ТС" column="vehicle" {...sortProps} />
+                  <SortHeader label="Водитель" column="driver" {...sortProps} />
+                  <th scope="col">Маршрут</th>
+                  <th scope="col">Адрес</th>
+                  <th scope="col">Причина</th>
+                  <th scope="col">Виновник</th>
+                  <SortHeader label="Ущерб" column="damage" align="right" {...sortProps} />
+                  <SortHeader
+                    label="Возмещение"
+                    column="compensated"
+                    align="right"
+                    {...sortProps}
+                  />
+                  <th scope="col">Статус</th>
+                  <th scope="col">Страховая</th>
+                  <th scope="col">Пострадавшие</th>
+                  {showBaseColumn && <th scope="col">База</th>}
                 </tr>
               </thead>
               <tbody>
@@ -242,27 +295,35 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                   const hasDetails = Boolean(row.ACCIDENT_DETAILS || row.ACCIDENT_COMMENT)
                   return (
                     <Fragment key={row.ACCIDENT_ID}>
-                      <tr>
+                      <tr className={isExpanded ? styles.rowExpanded : undefined}>
                         <td>
                           {hasDetails && (
                             <button
                               type="button"
                               className={styles.expandButton}
                               onClick={() => setExpandedId(isExpanded ? null : row.ACCIDENT_ID)}
-                              aria-label="Показать подробности"
+                              aria-label={
+                                isExpanded ? 'Скрыть подробности' : 'Показать подробности'
+                              }
+                              aria-expanded={isExpanded}
                             >
                               {isExpanded ? '−' : '+'}
                             </button>
                           )}
                         </td>
-                        <td>
+                        <td className={styles.muted}>
                           {formatDate(row.ACCIDENT_DATE)} {formatTime(row.ACCIDENT_TIME)}
                         </td>
                         <td>{getMotorcadeName(row)}</td>
                         <td>{vehicleLabel(row)}</td>
                         <td>{row.DRIVER_NAME || '—'}</td>
-                        <td>{row.ROUTE_NAME || '—'}</td>
-                        <td>{row.ACCIDENT_ADDRESS || '—'}</td>
+                        <td className={styles.muted}>{row.ROUTE_NAME || '—'}</td>
+                        <td
+                          className={`${styles.muted} ${styles.address}`}
+                          title={row.ACCIDENT_ADDRESS || undefined}
+                        >
+                          {row.ACCIDENT_ADDRESS || '—'}
+                        </td>
                         <td>
                           {row.ACCIDENT_CAUSE_NAME || '—'}
                           <span className={styles.causeTag}>
@@ -270,9 +331,21 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                           </span>
                         </td>
                         <td>{row.ACCIDENT_CAUSER_NAME || '—'}</td>
-                        <td>{formatCurrency(row.ACCIDENT_DAMAGE)}</td>
-                        <td>{formatCurrency(row.ACCIDENT_COMPENSATED_DAMAGE)}</td>
-                        <td>{row.ACCIDENT_STATUS_NAME || '—'}</td>
+                        <td className={styles.right}>{formatCurrency(row.ACCIDENT_DAMAGE)}</td>
+                        <td className={`${styles.right} ${styles.muted}`}>
+                          {formatCurrency(row.ACCIDENT_COMPENSATED_DAMAGE)}
+                        </td>
+                        <td>
+                          {row.ACCIDENT_STATUS_NAME ? (
+                            <span
+                              className={`${styles.status} ${row.ACCIDENT_IS_CASE_CLOSED ? '' : styles.statusOpen}`}
+                            >
+                              {row.ACCIDENT_STATUS_NAME}
+                            </span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
                         <td>{row.INSURANCE_COMPANY_NAME || '—'}</td>
                         <td>{row.ACCIDENT_VICTIM || '—'}</td>
                         {showBaseColumn && (

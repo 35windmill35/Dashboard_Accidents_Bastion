@@ -183,7 +183,7 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
       title: 'Динамика ущерба и возмещения по месяцам',
       legend: [
         { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.teal },
+        { label: 'Возмещение', color: COLOR.compensation },
       ],
       bodyHeight: DAMAGE_CHART_HEIGHT,
       drawBody: groupedBarChartBody(
@@ -195,7 +195,7 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
         })),
         {
           height: DAMAGE_CHART_HEIGHT,
-          colors: [COLOR.accent, COLOR.teal],
+          colors: [COLOR.accent, COLOR.compensation],
           formatTick: formatMoneyAxis,
           labelLines: 1,
         }

@@ -1,0 +1,52 @@
+.tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-tooltip-bg);
+  border: 1px solid var(--color-border-strong);
+  box-shadow: var(--shadow-lg);
+  font-size: 12px;
+  color: var(--color-text);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: tip-in 0.18s ease-out;
+}
+
+.title {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.swatch {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+
+.name {
+  flex: 1;
+  margin-right: 14px;
+  color: var(--color-text-secondary);
+}
+
+.value {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

@@ -21,6 +21,14 @@ export const PdfGeneratingOverlay = observer(function PdfGeneratingOverlay() {
         <div className={styles.subtitle}>
           {hasProgress ? `Раздел ${current} из ${total}` : 'Подготовка разделов'}
         </div>
+        {hasProgress && (
+          <div className={styles.progress} aria-hidden="true">
+            <span
+              className={styles.progressFill}
+              style={{ width: `${(current / total) * 100}%` }}
+            />
+          </div>
+        )}
       </div>
     </div>
   )

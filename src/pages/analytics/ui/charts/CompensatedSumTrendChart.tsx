@@ -1,18 +1,30 @@
 import {
   CartesianGrid,
-  Line,
-  LineChart,
+  Area,
+  AreaChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  LINE_CURSOR,
+  activeLineDot,
+  lineDot,
+} from '@/shared/ui/chart/chartStyle'
+import { AreaGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
-import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { CHART_MARGIN, Y_AXIS_WIDTH, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
+import { CHART_MARGIN, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { AnalyticsData } from '../../model/analyticsData'
 
@@ -24,6 +36,7 @@ interface Props {
 
 // Динамика суммы возмещения по месяцам — две линии (по автоколонне).
 export function CompensatedSumTrendChart({ data, rowsA, rowsB }: Props) {
+  const gradientId = useGradientId()
   const chartData = data.trendMonths.map((ym, index) => ({
     ym,
     label: formatMonthShortLabel(ym),
@@ -51,6 +64,7 @@ export function CompensatedSumTrendChart({ data, rowsA, rowsB }: Props) {
     <ChartCard
       table={table}
       title="Динамика суммы возмещения по месяцам"
+      subtitle={withCurrencyUnit('Суммы по месяцам')}
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },
         { label: data.b.name, color: COMPARISON_COLOR_B },
@@ -58,7 +72,7 @@ export function CompensatedSumTrendChart({ data, rowsA, rowsB }: Props) {
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <AreaChart
             data={chartData}
             margin={CHART_MARGIN}
             onClick={(state) => {
@@ -67,40 +81,45 @@ export function CompensatedSumTrendChart({ data, rowsA, rowsB }: Props) {
               if (point) handleClick(point.ym)
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              tickFormatter={formatCompactCurrency}
-              width={Y_AXIS_WIDTH}
-            />
+            <defs>
+              <AreaGradient id={`${gradientId}-0`} color={COMPARISON_COLOR_A} strong={false} />
+              <AreaGradient id={`${gradientId}-1`} color={COMPARISON_COLOR_B} strong={false} />
+            </defs>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="label" {...X_AXIS_PROPS} {...xAxisProps} />
+            <YAxis {...Y_AXIS_PROPS} tickFormatter={formatCompactCurrency} />
             <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
-              contentStyle={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                color: 'var(--color-text)',
-              }}
+              cursor={LINE_CURSOR}
+              content={
+                <ChartTooltip
+                  valueFormatter={formatCurrency}
+                  titleFormatter={(point) => formatMonthLabel(Number(point?.ym))}
+                />
+              }
             />
-            <Line
+            <Area
+              activeDot={activeLineDot(COMPARISON_COLOR_A)}
+              fill={`url(#${gradientId}-0)`}
+              {...ANIMATION}
               type="monotone"
               dataKey="a"
               name={data.a.name}
               stroke={COMPARISON_COLOR_A}
               strokeWidth={2}
-              dot={{ r: 3, cursor: 'pointer' }}
+              dot={lineDot(COMPARISON_COLOR_A)}
             />
-            <Line
+            <Area
+              activeDot={activeLineDot(COMPARISON_COLOR_B)}
+              fill={`url(#${gradientId}-1)`}
+              {...ANIMATION}
               type="monotone"
               dataKey="b"
               name={data.b.name}
               stroke={COMPARISON_COLOR_B}
               strokeWidth={2}
-              dot={{ r: 3, cursor: 'pointer' }}
+              dot={lineDot(COMPARISON_COLOR_B)}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </ChartCard>

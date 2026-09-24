@@ -6,6 +6,10 @@ import { authStore } from '@/entities/user/model/authStore'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { ErrorState } from '@/shared/ui/ErrorState/ErrorState'
 import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
+import { formatPeriodLabel } from '@/entities/accident/lib/period'
+import { formatNumber } from '@/shared/lib/formatters'
+import { PageHeader } from '@/widgets/page-header/PageHeader'
+import { SectionDivider } from '@/shared/ui/SectionDivider/SectionDivider'
 import { computeMotorcade } from './model/motorcadeData'
 import { MotorcadeKpiRow } from './ui/MotorcadeKpiRow'
 import { MotorcadeCharts } from './ui/MotorcadeCharts'
@@ -65,10 +69,16 @@ export const MotorcadePage = observer(function MotorcadePage() {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.title}>{selectedOption.name}</h1>
+      <PageHeader
+        eyebrow="Статистика по автоколонне"
+        title={selectedOption.name}
+        meta={[formatPeriodLabel(period), `${formatNumber(data.kpi.count)} ДТП за период`]}
+      />
 
       <MotorcadeKpiRow data={data} period={period} />
+      <SectionDivider title="Динамика и структура" />
       <MotorcadeCharts data={data} period={period} />
+      <SectionDivider title="Детализация" />
       <MotorcadeTables data={data} period={period} />
     </div>
   )

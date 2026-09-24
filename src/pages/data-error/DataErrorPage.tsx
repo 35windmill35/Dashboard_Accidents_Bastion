@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { authStore } from '@/entities/user/model/authStore'
-import styles from './DataErrorPage.module.css'
+import { StatusScreen } from '@/shared/ui/StatusScreen/StatusScreen'
 
 interface DataErrorPageProps {
   message?: string
@@ -23,16 +23,13 @@ export function DataErrorPage({
   }
 
   return (
-    <div className={styles.wrapper}>
-      <p className={styles.message}>{message}</p>
-      <div className={styles.actions}>
-        <button type="button" onClick={onRetry}>
-          Повторить
-        </button>
-        <button type="button" onClick={handleLogout}>
-          Выйти
-        </button>
-      </div>
-    </div>
+    <StatusScreen tone="error" title="Данные не загрузились" message={message}>
+      <button type="button" onClick={onRetry}>
+        Повторить
+      </button>
+      <button type="button" onClick={handleLogout}>
+        Выйти
+      </button>
+    </StatusScreen>
   )
 }

@@ -12,25 +12,55 @@ interface OverviewTablesProps {
 }
 
 const driverColumns: DataTableColumn<DriverAggregate>[] = [
-  { key: 'name', label: 'Водитель', render: (r) => r.name },
-  { key: 'count', label: 'ДТП', align: 'center', render: (r) => formatNumber(r.count) },
-  { key: 'sumDamage', label: 'Ущерб', align: 'center', render: (r) => formatCurrency(r.sumDamage) },
+  { key: 'name', label: 'Водитель', grow: true, render: (r) => r.name, title: (r) => r.name },
+  {
+    key: 'count',
+    label: 'ДТП',
+    align: 'right',
+    render: (r) => formatNumber(r.count),
+  },
+  {
+    key: 'sumDamage',
+    label: 'Ущерб',
+    align: 'right',
+    render: (r) => formatCurrency(r.sumDamage),
+  },
 ]
 
 const vehicleColumns: DataTableColumn<VehicleAggregate>[] = [
-  { key: 'name', label: 'ТС', render: (r) => r.name },
-  { key: 'count', label: 'ДТП', align: 'center', render: (r) => formatNumber(r.count) },
-  { key: 'sumDamage', label: 'Ущерб', align: 'center', render: (r) => formatCurrency(r.sumDamage) },
+  { key: 'name', label: 'ТС', grow: true, render: (r) => r.name, title: (r) => r.name },
+  {
+    key: 'count',
+    label: 'ДТП',
+    align: 'right',
+    render: (r) => formatNumber(r.count),
+  },
+  {
+    key: 'sumDamage',
+    label: 'Ущерб',
+    align: 'right',
+    render: (r) => formatCurrency(r.sumDamage),
+  },
 ]
 
 const causeColumns: DataTableColumn<CauseSlice>[] = [
-  { key: 'label', label: 'Категория', render: (r) => r.label },
-  { key: 'count', label: 'ДТП', align: 'center', render: (r) => formatNumber(r.count) },
-  { key: 'sumDamage', label: 'Ущерб', align: 'center', render: (r) => formatCurrency(r.sumDamage) },
+  { key: 'label', label: 'Категория', grow: true, wrap: true, render: (r) => r.label },
+  {
+    key: 'count',
+    label: 'ДТП',
+    align: 'right',
+    render: (r) => formatNumber(r.count),
+  },
+  {
+    key: 'sumDamage',
+    label: 'Ущерб',
+    align: 'right',
+    render: (r) => formatCurrency(r.sumDamage),
+  },
   {
     key: 'sumCompensated',
     label: 'Возмещение',
-    align: 'center',
+    align: 'right',
     render: (r) => formatCurrency(r.sumCompensated),
   },
 ]
@@ -45,6 +75,7 @@ export function OverviewTables({ data, period }: OverviewTablesProps) {
         columns={driverColumns}
         rows={data.driversRanking}
         getRowKey={(r) => r.key}
+        showRank
         onRowClick={(r) => drilldownStore.open(`${r.name} — ${periodLabel}`, r.rows)}
       />
       <DataTable
@@ -52,16 +83,21 @@ export function OverviewTables({ data, period }: OverviewTablesProps) {
         columns={vehicleColumns}
         rows={data.vehiclesRanking}
         getRowKey={(r) => r.key}
+        showRank
         onRowClick={(r) => drilldownStore.open(`${r.name} — ${periodLabel}`, r.rows)}
       />
-      <DataTable
-        title="Ущерб и возмещение по категориям причин"
-        columns={causeColumns}
-        rows={data.causeSlices}
-        getRowKey={(r) => r.category}
-        initialLimit={5}
-        onRowClick={(r) => drilldownStore.open(`${r.label} — ${periodLabel}`, r.rows)}
-      />
+      {/* Три суммы в строке не помещаются в треть ширины без обрезки —
+          таблица причин занимает отдельный ряд на всю ширину */}
+      <div className={styles.fullRow}>
+        <DataTable
+          title="Ущерб и возмещение по категориям причин"
+          columns={causeColumns}
+          rows={data.causeSlices}
+          getRowKey={(r) => r.category}
+          initialLimit={5}
+          onRowClick={(r) => drilldownStore.open(`${r.label} — ${periodLabel}`, r.rows)}
+        />
+      </div>
     </div>
   )
 }

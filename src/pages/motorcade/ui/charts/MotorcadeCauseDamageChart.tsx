@@ -1,15 +1,22 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  BAR_CURSOR,
+  BAR_RADIUS,
+  BAR_SIZE_GROUPED,
+} from '@/shared/ui/chart/chartStyle'
+import { BarGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
-import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
-import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import {
-  CHART_MARGIN,
-  Y_AXIS_WIDTH,
-  barPayload,
-  useCategoryXAxis,
-} from '@/shared/lib/rechartsHelpers'
+import { COLOR_DAMAGE, COLOR_COMPENSATION } from '@/shared/lib/chartColors'
+import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
+import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { CauseSlice } from '@/entities/accident/lib/metrics'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
@@ -21,6 +28,7 @@ interface Props {
 // Сумма ущерба/возмещения по категориям причин для одной автоколонны —
 // та же логика, что и на "Обзоре" (см. CauseDamageChart), но по её данным.
 export function MotorcadeCauseDamageChart({ data, period }: Props) {
+  const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)
   const chartData = data.causeSlices.filter((s) => s.count > 0)
 
@@ -49,44 +57,43 @@ export function MotorcadeCauseDamageChart({ data, period }: Props) {
     <ChartCard
       table={table}
       title="Ущерб и возмещение по категориям причин"
+      subtitle={withCurrencyUnit('Суммы за период')}
       legend={[
-        { label: 'Ущерб', color: CHART_1 },
-        { label: 'Возмещение', color: CHART_2 },
+        { label: 'Ущерб', color: COLOR_DAMAGE },
+        { label: 'Возмещение', color: COLOR_COMPENSATION },
       ]}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={CHART_MARGIN}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              tickFormatter={formatCompactCurrency}
-              width={Y_AXIS_WIDTH}
-            />
+            <defs>
+              <BarGradient id={`${gradientId}-0`} color={COLOR_DAMAGE} />
+              <BarGradient id={`${gradientId}-1`} color={COLOR_COMPENSATION} />
+            </defs>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="label" {...X_AXIS_PROPS} {...xAxisProps} />
+            <YAxis {...Y_AXIS_PROPS} tickFormatter={formatCompactCurrency} />
             <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
-              contentStyle={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                color: 'var(--color-text)',
-              }}
+              cursor={BAR_CURSOR}
+              content={<ChartTooltip valueFormatter={formatCurrency} />}
             />
             <Bar
+              maxBarSize={BAR_SIZE_GROUPED}
+              {...ANIMATION}
               dataKey="sumDamage"
               name="Ущерб"
-              fill={CHART_1}
-              radius={[4, 4, 0, 0]}
+              fill={`url(#${gradientId}-0)`}
+              radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => openCause(barPayload<CauseSlice>(entry).category)}
             />
             <Bar
+              maxBarSize={BAR_SIZE_GROUPED}
+              {...ANIMATION}
               dataKey="sumCompensated"
               name="Возмещение"
-              fill={CHART_2}
-              radius={[4, 4, 0, 0]}
+              fill={`url(#${gradientId}-1)`}
+              radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => openCause(barPayload<CauseSlice>(entry).category)}
             />

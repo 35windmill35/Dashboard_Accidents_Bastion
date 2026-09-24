@@ -112,3 +112,9 @@ export function formatTime(value: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) return '—'
   return new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' }).format(date)
 }
+
+// Подпись с единицей измерения для пояснений под заголовком графика:
+// «Суммы за период, ₸» (без знака, если валюта неизвестна или смешанная).
+export function withCurrencyUnit(text: string): string {
+  return currencySuffix ? `${text}, ${currencySuffix}` : text
+}

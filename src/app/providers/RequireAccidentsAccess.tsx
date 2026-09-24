@@ -3,11 +3,10 @@ import { observer } from 'mobx-react-lite'
 import { Navigate, useLocation } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
-import { Skeleton } from '@/shared/ui/Skeleton/Skeleton'
+import { StatusScreen } from '@/shared/ui/StatusScreen/StatusScreen'
 import { NoAccessPage } from '@/pages/no-access/NoAccessPage'
 import { DataErrorPage } from '@/pages/data-error/DataErrorPage'
 import { AppShell } from '@/widgets/app-shell/AppShell'
-import styles from './RequireAccidentsAccess.module.css'
 
 interface RequireAccidentsAccessProps {
   children?: ReactNode
@@ -23,7 +22,8 @@ interface RequireAccidentsAccessProps {
 // отказ шагов 2/3 контент не блокирует — баннер DataStatusBanner в AppShell.
 //
 // Сайдбар и шапка с фильтрами (AppShell) оборачивают только готовый
-// контент — экраны загрузки/ошибки/отказа их не показывают.
+// контент — экраны загрузки/ошибки/отказа их не показывают; сами эти экраны
+// — общий StatusScreen (карточка с логотипом, как экран входа).
 export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
   children,
 }: RequireAccidentsAccessProps) {
@@ -46,10 +46,12 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
   // "Повторить") экран не прячет — только самая первая.
   if (authStore.isLoggingIn || authStore.allowedDbIndexes === null) {
     return (
-      <div className={styles.loading}>
-        <p className={styles.progress}>Проверяем доступ к базам…</p>
-        <Skeleton height={32} count={4} />
-      </div>
+      <StatusScreen
+        tone="loading"
+        title="Проверяем доступ"
+        message="Проверяем права на дашборд ДТП по каждой базе…"
+        progress={null}
+      />
     )
   }
 
@@ -67,15 +69,18 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
   }
 
   if (accidentsStore.isInitialLoad) {
+    const total = accidentsStore.totalCount
     return (
-      <div className={styles.loading}>
-        <p className={styles.progress} role="status">
-          {accidentsStore.totalCount > 0
-            ? `Загружено баз ${accidentsStore.loadedCount} из ${accidentsStore.totalCount}`
-            : 'Загружаем данные…'}
-        </p>
-        <Skeleton height={32} count={4} />
-      </div>
+      <StatusScreen
+        tone="loading"
+        title="Загружаем данные"
+        message={
+          total > 0
+            ? `Загружено баз ${accidentsStore.loadedCount} из ${total}`
+            : 'Загружаем данные…'
+        }
+        progress={total > 0 ? accidentsStore.loadedCount / total : null}
+      />
     )
   }
 

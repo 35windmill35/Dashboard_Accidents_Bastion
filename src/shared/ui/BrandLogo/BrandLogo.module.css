@@ -1,0 +1,29 @@
+.tile {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff; /* фирменная плитка — белая в обеих темах */
+}
+
+.svg {
+  display: block;
+  overflow: visible;
+}
+
+.hazard {
+  fill: var(--color-hazard);
+  stroke: none;
+  filter: drop-shadow(0 0 3px var(--color-hazard));
+  animation: blink 1.1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.12;
+  }
+}

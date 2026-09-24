@@ -1,13 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { KpiCard } from '@/widgets/kpi-card/KpiCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
-import {
-  formatCurrency,
-  formatNumber,
-  formatPercent,
-  formatDelta,
-  calcDelta,
-} from '@/shared/lib/formatters'
+import { formatDelta, calcDelta } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import {
   rowsNotFullyCompensated,
@@ -48,7 +42,8 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
     <div className={styles.row}>
       <KpiCard
         label="Всего ДТП"
-        value={formatNumber(kpi.count)}
+        value={kpi.count}
+        kind="count"
         delta={countDelta}
         deltaHigherIsBetter={false}
         tooltip={`Общее число ДТП за период. Δ к прошлому периоду: ${formatDelta(countDelta)}`}
@@ -57,7 +52,8 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
       />
       <KpiCard
         label="Общая сумма ущерба"
-        value={formatCurrency(kpi.sumDamage)}
+        value={kpi.sumDamage}
+        kind="currency"
         delta={previousKpi ? calcDelta(kpi.sumDamage, previousKpi.sumDamage) : null}
         deltaHigherIsBetter={false}
         tooltip="Совокупный финансовый эффект ДТП — основа ремонтного бюджета"
@@ -66,7 +62,8 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
       />
       <KpiCard
         label="Сумма возмещения"
-        value={formatCurrency(kpi.sumCompensated)}
+        value={kpi.sumCompensated}
+        kind="currency"
         delta={previousKpi ? calcDelta(kpi.sumCompensated, previousKpi.sumCompensated) : null}
         tooltip="Сколько из ущерба фактически покрыто виновником/страховой"
         onOpenList={() => open('ДТП с возмещением', rowsWithCompensation(periodRows))}
@@ -74,7 +71,8 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
       />
       <KpiCard
         label="Доля возмещения"
-        value={formatPercent(kpi.compensationShare)}
+        value={kpi.compensationShare}
+        kind="percent"
         delta={previousKpi ? calcDelta(kpi.compensationShare, previousKpi.compensationShare) : null}
         tooltip="Возмещено ÷ ущерб. Низкое значение — сигнал юридическому отделу"
         onOpenList={() =>
@@ -84,7 +82,8 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
       />
       <KpiCard
         label="Средний ущерб на 1 ДТП"
-        value={formatCurrency(kpi.averageDamage)}
+        value={kpi.averageDamage}
+        kind="currency"
         delta={previousKpi ? calcDelta(kpi.averageDamage, previousKpi.averageDamage) : null}
         deltaHigherIsBetter={false}
         tooltip="Тяжесть одного инцидента: ущерб ÷ число ДТП с ущербом"

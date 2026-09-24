@@ -8,18 +8,25 @@ import {
   YAxis,
   Cell,
 } from 'recharts'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  BAR_CURSOR,
+  BAR_RADIUS,
+  BAR_SIZE_SINGLE,
+} from '@/shared/ui/chart/chartStyle'
+import { BarGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
-import { CHART_1 } from '@/shared/lib/chartColors'
+import { COLOR_COUNT } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
-import {
-  CHART_MARGIN,
-  Y_AXIS_WIDTH,
-  barPayload,
-  useCategoryXAxis,
-} from '@/shared/lib/rechartsHelpers'
+import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -31,6 +38,7 @@ interface Props {
 // Кол-во ДТП по автоколоннам за период, включая псевдо-автоколонну "Не
 // указана" — это единственный экран, где она участвует в графиках.
 export function MotorcadeCountChart({ data, period }: Props) {
+  const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)
   const { containerRef, xAxisProps } = useCategoryXAxis(
     data.motorcadeAgg.map((a) => a.name),
@@ -43,35 +51,23 @@ export function MotorcadeCountChart({ data, period }: Props) {
   }
 
   return (
-    <ChartCard
-      table={table}
-      title="ДТП по автоколоннам"
-      legend={[{ label: 'ДТП', color: CHART_1 }]}
-    >
+    <ChartCard table={table} title="ДТП по автоколоннам" subtitle={'Количество ДТП за период'}>
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data.motorcadeAgg} margin={CHART_MARGIN}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis dataKey="name" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              allowDecimals={false}
-              width={Y_AXIS_WIDTH}
-            />
-            <Tooltip
-              formatter={(value) => formatNumber(Number(value))}
-              contentStyle={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                color: 'var(--color-text)',
-              }}
-            />
+            <defs>
+              <BarGradient id={`${gradientId}-0`} color={COLOR_COUNT} />
+            </defs>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="name" {...X_AXIS_PROPS} {...xAxisProps} />
+            <YAxis {...Y_AXIS_PROPS} allowDecimals={false} />
+            <Tooltip cursor={BAR_CURSOR} content={<ChartTooltip />} />
             <Bar
+              maxBarSize={BAR_SIZE_SINGLE}
+              {...ANIMATION}
               dataKey="count"
               name="ДТП"
-              radius={[4, 4, 0, 0]}
+              radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => {
                 const agg = barPayload<MotorcadeAggregate>(entry)
@@ -80,7 +76,7 @@ export function MotorcadeCountChart({ data, period }: Props) {
               }}
             >
               {data.motorcadeAgg.map((agg) => (
-                <Cell key={agg.key} fill={CHART_1} />
+                <Cell key={agg.key} fill={`url(#${gradientId}-0)`} />
               ))}
             </Bar>
           </BarChart>

@@ -1,11 +1,14 @@
+/* Две колонки карточек графиков. Каждая карточка сама занимает две
+   строки сетки (шапка + график, subgrid — см. ChartCard), поэтому
+   grid-auto-rows здесь не задавать. Зазор между карточками — 16px. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
 }
 
 @media (max-width: 960px) {
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

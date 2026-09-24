@@ -4,7 +4,9 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
 import { authStore } from '@/entities/user/model/authStore'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
-import type { Period } from '@/entities/accident/lib/period'
+import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
+import { PageHeader } from '@/widgets/page-header/PageHeader'
+import { SectionDivider } from '@/shared/ui/SectionDivider/SectionDivider'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import { ErrorState } from '@/shared/ui/ErrorState/ErrorState'
 import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
@@ -87,8 +89,15 @@ export const AnalyticsPage = observer(function AnalyticsPage() {
 
   return (
     <div className={styles.page}>
+      <PageHeader
+        eyebrow="Сравнительная аналитика"
+        title="Аналитика"
+        meta={[formatPeriodLabel(period), `${data.a.name} и ${data.b.name}`]}
+      />
       <AnalyticsKpiGroups data={data} period={period} />
+      <SectionDivider title="Динамика и структура" />
       <AnalyticsCharts data={data} period={period} rowsA={rowsA} rowsB={rowsB} />
+      <SectionDivider title="Детализация" />
       <AnalyticsTables data={data} period={period} />
     </div>
   )

@@ -4,6 +4,27 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { formatNumber } from '@/shared/lib/formatters'
 import styles from './DataStatusBanner.module.css'
 
+// Значок предупреждения (JSX-константа, а не компонент — файл экспортирует
+// только DataStatusBanner)
+const warningIcon = (
+  <svg
+    className={styles.icon}
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 3.5 21.5 20h-19Z" />
+    <path d="M12 10v4.5" />
+    <path d="M12 17.2v.3" />
+  </svg>
+)
+
 // Несбрасываемые предупреждения о полноте данных — над контентом всех
 // трёх экранов (ТЗ §1.2, §8):
 // - часть баз не прошла проверку права (шаг 2) или не отдала данные (шаг 3)
@@ -26,7 +47,10 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
     <div className={styles.stack}>
       {unavailable.length > 0 && (
         <div className={styles.banner} role="status">
-          <span>Данные баз: {unavailable.join(', ')} недоступны, показатели неполные.</span>
+          {warningIcon}
+          <span className={styles.text}>
+            Данные баз: {unavailable.join(', ')} недоступны, показатели неполные.
+          </span>
           <button
             type="button"
             className={styles.retry}
@@ -42,7 +66,8 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
 
       {incomplete.length > 0 && (
         <div className={styles.banner} role="status">
-          <span>
+          {warningIcon}
+          <span className={styles.text}>
             Загружены не все записи:{' '}
             {incomplete
               .map(
@@ -65,7 +90,8 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
 
       {accidentsStore.hasMixedCurrencies && (
         <div className={styles.banner} role="status">
-          <span>
+          {warningIcon}
+          <span className={styles.text}>
             В данных несколько валют ({currencies.join(', ')}). Суммы ущерба и возмещения посчитаны
             без пересчёта курсов и не сопоставимы между собой.
           </span>

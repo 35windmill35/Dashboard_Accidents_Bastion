@@ -1,6 +1,6 @@
 import { KpiCard } from '@/widgets/kpi-card/KpiCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
-import { formatCurrency, formatNumber, formatPercent, calcDelta } from '@/shared/lib/formatters'
+import { calcDelta } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { rowsNotFullyCompensated, rowsWithDamage } from '@/entities/accident/lib/metrics'
@@ -13,7 +13,8 @@ interface AnalyticsKpiGroupsProps {
   period: Period
 }
 
-// Две группы KPI, визуально разделённые по цвету: слева — Автоколонна 1
+// Две группы KPI (по эталону — заголовок группы с цветной точкой серии,
+// тем же цветом, что автоколонна на графиках): слева — Автоколонна 1
 // без дельты, справа — Автоколонна 2 с относительной разницей к первой
 // (см. KpiCard.deltaLabel). Дельта показывает разницу между автоколоннами,
 // а не с прошлым периодом — поэтому previousKpi здесь не участвует.
@@ -57,14 +58,24 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
     compareTo ? calcDelta(value, otherValue) : null
 
   return (
-    <div className={styles.group} style={{ borderTopColor: color }}>
-      <div className={styles.groupTitle} style={{ color }}>
-        {side.name}
+    <section className={styles.group} aria-label={side.name}>
+      <div className={styles.groupHeader}>
+        <span
+          className={styles.groupDot}
+          style={{ background: color, boxShadow: `0 0 0 4px ${color}26` }}
+          aria-hidden="true"
+        />
+        <span className={styles.groupTitle}>{side.name}</span>
+        <span className={styles.groupNote}>
+          {compareTo ? `сравнение с ${compareTo.name}` : 'базовая для сравнения'}
+        </span>
       </div>
       <div className={styles.groupRow}>
         <KpiCard
+          compact
           label="Количество ДТП"
-          value={formatNumber(kpi.count)}
+          value={kpi.count}
+          kind="count"
           delta={compareTo ? delta(kpi.count, compareTo.scope.kpi.count) : undefined}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
@@ -72,8 +83,10 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           onOpenList={() => onOpen('Все ДТП', rows)}
         />
         <KpiCard
+          compact
           label="Сумма ущерба"
-          value={formatCurrency(kpi.sumDamage)}
+          value={kpi.sumDamage}
+          kind="currency"
           delta={compareTo ? delta(kpi.sumDamage, compareTo.scope.kpi.sumDamage) : undefined}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
@@ -81,8 +94,10 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           onOpenList={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
         />
         <KpiCard
+          compact
           label="Доля возмещения"
-          value={formatPercent(kpi.compensationShare)}
+          value={kpi.compensationShare}
+          kind="percent"
           delta={
             compareTo
               ? delta(kpi.compensationShare, compareTo.scope.kpi.compensationShare)
@@ -93,8 +108,10 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           onOpenList={() => onOpen('ДТП, возмещённые не полностью', rowsNotFullyCompensated(rows))}
         />
         <KpiCard
+          compact
           label="Средний ущерб на 1 ДТП"
-          value={formatCurrency(kpi.averageDamage)}
+          value={kpi.averageDamage}
+          kind="currency"
           delta={
             compareTo ? delta(kpi.averageDamage, compareTo.scope.kpi.averageDamage) : undefined
           }
@@ -104,6 +121,6 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           onOpenList={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
         />
       </div>
-    </div>
+    </section>
   )
 }

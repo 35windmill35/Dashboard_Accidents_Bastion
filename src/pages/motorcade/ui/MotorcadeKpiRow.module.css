@@ -1,17 +1,18 @@
 .row {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* 8 карточек — 4 столбца × 2 ряда, как до редизайна */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-3);
 }
 
 @media (max-width: 1200px) {
   .row {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 720px) {
   .row {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

@@ -3,79 +3,155 @@
  * хардкод цветов не добавлять — это единственный файл, который правится
  * при доводке темы.
  *
- * Тема переключается атрибутом data-theme="dark"|"light" на <html>.
- * Без переключателя в UI тема берётся из системных настроек
- * (prefers-color-scheme), по умолчанию тёмная.
+ * Тема — атрибут data-theme="dark"|"light" на <html>. По ТЗ она берётся
+ * только из настроек браузера (prefers-color-scheme), переключателя в UI
+ * нет; по умолчанию тёмная. Атрибут ставит скрипт в index.html ещё до
+ * загрузки бандла (без вспышки не той темы), дальше за сменой системной
+ * темы следит shared/lib/theme/themeStore.ts.
+ *
+ * Палитра — по эталону «Дашборд ДТП новый дизайн»: тёмно-синий фон,
+ * синий акцент, мягкие полупрозрачные линии. Имена старых токенов
+ * (--color-bg, --color-surface, --color-border…) сохранены — все виджеты
+ * подхватывают новую палитру без правок; новые токены добавлены ниже них.
+ *
+ * Отличия от эталона, сделанные сознательно (доступность, ТЗ §8):
+ * - --color-text-faint светлее эталонного (#65718A давал 3.5:1 к карточке
+ *   на мелком 11-px тексте) — теперь не ниже 4.5:1 в обеих темах;
+ * - залитые кнопки с белым текстом — только на --color-accent-fill
+ *   (белый на --color-accent в тёмной теме — 3.3:1, мало для 13-px).
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap');
 
 :root,
 [data-theme='dark'] {
-  --color-bg: #0a0a0b;
-  --color-surface: #17171a;
-  --color-surface-2: #1f1f23;
-  --color-border: #2a2a2f;
-  --color-text: #f4f4f5;
-  --color-text-secondary: #97979f;
-  --color-accent: #f5a623;
-  --color-positive: #22c55e;
-  --color-negative: #ef4444;
+  color-scheme: dark;
 
-  /* Цвет текста поверх плашек с фоном --color-accent */
-  --color-on-accent: #1a1206;
+  /* Базовые поверхности */
+  --color-bg: #0a0e16;
+  --color-sidebar-bg: rgb(12 17 27 / 92%);
+  --color-header-bg: rgb(10 14 22 / 76%);
+  --color-surface: #131a27; /* карточка: верх градиента */
+  --color-surface-end: #0f1520; /* карточка: низ градиента */
+  --color-surface-2: #192233; /* приподнятая поверхность, hover */
+  --color-input-bg: #0b111b;
+  --color-tooltip-bg: rgb(19 26 39 / 97%);
+  --color-backdrop: rgb(4 7 12 / 62%);
 
-  /* Категориальная палитра графиков (5 слотов, порядок фиксирован —
-     проверено скриптом валидации на CVD-различимость), продублирована в
-     shared/lib/chartColors.ts как JS-константы — Recharts не читает
-     CSS-переменные напрямую. Тёмный вариант шагов. */
-  --color-chart-1: #3987e5;
-  --color-chart-2: #d95926;
-  --color-chart-3: #199e70;
-  --color-chart-4: #c98500;
-  --color-chart-5: #d55181;
+  /* Линии и полупрозрачные подложки */
+  --color-border: rgb(148 170 210 / 10%);
+  --color-border-strong: rgb(148 170 210 / 19%);
+  --color-soft: rgb(148 170 210 / 5%);
+  --color-soft-2: rgb(148 170 210 / 9%);
+
+  /* Текст */
+  --color-title: #f7f9fc;
+  --color-text: #e8edf5;
+  --color-text-secondary: #93a0b5;
+  --color-text-faint: #7d89a1;
+
+  /* Акцент: --color-accent — для текста, иконок, рамок и подсветки;
+     --color-accent-fill — фон залитых кнопок/активных элементов с белым
+     текстом (--color-on-accent) */
+  --color-accent: #3d8bff;
+  --color-accent-hi: #7db2ff;
+  --color-accent-soft: rgb(61 139 255 / 14%);
+  --color-accent-line: rgb(61 139 255 / 42%);
+  --color-accent-fill: #2a62d4;
+  --color-accent-fill-hi: #3a70dc;
+  --color-accent-fill-soft: rgb(42 98 212 / 16%);
+  --color-accent-fill-line: rgb(42 98 212 / 45%);
+  --color-on-accent: #ffffff;
+  --color-glow: rgb(61 139 255 / 11%);
+
+  --color-positive: #3ed598;
+  --color-negative: #ff6b6b;
+  --color-positive-soft: rgb(62 213 152 / 12%);
+  --color-negative-soft: rgb(255 107 107 / 12%);
+
+  /* Предупреждение (неполные данные) — янтарный, отдельно от палитры
+     графиков: не путается с сериями */
+  --color-warning: #f0b44c;
+  --color-warning-soft: rgb(240 180 76 / 10%);
+  --color-warning-line: rgb(240 180 76 / 35%);
+
+  /* Сигнальные «аварийки» в логотипе — одинаковые в обеих темах */
+  --color-hazard: #ff8a00;
+
+  --shadow-card: inset 0 1px 0 rgb(255 255 255 / 4%);
+  --shadow-lift: 0 22px 44px -22px rgb(0 0 0 / 90%), 0 0 0 4px rgb(61 139 255 / 6%);
+  --shadow-lg: 0 40px 100px -30px rgb(0 0 0 / 85%);
+
+  /* Палитра графиков (5 категориальных слотов + «возмещение»),
+     продублирована в shared/lib/chartColors.ts как JS-константы — Recharts
+     не читает CSS-переменные напрямую. Проверена валидатором палитр для
+     фона карточки тёмной темы; порядок слотов фиксирован. */
+  --color-chart-1: #3d8bff;
+  --color-chart-2: #0e9faa;
+  --color-chart-3: #9a6af0;
+  --color-chart-4: #bd8217;
+  --color-chart-5: #d9567e;
+  --color-chart-compensation: #2ba67a;
 }
 
 [data-theme='light'] {
-  --color-bg: #f5f6f8;
+  color-scheme: light;
+
+  --color-bg: #f2f4f8;
+  --color-sidebar-bg: rgb(255 255 255 / 94%);
+  --color-header-bg: rgb(242 244 248 / 82%);
   --color-surface: #ffffff;
-  --color-surface-2: #eef0f3;
-  --color-border: #dcdfe4;
-  --color-text: #17181c;
-  --color-text-secondary: #63676f;
-  --color-accent: #2f5fe0;
-  --color-positive: #1f9d5a;
-  --color-negative: #d93636;
+  --color-surface-end: #fafbfd;
+  --color-surface-2: #edf0f5;
+  --color-input-bg: #ffffff;
+  --color-tooltip-bg: rgb(255 255 255 / 98%);
+  --color-backdrop: rgb(15 23 42 / 35%);
+
+  --color-border: rgb(20 35 65 / 10%);
+  --color-border-strong: rgb(20 35 65 / 17%);
+  --color-soft: rgb(20 35 65 / 3.5%);
+  --color-soft-2: rgb(20 35 65 / 7%);
+
+  --color-title: #0b1220;
+  --color-text: #172033;
+  --color-text-secondary: #566178;
+  --color-text-faint: #6b7589;
+
+  --color-accent: #1d63ed;
+  --color-accent-hi: #1552c9;
+  --color-accent-soft: rgb(29 99 237 / 9%);
+  --color-accent-line: rgb(29 99 237 / 36%);
+  --color-accent-fill: #1f57c8;
+  --color-accent-fill-hi: #1a4aae;
+  --color-accent-fill-soft: rgb(31 87 200 / 8%);
+  --color-accent-fill-line: rgb(31 87 200 / 30%);
   --color-on-accent: #ffffff;
+  --color-glow: rgb(29 99 237 / 7%);
 
-  /* Светлый вариант тех же 5 шагов — три из них ниже 3:1 к белому фону,
-     поэтому на графиках для этих серий обязательны прямые подписи значений
-     или таблица-альтернатива, не полагаться на сам цвет. */
-  --color-chart-1: #2a78d6;
-  --color-chart-2: #eb6834;
-  --color-chart-3: #1baf7a;
-  --color-chart-4: #eda100;
-  --color-chart-5: #e87ba4;
-}
+  /* Зелёный темнее эталонного #0E9F6E (3.4:1 к белому) — 4.5:1 для
+     мелких подписей дельт */
+  --color-positive: #0a7f57;
+  --color-negative: #d42a2a;
+  --color-positive-soft: rgb(10 127 87 / 10%);
+  --color-negative-soft: rgb(212 42 42 / 9%);
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme]) {
-    --color-bg: #f5f6f8;
-    --color-surface: #ffffff;
-    --color-surface-2: #eef0f3;
-    --color-border: #dcdfe4;
-    --color-text: #17181c;
-    --color-text-secondary: #63676f;
-    --color-accent: #2f5fe0;
-    --color-positive: #1f9d5a;
-    --color-negative: #d93636;
-    --color-on-accent: #ffffff;
-    --color-chart-1: #2a78d6;
-    --color-chart-2: #eb6834;
-    --color-chart-3: #1baf7a;
-    --color-chart-4: #eda100;
-    --color-chart-5: #e87ba4;
-  }
+  --color-warning: #9a6200;
+  --color-warning-soft: rgb(214 140 16 / 10%);
+  --color-warning-line: rgb(214 140 16 / 40%);
+
+  --color-hazard: #ff8a00;
+
+  --shadow-card: 0 1px 2px rgb(20 35 65 / 6%);
+  --shadow-lift: 0 18px 40px -20px rgb(20 35 65 / 35%), 0 0 0 4px rgb(29 99 237 / 5%);
+  --shadow-lg: 0 30px 80px -24px rgb(20 35 65 / 35%);
+
+  /* Светлый вариант тех же слотов — все ≥ 3:1 к белому фону карточки */
+  --color-chart-1: #1d63ed;
+  --color-chart-2: #00909c;
+  --color-chart-3: #7b4fd6;
+  --color-chart-4: #a86c0a;
+  --color-chart-5: #c2386a;
+  --color-chart-compensation: #0e8a5f;
 }
 
 :root {
@@ -88,16 +164,26 @@
   --space-6: 32px;
 
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
 
-  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  /* Rubik — один мягкий шрифт со скруглёнными углами на весь интерфейс
+     (выбран заказчиком вместо эталонной пары Barlow + Roboto, которая
+     резала глаза). Кириллица и цифры — из одного шрифта. --font-display
+     оставлен отдельной переменной для крупных заголовков и числа в центре
+     кольца — сейчас тот же Rubik. */
+  --font-sans: 'Rubik', system-ui, 'Segoe UI', sans-serif;
+  --font-display: 'Rubik', system-ui, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* Кривые анимаций эталона */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-slide: cubic-bezier(0.3, 0.9, 0.3, 1);
 }
 
 /* Скроллбар под тему */
 * {
-  scrollbar-color: var(--color-border) var(--color-surface);
+  scrollbar-color: var(--color-border-strong) transparent;
   scrollbar-width: thin;
 }
 
@@ -107,14 +193,14 @@
 }
 
 *::-webkit-scrollbar-track {
-  background: var(--color-surface);
+  background: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-border-strong);
   border-radius: 8px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-secondary);
+  background: var(--color-text-faint);
 }

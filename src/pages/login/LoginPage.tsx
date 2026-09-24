@@ -4,10 +4,14 @@ import { useNavigate } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { formatPhoneInput } from '@/shared/lib/phoneMask'
 import { PasswordInput } from '@/shared/ui/PasswordInput/PasswordInput'
+import { BrandLogo } from '@/shared/ui/BrandLogo/BrandLogo'
 import styles from './LoginPage.module.css'
 
 // Регистрацию не делаем — у заказчика своя форма, поэтому ссылки на
 // /register здесь нет.
+//
+// Оформление — по эталону: карточка с градиентом и тенью на фоне с синим
+// свечением, логотип, узкий заголовок.
 export const LoginPage = observer(function LoginPage() {
   const navigate = useNavigate()
   const [phone, setPhone] = useState('')
@@ -32,7 +36,11 @@ export const LoginPage = observer(function LoginPage() {
   return (
     <div className={styles.wrapper}>
       <form className={styles.form} onSubmit={handleSubmit}>
-        <h1 className={styles.title}>Дашборд ДТП</h1>
+        <div className={styles.brand}>
+          <BrandLogo size={56} />
+          <h1 className={styles.title}>Дашборд ДТП</h1>
+          <span className={styles.subtitle}>Вход для сотрудников</span>
+        </div>
 
         <label className={styles.field}>
           <span className={styles.label}>Телефон</span>
@@ -65,7 +73,11 @@ export const LoginPage = observer(function LoginPage() {
           </p>
         )}
 
-        {authStore.loginError && <p className={styles.error}>{authStore.loginError}</p>}
+        {authStore.loginError && (
+          <p className={styles.error} role="alert">
+            {authStore.loginError}
+          </p>
+        )}
 
         <button className={styles.submit} type="submit" disabled={authStore.isLoggingIn}>
           {authStore.isLoggingIn ? 'Входим…' : 'Войти'}

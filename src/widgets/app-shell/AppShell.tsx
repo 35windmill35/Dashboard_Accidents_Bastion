@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { observer } from 'mobx-react-lite'
 import { authStore } from '@/entities/user/model/authStore'
+import { themeStore } from '@/shared/lib/theme/themeStore'
 import { useFiltersUrlSync } from '@/features/filters-url-sync/useFiltersUrlSync'
 import { DataStatusBanner } from '@/widgets/data-status-banner/DataStatusBanner'
 import { AppSidebar } from './AppSidebar'
@@ -19,7 +21,13 @@ interface AppShellProps {
 // Здесь же: синхронизация фильтров с адресной строкой и периодическая
 // проверка срока сессии (10 ч / 30 мин без запросов, ТЗ §2.3) — истёкшая
 // сессия разлогинивает, guard уводит на экран входа.
-export function AppShell({ children }: AppShellProps) {
+//
+// Контент экрана перемонтируется при смене системной темы (key): цвета графиков
+// Recharts — JS-константы (shared/lib/chartColors), а не CSS-переменные,
+// и перерисоваться новыми цветами графики должны целиком. Экраны только
+// считают по уже загруженным сторам — перемонтирование ничего не
+// перезапрашивает.
+export const AppShell = observer(function AppShell({ children }: AppShellProps) {
   const [isSidebarOpen, setSidebarOpen] = useState(false)
 
   useFiltersUrlSync()
@@ -39,11 +47,11 @@ export function AppShell({ children }: AppShellProps) {
 
       <div className={styles.contentColumn}>
         <AppTopBar onToggleSidebar={() => setSidebarOpen((v) => !v)} />
-        <main className={styles.main}>
+        <main className={styles.main} key={themeStore.theme}>
           <DataStatusBanner />
           {children}
         </main>
       </div>
     </div>
   )
-}
+})

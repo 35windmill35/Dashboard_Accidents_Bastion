@@ -175,7 +175,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
       title: 'Динамика ущерба и возмещения по месяцам',
       legend: [
         { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.teal },
+        { label: 'Возмещение', color: COLOR.compensation },
       ],
       bodyHeight: DAMAGE_CHART_HEIGHT,
       drawBody: groupedBarChartBody(
@@ -187,7 +187,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
         })),
         {
           height: DAMAGE_CHART_HEIGHT,
-          colors: [COLOR.accent, COLOR.teal],
+          colors: [COLOR.accent, COLOR.compensation],
           formatTick: formatMoneyAxis,
           labelLines: 1,
         }
@@ -215,7 +215,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
       title: 'Ущерб и возмещение по автоколоннам',
       legend: [
         { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.teal },
+        { label: 'Возмещение', color: COLOR.compensation },
       ],
       bodyHeight: Math.max(1, motorcades.length) * DUAL_ROW_HEIGHT,
       note: motorcades.length === 0 ? 'За выбранный период ДТП не зарегистрировано.' : undefined,
@@ -227,7 +227,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
           secondary: item.sumCompensated,
           formatted: formatPdfCurrency(item.sumDamage),
         })),
-        { colors: [COLOR.accent, COLOR.teal] }
+        { colors: [COLOR.accent, COLOR.compensation] }
       ),
     })
 

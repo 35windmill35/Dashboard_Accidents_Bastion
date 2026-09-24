@@ -15,46 +15,81 @@ export interface ChartDataTable {
 
 interface ChartCardProps {
   title: string
+  // Короткое пояснение под заголовком (итог, единицы) — как в эталоне
+  subtitle?: string
   children: ReactNode
   height?: number
   legend?: ChartLegendItem[]
   table?: ChartDataTable
 }
 
-// Общая рамка для графиков экранов: заголовок + фиксированная высота под
-// ResponsiveContainer + легенда + переключатель «Показать данные».
+// Общая рамка для графиков экранов по эталону: заголовок с пояснением,
+// справа — легенда и переключатель «График / Данные», ниже — сам график
+// фиксированной высоты (под ResponsiveContainer).
 //
-// Легенда рисуется здесь, а не через <Legend> из Recharts. Внутренняя
-// легенда Recharts вычитает своё место ИЗ той же фиксированной высоты
-// графика — а значит у графика с одной серией (легенды нет) и графика с
-// двумя сериями (легенда в одну строку) остаётся разная высота под сами
-// оси, и на соседних карточках в сетке "плывут" линия оси X и сетка по Y.
-// Здесь легенда — отдельная зона ПОД графиком с одной и той же высотой у
-// всех карточек, есть в ней элементы или нет, поэтому область самого
-// графика (а с ней и оси) одинакова везде.
+// Выравнивание осей между соседними карточками: легенда теперь в шапке
+// (как в эталоне), а шапки бывают разной высоты — заголовок переносится,
+// легенда уходит на вторую строку. Чтобы область графика (а с ней оси X и
+// сетка по Y) у соседей в одной строке сетки стояла на одном уровне,
+// карточка — subgrid на две строки родительской сетки: высота шапки
+// общая для всех карточек строки (по самой высокой), график начинается
+// с одной и той же линии. Родительская сетка должна давать карточке две
+// строки (см. *Charts.module.css — grid-auto-rows не задавать).
 //
 // Таблица данных показывается на месте графика в той же высоте, чтобы
 // переключение не двигало сетку карточек.
-export function ChartCard({ title, children, height = 280, legend, table }: ChartCardProps) {
+export function ChartCard({
+  title,
+  subtitle,
+  children,
+  height = 280,
+  legend,
+  table,
+}: ChartCardProps) {
   const [showTable, setShowTable] = useState(false)
   const tableId = useId()
   const isTableVisible = showTable && table !== undefined
+  const legendItems = legend ?? []
 
   return (
-    <div className={styles.card}>
+    <section className={styles.card}>
       <div className={styles.header}>
-        <div className={styles.title}>{title}</div>
-        {table && (
-          <button
-            type="button"
-            className={styles.toggle}
-            aria-pressed={showTable}
-            aria-controls={tableId}
-            onClick={() => setShowTable((v) => !v)}
-          >
-            {showTable ? 'Показать график' : 'Показать данные'}
-          </button>
-        )}
+        <div className={styles.titles}>
+          <h3 className={styles.title}>{title}</h3>
+          {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
+        </div>
+
+        <div className={styles.tools}>
+          {!isTableVisible &&
+            legendItems.map((item) => (
+              <span key={item.label} className={styles.legendItem}>
+                <span className={styles.legendSwatch} style={{ background: item.color }} />
+                {item.label}
+              </span>
+            ))}
+
+          {table && (
+            <div className={styles.segmented} role="group" aria-label={`${title}: вид`}>
+              <button
+                type="button"
+                className={`${styles.segment} ${!isTableVisible ? styles.segmentActive : ''}`}
+                aria-pressed={!isTableVisible}
+                onClick={() => setShowTable(false)}
+              >
+                График
+              </button>
+              <button
+                type="button"
+                className={`${styles.segment} ${isTableVisible ? styles.segmentActive : ''}`}
+                aria-pressed={isTableVisible}
+                aria-controls={tableId}
+                onClick={() => setShowTable(true)}
+              >
+                Данные
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {isTableVisible ? (
@@ -92,18 +127,10 @@ export function ChartCard({ title, children, height = 280, legend, table }: Char
           )}
         </div>
       ) : (
-        <div style={{ height }}>{children}</div>
+        <div className={styles.body} style={{ height }}>
+          {children}
+        </div>
       )}
-
-      <div className={styles.legend}>
-        {!isTableVisible &&
-          legend?.map((item) => (
-            <span key={item.label} className={styles.legendItem}>
-              <span className={styles.legendSwatch} style={{ background: item.color }} />
-              {item.label}
-            </span>
-          ))}
-      </div>
-    </div>
+    </section>
   )
 }

@@ -1,8 +1,8 @@
 import type { jsPDF } from 'jspdf'
-import { plexSansRegular } from './fonts/plexSansRegular'
-import { plexSansSemiBold } from './fonts/plexSansSemiBold'
-import { plexMonoRegular } from './fonts/plexMonoRegular'
-import { plexMonoSemiBold } from './fonts/plexMonoSemiBold'
+import { rubikRegular } from './fonts/rubikRegular'
+import { rubikMedium } from './fonts/rubikMedium'
+import { rubikTabularRegular } from './fonts/rubikTabularRegular'
+import { rubikTabularMedium } from './fonts/rubikTabularMedium'
 
 export type Rgb = readonly [number, number, number]
 
@@ -17,38 +17,46 @@ export const PAGE = {
 
 export const CONTENT_WIDTH = PAGE.width - PAGE.marginX * 2
 
-// Палитра отчёта — печатная, не совпадает с темой интерфейса: PDF всегда
-// светлый, на белой бумаге.
+// Палитра отчёта — светлая тема интерфейса (PDF всегда светлый, на белой
+// бумаге), те же цвета, что на экране: см. app/styles/theme.css
+// ([data-theme='light']) и shared/lib/chartColors.ts (LIGHT). Держать в паре.
 export const COLOR = {
-  ink: [26, 32, 38],
-  secondary: [96, 106, 116],
-  muted: [145, 152, 159],
-  hairline: [239, 241, 243],
-  line: [229, 232, 235],
-  lineStrong: [212, 216, 221],
-  accent: [31, 108, 176],
-  teal: [59, 172, 166],
-  positive: [52, 108, 66],
-  negative: [160, 64, 52],
-  highlight: [241, 246, 250],
+  ink: [23, 32, 51], // --color-text
+  title: [11, 18, 32], // --color-title
+  secondary: [86, 97, 120], // --color-text-secondary
+  muted: [107, 117, 137], // --color-text-faint
+  hairline: [237, 240, 245], // сетка графиков, разделители строк
+  line: [226, 230, 237], // рамки карточек
+  lineStrong: [205, 211, 222], // базовая линия осей, шапка таблиц
+  accent: [29, 99, 237], // --color-accent / серия «ДТП», «Ущерб», автоколонна A
+  teal: [0, 144, 156], // --color-chart-2 / автоколонна B
+  compensation: [14, 138, 95], // --color-chart-compensation / «Возмещение»
+  positive: [10, 127, 87], // --color-positive
+  negative: [212, 42, 42], // --color-negative
+  highlight: [241, 245, 254], // --color-accent-soft на белом
+  surface: [250, 251, 253], // --color-surface-end: фон KPI-карточек
   white: [255, 255, 255],
 } as const satisfies Record<string, Rgb>
 
-export const FONT_SANS = 'PlexSans'
-export const FONT_MONO = 'PlexMono'
+// Rubik — тот же шрифт, что в интерфейсе. Два начертания: обычное и Medium
+// (в jsPDF оно регистрируется как 'bold'). «mono» — Rubik с моноширинными
+// цифрами (вшита OpenType-функция tnum): суммы в колонках таблиц и на осях
+// выравниваются по разрядам, как tabular-nums на экране.
+export const FONT_SANS = 'Rubik'
+export const FONT_MONO = 'RubikTabular'
 
 // Встроенные шрифты jsPDF (helvetica и прочие) физически не содержат
 // кириллицы — вместо текста получается мусор вида "0H1>@4". Поэтому в
-// документ подкладываются подмножества IBM Plex.
+// документ подкладываются подмножества Rubik (см. fonts/).
 export function registerPdfFonts(doc: jsPDF): void {
-  doc.addFileToVFS('PlexSans-Regular.ttf', plexSansRegular)
-  doc.addFont('PlexSans-Regular.ttf', FONT_SANS, 'normal')
-  doc.addFileToVFS('PlexSans-SemiBold.ttf', plexSansSemiBold)
-  doc.addFont('PlexSans-SemiBold.ttf', FONT_SANS, 'bold')
-  doc.addFileToVFS('PlexMono-Regular.ttf', plexMonoRegular)
-  doc.addFont('PlexMono-Regular.ttf', FONT_MONO, 'normal')
-  doc.addFileToVFS('PlexMono-SemiBold.ttf', plexMonoSemiBold)
-  doc.addFont('PlexMono-SemiBold.ttf', FONT_MONO, 'bold')
+  doc.addFileToVFS('Rubik-Regular.ttf', rubikRegular)
+  doc.addFont('Rubik-Regular.ttf', FONT_SANS, 'normal')
+  doc.addFileToVFS('Rubik-Medium.ttf', rubikMedium)
+  doc.addFont('Rubik-Medium.ttf', FONT_SANS, 'bold')
+  doc.addFileToVFS('RubikTabular-Regular.ttf', rubikTabularRegular)
+  doc.addFont('RubikTabular-Regular.ttf', FONT_MONO, 'normal')
+  doc.addFileToVFS('RubikTabular-Medium.ttf', rubikTabularMedium)
+  doc.addFont('RubikTabular-Medium.ttf', FONT_MONO, 'bold')
 }
 
 export interface TextStyle {
@@ -181,8 +189,8 @@ export function drawLegendChip(
   color: Rgb
 ): number {
   const box = 5
-  drawRect(doc, x, y - box + 1, box, box, { fill: color, radius: 1 })
-  const style: TextStyle = { font: 'mono', size: 6.2, color: COLOR.secondary }
+  drawRect(doc, x, y - box + 0.5, box, box, { fill: color, radius: 1.2 })
+  const style: TextStyle = { size: 6.4, color: COLOR.secondary }
   drawText(doc, label, x + box + 3.5, y, style)
   return box + 3.5 + measureText(doc, label, style)
 }

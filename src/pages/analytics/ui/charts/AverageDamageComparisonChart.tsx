@@ -8,17 +8,24 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  BAR_CURSOR,
+  BAR_RADIUS,
+  BAR_SIZE_SINGLE,
+} from '@/shared/ui/chart/chartStyle'
+import { BarGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
-import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import {
-  CATEGORY_AXIS_HEIGHT,
-  CHART_MARGIN,
-  Y_AXIS_WIDTH,
-  barPayload,
-} from '@/shared/lib/rechartsHelpers'
+import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
+import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN, barPayload } from '@/shared/lib/rechartsHelpers'
 import type { AnalyticsData } from '../../model/analyticsData'
 
 interface Props {
@@ -35,6 +42,7 @@ interface Point {
 // Средний ущерб на 1 ДТП — по одному столбцу на автоколонну, разница видна
 // сразу по высоте (в отличие от KPI-карточек, где нужно сравнивать числа).
 export function AverageDamageComparisonChart({ data, period }: Props) {
+  const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)
 
   const chartData: Point[] = [
@@ -59,41 +67,33 @@ export function AverageDamageComparisonChart({ data, period }: Props) {
   }
 
   return (
-    <ChartCard table={table} title="Средний ущерб на 1 ДТП">
+    <ChartCard
+      table={table}
+      title="Средний ущерб на 1 ДТП"
+      subtitle={withCurrencyUnit('На 1 ДТП с ущербом')}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={CHART_MARGIN}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-          <XAxis
-            dataKey="name"
-            stroke="var(--color-text-secondary)"
-            fontSize={12}
-            height={CATEGORY_AXIS_HEIGHT}
-          />
-          <YAxis
-            stroke="var(--color-text-secondary)"
-            fontSize={12}
-            tickFormatter={formatCompactCurrency}
-            width={Y_AXIS_WIDTH}
-          />
-          <Tooltip
-            formatter={(value) => formatCurrency(Number(value))}
-            contentStyle={{
-              background: 'var(--color-surface-2)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 8,
-              color: 'var(--color-text)',
-            }}
-          />
+          <defs>
+            <BarGradient id={`${gradientId}-0`} color={COMPARISON_COLOR_A} />
+            <BarGradient id={`${gradientId}-1`} color={COMPARISON_COLOR_B} />
+          </defs>
+          <CartesianGrid {...GRID_PROPS} />
+          <XAxis {...X_AXIS_PROPS} dataKey="name" height={CATEGORY_AXIS_HEIGHT} />
+          <YAxis {...Y_AXIS_PROPS} tickFormatter={formatCompactCurrency} />
+          <Tooltip cursor={BAR_CURSOR} content={<ChartTooltip valueFormatter={formatCurrency} />} />
           <Bar
+            maxBarSize={BAR_SIZE_SINGLE}
+            {...ANIMATION}
             dataKey="averageDamage"
-            radius={[4, 4, 0, 0]}
+            radius={BAR_RADIUS}
             style={{ cursor: 'pointer' }}
             onClick={(entry) => handleClick(barPayload<Point>(entry).side)}
           >
             {chartData.map((point) => (
               <Cell
                 key={point.side}
-                fill={point.side === 'a' ? COMPARISON_COLOR_A : COMPARISON_COLOR_B}
+                fill={point.side === 'a' ? `url(#${gradientId}-0)` : `url(#${gradientId}-1)`}
               />
             ))}
           </Bar>

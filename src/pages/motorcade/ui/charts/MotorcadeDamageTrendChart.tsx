@@ -1,18 +1,30 @@
 import {
   CartesianGrid,
-  Line,
-  LineChart,
+  Area,
+  AreaChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  LINE_CURSOR,
+  activeLineDot,
+  lineDot,
+} from '@/shared/ui/chart/chartStyle'
+import { AreaGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { formatMonthShortLabel, formatMonthLabel } from '@/entities/accident/lib/period'
-import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
-import { formatCurrency, formatCompactCurrency } from '@/shared/lib/formatters'
-import { CHART_MARGIN, Y_AXIS_WIDTH, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { COLOR_DAMAGE, COLOR_COMPENSATION } from '@/shared/lib/chartColors'
+import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
+import { CHART_MARGIN, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
 interface Props {
@@ -22,6 +34,7 @@ interface Props {
 // Динамика суммы ущерба/возмещения по месяцам для выбранной автоколонны —
 // та же ось, что и у графика количества ДТП (см. MotorcadeTrendChart).
 export function MotorcadeDamageTrendChart({ data }: Props) {
+  const gradientId = useGradientId()
   const chartData = data.monthlyCounts.map((m) => ({
     ym: m.ym,
     label: formatMonthShortLabel(m.ym),
@@ -47,14 +60,15 @@ export function MotorcadeDamageTrendChart({ data }: Props) {
     <ChartCard
       table={table}
       title="Динамика ущерба и возмещения по месяцам"
+      subtitle={withCurrencyUnit('Суммы по месяцам')}
       legend={[
-        { label: 'Ущерб', color: CHART_1 },
-        { label: 'Возмещение', color: CHART_2 },
+        { label: 'Ущерб', color: COLOR_DAMAGE },
+        { label: 'Возмещение', color: COLOR_COMPENSATION },
       ]}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <AreaChart
             data={chartData}
             margin={CHART_MARGIN}
             onClick={(state) => {
@@ -63,40 +77,45 @@ export function MotorcadeDamageTrendChart({ data }: Props) {
               if (point) handleClick(point.ym)
             }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              tickFormatter={formatCompactCurrency}
-              width={Y_AXIS_WIDTH}
-            />
+            <defs>
+              <AreaGradient id={`${gradientId}-0`} color={COLOR_DAMAGE} strong={false} />
+              <AreaGradient id={`${gradientId}-1`} color={COLOR_COMPENSATION} strong={false} />
+            </defs>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="label" {...X_AXIS_PROPS} {...xAxisProps} />
+            <YAxis {...Y_AXIS_PROPS} tickFormatter={formatCompactCurrency} />
             <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
-              contentStyle={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                color: 'var(--color-text)',
-              }}
+              cursor={LINE_CURSOR}
+              content={
+                <ChartTooltip
+                  valueFormatter={formatCurrency}
+                  titleFormatter={(point) => formatMonthLabel(Number(point?.ym))}
+                />
+              }
             />
-            <Line
+            <Area
+              activeDot={activeLineDot(COLOR_DAMAGE)}
+              fill={`url(#${gradientId}-0)`}
+              {...ANIMATION}
               type="monotone"
               dataKey="sumDamage"
               name="Ущерб"
-              stroke={CHART_1}
+              stroke={COLOR_DAMAGE}
               strokeWidth={2}
-              dot={{ r: 3, cursor: 'pointer' }}
+              dot={lineDot(COLOR_DAMAGE)}
             />
-            <Line
+            <Area
+              activeDot={activeLineDot(COLOR_COMPENSATION)}
+              fill={`url(#${gradientId}-1)`}
+              {...ANIMATION}
               type="monotone"
               dataKey="sumCompensated"
               name="Возмещение"
-              stroke={CHART_2}
+              stroke={COLOR_COMPENSATION}
               strokeWidth={2}
-              dot={{ r: 3, cursor: 'pointer' }}
+              dot={lineDot(COLOR_COMPENSATION)}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </ChartCard>

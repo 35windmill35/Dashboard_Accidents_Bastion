@@ -4,6 +4,9 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
 import { authStore } from '@/entities/user/model/authStore'
 import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
+import { formatPeriodLabel } from '@/entities/accident/lib/period'
+import { PageHeader } from '@/widgets/page-header/PageHeader'
+import { SectionDivider } from '@/shared/ui/SectionDivider/SectionDivider'
 import { computeOverview } from './model/overviewData'
 import { OverviewKpiRow } from './ui/OverviewKpiRow'
 import { OverviewCharts } from './ui/OverviewCharts'
@@ -43,8 +46,15 @@ export const OverviewPage = observer(function OverviewPage() {
 
   return (
     <div className={styles.page}>
+      <PageHeader
+        eyebrow="Сводка по автопарку"
+        title="Обзор"
+        meta={[formatPeriodLabel(period), 'Все автоколонны']}
+      />
       <OverviewKpiRow data={data} period={period} />
+      <SectionDivider title="Динамика и структура" />
       <OverviewCharts data={data} period={period} />
+      <SectionDivider title="Детализация" />
       <OverviewTables data={data} period={period} />
     </div>
   )

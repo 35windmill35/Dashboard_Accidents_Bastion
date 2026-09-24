@@ -39,36 +39,39 @@ export function reportHeader(doc: jsPDF, meta: ReportHeaderMeta): BlockFactory {
     return {
       height,
       draw: (y) => {
+        // Надзаголовок акцентным цветом капсом — как на экранах дашборда
         drawText(doc, meta.kicker.toUpperCase(), x, y + 8, {
-          font: 'mono',
           size: 6.2,
-          color: COLOR.secondary,
-          charSpace: 1.1,
+          color: COLOR.accent,
+          charSpace: 1.3,
         })
         // fitText — заголовок не всегда короткая константа (напр. на
         // "Автоколонне" в него подставляется имя автоколонны), поэтому он не
         // должен наезжать на период/фильтры справа.
-        const titleStyle: TextStyle = { weight: 'bold', size: 15, color: COLOR.ink }
+        const titleStyle: TextStyle = { weight: 'bold', size: 17, color: COLOR.title }
         drawText(doc, fitText(doc, meta.title, width * 0.6, titleStyle), x, y + 29, titleStyle)
 
         const rightX = x + width
         drawText(doc, meta.periodLabel, rightX, y + 10, {
           weight: 'bold',
           size: 10.5,
-          color: COLOR.ink,
+          color: COLOR.title,
           align: 'right',
         })
 
         rightLines.forEach((line, index) => {
-          const style = { font: 'mono' as const, size: 6.6, color: COLOR.secondary }
+          const style = { size: 6.6, color: COLOR.secondary }
           drawText(doc, fitText(doc, line, width * 0.62, style), rightX, y + 22 + index * 9.5, {
             ...style,
             align: 'right',
           })
         })
 
+        // Разделитель под шапкой: тонкая линия во всю ширину и короткий
+        // акцентный отрезок слева
         const ruleY = y + contentHeight + HEADER_RULE_GAP
-        drawLine(doc, x, ruleY, x + width, ruleY, COLOR.ink, 1.2)
+        drawLine(doc, x, ruleY, x + width, ruleY, COLOR.line, 0.8)
+        drawLine(doc, x, ruleY, x + 56, ruleY, COLOR.accent, 1.6)
       },
     }
   }
@@ -113,32 +116,32 @@ export function kpiRow(doc: jsPDF, cards: KpiCardData[]): BlockFactory {
       draw: (y) => {
         cards.forEach((data, index) => {
           const cardX = x + index * (cardWidth + KPI_GAP)
+          // Карточка как на экране: светлая подложка, тонкая рамка,
+          // скруглённые углы; подпись обычным регистром, крупное число
           drawRect(doc, cardX, y, cardWidth, KPI_HEIGHT, {
+            fill: COLOR.surface,
             stroke: COLOR.line,
-            lineWidth: 0.5,
-            radius: 2,
+            lineWidth: 0.6,
+            radius: 4,
           })
-          drawRect(doc, cardX, y, cardWidth, 2.4, { fill: COLOR.accent })
 
           const innerWidth = cardWidth - 16
-          const label = data.label.toUpperCase()
-          const labelSize = fitFontSize(doc, label, innerWidth, 5.8, 4.8, {
+          const label = data.label
+          const labelSize = fitFontSize(doc, label, innerWidth, 6.8, 5.4, {
+            font: 'sans',
             weight: 'normal',
-            charSpace: 0.3,
           })
-          drawText(doc, label, cardX + 8, y + 17, {
-            font: 'mono',
+          drawText(doc, label, cardX + 8, y + 15, {
             size: labelSize,
             color: COLOR.secondary,
-            charSpace: 0.3,
           })
 
-          const valueSize = fitFontSize(doc, data.value, innerWidth, 13.5, 8)
-          drawText(doc, data.value, cardX + 8, y + 36, {
+          const valueSize = fitFontSize(doc, data.value, innerWidth, 14, 8)
+          drawText(doc, data.value, cardX + 8, y + 35, {
             font: 'mono',
             weight: 'bold',
             size: valueSize,
-            color: COLOR.ink,
+            color: COLOR.title,
           })
 
           if (data.delta) {
@@ -148,7 +151,7 @@ export function kpiRow(doc: jsPDF, cards: KpiCardData[]): BlockFactory {
                 : data.deltaTone === 'negative'
                   ? COLOR.negative
                   : COLOR.secondary
-            const deltaStyle = { font: 'mono' as const, size: 6.2, color: tone }
+            const deltaStyle = { size: 6.4, color: tone }
             drawText(
               doc,
               fitText(doc, data.delta, innerWidth, deltaStyle),
@@ -182,9 +185,8 @@ export function noticeBlock(doc: jsPDF, title: string, lines: string[]): BlockFa
           fill: COLOR.highlight,
           stroke: COLOR.line,
           lineWidth: 0.5,
-          radius: 2,
+          radius: 4,
         })
-        drawRect(doc, x, y, 2.4, height, { fill: COLOR.accent })
         drawText(doc, title, x + NOTICE_PAD_X, y + 14, {
           weight: 'bold',
           size: 8.4,

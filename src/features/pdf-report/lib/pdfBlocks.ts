@@ -38,11 +38,11 @@ interface CardOptions {
 // высоты, необязательная подпись-вывод под телом.
 export function card(doc: jsPDF, x: number, width: number, options: CardOptions): Block {
   const { title, legend, bodyHeight, note, drawBody } = options
-  const titleStyle: TextStyle = { weight: 'bold', size: 8.4, color: COLOR.ink }
+  const titleStyle: TextStyle = { weight: 'bold', size: 8.6, color: COLOR.title }
   const innerWidth = width - CARD_PAD_X * 2
 
   const legendWidths = (legend ?? []).map(
-    (item) => 8.5 + measureText(doc, item.label, { font: 'mono', size: 6.2 })
+    (item) => 8.5 + measureText(doc, item.label, { size: 6.4 })
   )
   const legendWidth =
     legendWidths.length > 0
@@ -73,8 +73,8 @@ export function card(doc: jsPDF, x: number, width: number, options: CardOptions)
     draw: (y) => {
       drawRect(doc, x, y, width, height, {
         stroke: COLOR.line,
-        lineWidth: 0.5,
-        radius: 2,
+        lineWidth: 0.6,
+        radius: 4,
       })
 
       const titleBaseline = y + CARD_PAD_TOP + CARD_TITLE_OFFSET
@@ -240,6 +240,7 @@ export function barChartBody(
       if (item.value > 0 && barHeight > 0) {
         drawRect(doc, center - barWidth / 2, geometry.baseline - barHeight, barWidth, barHeight, {
           fill: options.color,
+          radius: Math.min(1.5, barHeight / 2),
         })
         drawText(
           doc,
@@ -304,6 +305,7 @@ export function groupedBarChartBody(
         const offset = pairIndex === 0 ? -barWidth - 0.6 : 0.6
         drawRect(doc, center + offset, geometry.baseline - barHeight, barWidth, barHeight, {
           fill: color,
+          radius: Math.min(1.2, barHeight / 2),
         })
       })
     })
@@ -520,9 +522,8 @@ export function tableCard(
           isRight ? offsets[index] + widths[index] : offsets[index],
           bodyY + 8,
           {
-            font: 'mono',
-            size: 6,
-            color: COLOR.secondary,
+            size: 5.8,
+            color: COLOR.muted,
             align: isRight ? 'right' : 'left',
             charSpace: 0.3,
           }

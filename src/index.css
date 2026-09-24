@@ -13,7 +13,7 @@ body {
 
 body {
   min-height: 100svh;
-  font: 15px/1.45 var(--font-sans);
+  font: 14px/1.45 var(--font-sans);
   color: var(--color-text);
   background: var(--color-bg);
   font-synthesis: none;
@@ -31,6 +31,7 @@ h2,
 h3 {
   margin: 0 0 var(--space-3);
   font-weight: 600;
+  color: var(--color-title);
 }
 
 p {
@@ -43,8 +44,41 @@ select {
   font: inherit;
 }
 
+/* Выпадающий список нативного <select> — в цвет темы */
+option {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 a {
   color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-accent-hi);
+}
+
+::selection {
+  background: var(--color-accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Анимации эталона (появление, «аварийки» логотипа, вращение иконки
+   обновления) объявляются в модулях стилей, где используются, — CSS Modules
+   переименовывают имена keyframes локально. Здесь — только общий запрет
+   анимаций для «уменьшить движение» в системе. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* Графики Recharts. Обёртка-svg получает tabindex=0 (accessibilityLayer),

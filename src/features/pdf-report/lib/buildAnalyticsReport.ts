@@ -184,7 +184,7 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
       title: 'Сумма ущерба и возмещения',
       legend: [
         { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.teal },
+        { label: 'Возмещение', color: COLOR.compensation },
       ],
       bodyHeight: 2 * DUAL_ROW_HEIGHT,
       drawBody: dualBarsBody(
@@ -195,7 +195,7 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
           secondary: side.scope.kpi.sumCompensated,
           formatted: formatPdfCurrency(side.scope.kpi.sumDamage),
         })),
-        { colors: [COLOR.accent, COLOR.teal] }
+        { colors: [COLOR.accent, COLOR.compensation] }
       ),
     })
 

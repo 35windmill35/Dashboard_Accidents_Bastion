@@ -1,49 +1,65 @@
 .card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
   min-width: 0;
-  /* Таблицы в одной строке сетки показывают разное число строк по
-     умолчанию (топ-8, топ-8, топ-5 причин) — без общей минимальной высоты
-     карточки заканчивались бы на разной высоте. 390px — высота карточки с
-     8 строками данных, более короткие таблицы просто дополняются пустым
-     полем снизу и выравниваются по низу с соседями. */
-  min-height: 390px;
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+  padding: 20px 22px 14px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, var(--color-surface) 0%, var(--color-surface-end) 100%);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
+  animation: table-in 0.75s var(--ease-out) 0.25s backwards;
+}
+
+@keyframes table-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
 }
 
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--space-3);
+  gap: var(--space-3);
+  min-height: 26px;
 }
 
 .title {
-  font-size: 13px;
-  font-weight: 600;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--color-text);
 }
 
 .toggle {
-  border: 1px solid var(--color-border);
+  flex: none;
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--color-border-strong);
   background: transparent;
   color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  padding: 4px var(--space-2);
+  font-size: 11.5px;
+  white-space: nowrap;
   cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
 }
 
 .toggle:hover {
-  color: var(--color-text);
-  background: var(--color-surface-2);
+  color: var(--color-accent-hi);
+  border-color: var(--color-accent-line);
 }
 
 .empty {
-  color: var(--color-text-secondary);
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: var(--color-text-faint);
   font-size: 13px;
 }
 
@@ -51,26 +67,48 @@
   overflow-x: auto;
 }
 
+/* Раскладка как у сетки эталона: колонка .grow забирает остаток ширины,
+   остальные (.fit) — ровно по содержимому. Минимальная ширина — чтобы на
+   узком экране таблица прокручивалась, а не сплющивалась. */
 .table {
   width: 100%;
-  border-collapse: collapse;
+  min-width: 300px;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
 }
 
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .table th {
-  text-align: left;
   padding: var(--space-2);
-  color: var(--color-text-secondary);
-  font-weight: 500;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-strong);
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
   white-space: nowrap;
 }
 
 .table td {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  padding: 10px var(--space-2);
+  border-bottom: 1px solid var(--color-soft-2);
   color: var(--color-text);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.table tbody tr:last-child td {
+  border-bottom-color: transparent;
 }
 
 .right {
@@ -85,6 +123,11 @@
    перебивает .right/.center у заголовков — значения в колонке
    выравнивались как надо, а сам заголовок колонки оставался прижат к
    левому краю. */
+.table th.fit + th,
+.table td.fit + td {
+  padding-left: var(--space-3);
+}
+
 .table th.right {
   text-align: right;
 }
@@ -93,12 +136,65 @@
   text-align: center;
 }
 
+/* Колонка по содержимому: ширина 1% + nowrap = «сжаться до текста» */
+.table .fit {
+  width: 1%;
+}
+
+/* Колонка-остаток с многоточием: max-width: 0 не даёт тексту раздвинуть
+   таблицу, width: 100% отдаёт ей всё свободное место */
+.table .grow {
+  width: 100%;
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Колонка-остаток с переносом по словам */
+.table .growWrap {
+  width: 100%;
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.table td.dim {
+  color: var(--color-text-secondary);
+}
+
+/* Место в рейтинге: «01», «02»…, первые три — акцентом */
+.table .rankCell {
+  padding-right: 0;
+  font-weight: 500;
+  color: var(--color-text-faint);
+}
+
+.table td.rankTop {
+  color: var(--color-accent);
+}
+
 .clickableRow {
   cursor: pointer;
 }
 
-.clickableRow:hover {
-  background: var(--color-surface-2);
+.clickableRow td {
+  transition: background-color 0.2s;
+}
+
+.clickableRow:hover td {
+  background: var(--color-accent-soft);
+}
+
+.clickableRow:hover td:first-child {
+  border-radius: 5px 0 0 5px;
+}
+
+.clickableRow:hover td:last-child {
+  border-radius: 0 5px 5px 0;
+}
+
+.clickableRow:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
 }
 
 .pagination {
@@ -106,18 +202,27 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-3);
-  padding-top: var(--space-3);
+  padding-top: var(--space-1);
   font-size: 12px;
   color: var(--color-text-secondary);
 }
 
 .pagination button {
-  padding: 4px var(--space-2);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--color-border-strong);
   background: transparent;
   color: var(--color-text);
+  font-size: 11.5px;
   cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+  color: var(--color-accent-hi);
+  border-color: var(--color-accent-line);
 }
 
 .pagination button:disabled {

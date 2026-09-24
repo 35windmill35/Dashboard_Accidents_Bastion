@@ -1,27 +1,49 @@
+/* Ошибка внутри экрана (например, нет автоколонн для сравнения) — пустая
+   карточка с пунктирной рамкой, как пустые состояния эталона */
 .wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-6) var(--space-4);
+  padding: 48px var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-border-strong);
+  background: var(--color-soft);
   text-align: center;
 }
 
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--color-text-secondary);
+  background: var(--color-soft-2);
+}
+
 .message {
-  color: var(--color-negative);
+  max-width: 420px;
   font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
 }
 
 .retry {
-  padding: 6px 16px;
+  padding: 7px 16px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
+  border: 1px solid var(--color-border-strong);
+  background: transparent;
   color: var(--color-text);
-  cursor: pointer;
   font-size: 13px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .retry:hover {
-  border-color: var(--color-accent);
+  border-color: var(--color-accent-line);
+  color: var(--color-accent-hi);
 }

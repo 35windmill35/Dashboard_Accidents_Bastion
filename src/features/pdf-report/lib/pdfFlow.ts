@@ -96,6 +96,7 @@ export function drawPageFooters(doc: jsPDF): void {
   for (let page = 1; page <= total; page += 1) {
     doc.setPage(page)
     drawLine(doc, PAGE.marginX, y - 10, PAGE.width - PAGE.marginX, y - 10, COLOR.line, 0.5)
+    drawText(doc, 'Дашборд ДТП', PAGE.marginX, y, { size: 6.2, color: COLOR.muted })
     drawText(doc, `Стр. ${page} из ${total}`, PAGE.width - PAGE.marginX, y, {
       font: 'mono',
       size: 6.2,

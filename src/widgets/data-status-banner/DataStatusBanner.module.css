@@ -1,41 +1,63 @@
+/* Предупреждения о полноте данных — янтарные плашки над контентом */
 .stack {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  animation: banner-in 0.5s var(--ease-out) backwards;
 }
 
 .banner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
   gap: var(--space-3);
-  background: var(--color-surface-2);
-  border: 1px solid var(--color-accent);
+  padding: 12px 16px;
   border-radius: var(--radius-md);
-  padding: var(--space-3) var(--space-4);
+  background: var(--color-warning-soft);
+  border: 1px solid var(--color-warning-line);
   font-size: 13px;
+  line-height: 1.45;
   color: var(--color-text);
+}
+
+.icon {
+  flex: none;
+  color: var(--color-warning);
+}
+
+.text {
+  flex: 1 1 280px;
+  min-width: 0;
 }
 
 .retry {
+  flex: none;
   padding: 6px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--color-accent);
+  border: 1px solid var(--color-warning-line);
   background: transparent;
   color: var(--color-text);
-  font-size: 13px;
+  font-size: 12.5px;
   cursor: pointer;
   white-space: nowrap;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
 }
 
 .retry:hover:not(:disabled) {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  background: var(--color-warning-soft);
+  border-color: var(--color-warning);
 }
 
 .retry:disabled {
   opacity: 0.6;
-  cursor: default;
+  cursor: progress;
+}
+
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }

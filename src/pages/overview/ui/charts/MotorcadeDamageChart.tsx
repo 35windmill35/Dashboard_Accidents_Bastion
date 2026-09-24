@@ -1,16 +1,28 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  BAR_CURSOR,
+  BAR_RADIUS,
+  BAR_SIZE_GROUPED,
+} from '@/shared/ui/chart/chartStyle'
+import { BarGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
-import { CHART_1, CHART_2 } from '@/shared/lib/chartColors'
-import { formatCurrency, formatCompactCurrency, formatPercent } from '@/shared/lib/formatters'
+import { COLOR_DAMAGE, COLOR_COMPENSATION } from '@/shared/lib/chartColors'
 import {
-  CHART_MARGIN,
-  Y_AXIS_WIDTH,
-  barPayload,
-  useCategoryXAxis,
-} from '@/shared/lib/rechartsHelpers'
+  formatCurrency,
+  formatCompactCurrency,
+  formatPercent,
+  withCurrencyUnit,
+} from '@/shared/lib/formatters'
+import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -22,6 +34,7 @@ interface Props {
 // Ущерб/возмещение по автоколоннам — одна ось (обе величины в тенге), два
 // ряда рядом, не наложение.
 export function MotorcadeDamageChart({ data, period }: Props) {
+  const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)
 
   const openMotorcade = (key: string) => {
@@ -50,44 +63,43 @@ export function MotorcadeDamageChart({ data, period }: Props) {
     <ChartCard
       table={table}
       title="Ущерб и возмещение по автоколоннам"
+      subtitle={withCurrencyUnit('Суммы за период')}
       legend={[
-        { label: 'Ущерб', color: CHART_1 },
-        { label: 'Возмещение', color: CHART_2 },
+        { label: 'Ущерб', color: COLOR_DAMAGE },
+        { label: 'Возмещение', color: COLOR_COMPENSATION },
       ]}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data.motorcadeAgg} margin={CHART_MARGIN}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis dataKey="name" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              tickFormatter={formatCompactCurrency}
-              width={Y_AXIS_WIDTH}
-            />
+            <defs>
+              <BarGradient id={`${gradientId}-0`} color={COLOR_DAMAGE} />
+              <BarGradient id={`${gradientId}-1`} color={COLOR_COMPENSATION} />
+            </defs>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="name" {...X_AXIS_PROPS} {...xAxisProps} />
+            <YAxis {...Y_AXIS_PROPS} tickFormatter={formatCompactCurrency} />
             <Tooltip
-              formatter={(value) => formatCurrency(Number(value))}
-              contentStyle={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                color: 'var(--color-text)',
-              }}
+              cursor={BAR_CURSOR}
+              content={<ChartTooltip valueFormatter={formatCurrency} />}
             />
             <Bar
+              maxBarSize={BAR_SIZE_GROUPED}
+              {...ANIMATION}
               dataKey="sumDamage"
               name="Ущерб"
-              fill={CHART_1}
-              radius={[4, 4, 0, 0]}
+              fill={`url(#${gradientId}-0)`}
+              radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => openMotorcade(barPayload<MotorcadeAggregate>(entry).key)}
             />
             <Bar
+              maxBarSize={BAR_SIZE_GROUPED}
+              {...ANIMATION}
               dataKey="sumCompensated"
               name="Возмещение"
-              fill={CHART_2}
-              radius={[4, 4, 0, 0]}
+              fill={`url(#${gradientId}-1)`}
+              radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => openMotorcade(barPayload<MotorcadeAggregate>(entry).key)}
             />

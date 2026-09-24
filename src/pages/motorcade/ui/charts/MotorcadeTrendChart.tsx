@@ -1,6 +1,6 @@
 import {
-  Line,
-  LineChart,
+  Area,
+  AreaChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -9,10 +9,21 @@ import {
 } from 'recharts'
 import { formatNumber } from '@/shared/lib/formatters'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  LINE_CURSOR,
+  activeLineDot,
+} from '@/shared/ui/chart/chartStyle'
+import { AreaGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { formatMonthShortLabel, formatMonthLabel } from '@/entities/accident/lib/period'
-import { CHART_1 } from '@/shared/lib/chartColors'
-import { CHART_MARGIN, Y_AXIS_WIDTH, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { COLOR_COUNT } from '@/shared/lib/chartColors'
+import { CHART_MARGIN, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
 interface Props {
@@ -40,8 +51,10 @@ function TrendDot({ cx, cy, payload, onPointClick }: DotProps) {
     <circle
       cx={cx}
       cy={cy}
-      r={4}
-      fill={CHART_1}
+      r={3}
+      fill={COLOR_COUNT}
+      stroke="var(--color-surface)"
+      strokeWidth={1.5}
       style={{ cursor: 'pointer' }}
       onClick={() => onPointClick(payload.ym)}
     />
@@ -51,6 +64,7 @@ function TrendDot({ cx, cy, payload, onPointClick }: DotProps) {
 // Динамика ДТП по месяцам для выбранной автоколонны — те же 12 месяцев, что
 // и на "Обзоре" (см. getTrendMonths), но по её собственной истории.
 export function MotorcadeTrendChart({ data }: Props) {
+  const gradientId = useGradientId()
   const chartData: TrendPoint[] = data.monthlyCounts.map((m) => ({
     ym: m.ym,
     label: formatMonthShortLabel(m.ym),
@@ -71,37 +85,35 @@ export function MotorcadeTrendChart({ data }: Props) {
     <ChartCard
       table={table}
       title="Динамика ДТП по месяцам"
-      legend={[{ label: 'ДТП', color: CHART_1 }]}
+      subtitle={`${formatNumber(chartData.reduce((sum, d) => sum + d.count, 0))} ДТП за ${chartData.length} мес.`}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={CHART_MARGIN}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              allowDecimals={false}
-              width={Y_AXIS_WIDTH}
-            />
+          <AreaChart data={chartData} margin={CHART_MARGIN}>
+            <defs>
+              <AreaGradient id={`${gradientId}-0`} color={COLOR_COUNT} strong />
+            </defs>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="label" {...X_AXIS_PROPS} {...xAxisProps} />
+            <YAxis {...Y_AXIS_PROPS} allowDecimals={false} />
             <Tooltip
-              contentStyle={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                color: 'var(--color-text)',
-              }}
+              cursor={LINE_CURSOR}
+              content={
+                <ChartTooltip titleFormatter={(point) => formatMonthLabel(Number(point?.ym))} />
+              }
             />
-            <Line
+            <Area
+              activeDot={activeLineDot(COLOR_COUNT)}
+              fill={`url(#${gradientId}-0)`}
+              {...ANIMATION}
               type="monotone"
               dataKey="count"
               name="ДТП"
-              stroke={CHART_1}
+              stroke={COLOR_COUNT}
               strokeWidth={2}
               dot={<TrendDot onPointClick={handleClick} />}
-              activeDot={{ r: 6 }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </ChartCard>

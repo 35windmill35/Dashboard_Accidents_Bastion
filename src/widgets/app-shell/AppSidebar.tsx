@@ -1,6 +1,9 @@
-import type { ComponentType } from 'react'
-import { NavLink } from 'react-router-dom'
-import { IconGrid, IconBus, IconChart } from './icons'
+import type { ComponentType, CSSProperties } from 'react'
+import { observer } from 'mobx-react-lite'
+import { NavLink, matchPath, useLocation, useNavigate } from 'react-router-dom'
+import { authStore } from '@/entities/user/model/authStore'
+import { BrandLogo } from '@/shared/ui/BrandLogo/BrandLogo'
+import { IconGrid, IconBus, IconChart, IconLogout } from './icons'
 import styles from './AppSidebar.module.css'
 
 interface NavItem {
@@ -24,15 +27,45 @@ interface AppSidebarProps {
 // Выдвигающееся меню: на десктопе — фиксированная колонка, на мобильном —
 // оверлей поверх контента, открывается/закрывается кнопкой в шапке
 // (см. AppShell).
-export function AppSidebar({ isOpen, onNavigate }: AppSidebarProps) {
+//
+// Как в эталоне: подсветка активного раздела — одна плашка, которая
+// «переезжает» к выбранному пункту (а не фон на самой ссылке). Переключателя
+// темы из эталона нет — по ТЗ тема берётся из настроек браузера
+// (shared/lib/theme/themeStore). Внизу — «Выйти» (в эталоне её нет,
+// перенесена сюда из шапки).
+export const AppSidebar = observer(function AppSidebar({ isOpen, onNavigate }: AppSidebarProps) {
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const activeIndex = NAV_ITEMS.findIndex(
+    (item) => matchPath({ path: item.to, end: item.end ?? false }, location.pathname) !== null
+  )
+
+  const handleLogout = () => {
+    authStore.logout()
+    navigate('/login')
+  }
+
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ''}`}>
       <div className={styles.brand}>
-        <span className={styles.logo}>ДТП</span>
-        <div className={styles.brandName}>Дашборд ДТП</div>
+        <BrandLogo size={40} />
+        <div className={styles.brandText}>
+          <span className={styles.brandName}>Дашборд ДТП</span>
+          <span className={styles.brandCaption}>Аналитика аварийности</span>
+        </div>
       </div>
 
-      <nav className={styles.nav}>
+      <span className={styles.sectionLabel}>Разделы</span>
+
+      <nav className={styles.nav} aria-label="Разделы">
+        {activeIndex >= 0 && (
+          <span
+            className={styles.indicator}
+            style={{ '--active-index': activeIndex } as CSSProperties}
+            aria-hidden="true"
+          />
+        )}
         {NAV_ITEMS.map(({ to, label, end, Icon }) => (
           <NavLink
             key={to}
@@ -48,6 +81,19 @@ export function AppSidebar({ isOpen, onNavigate }: AppSidebarProps) {
           </NavLink>
         ))}
       </nav>
+
+      <div className={styles.footer}>
+        <button
+          type="button"
+          className={`${styles.footerButton} ${styles.logout}`}
+          onClick={handleLogout}
+        >
+          <span className={styles.footerButtonLabel}>
+            <IconLogout />
+            <span>Выйти</span>
+          </span>
+        </button>
+      </div>
     </aside>
   )
-}
+})

@@ -1,15 +1,22 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import {
+  GRID_PROPS,
+  X_AXIS_PROPS,
+  Y_AXIS_PROPS,
+  ANIMATION,
+  useGradientId,
+  BAR_CURSOR,
+  BAR_RADIUS,
+  BAR_SIZE_GROUPED,
+} from '@/shared/ui/chart/chartStyle'
+import { BarGradient } from '@/shared/ui/chart/ChartGradients'
+import { ChartTooltip } from '@/shared/ui/chart/ChartTooltip'
 import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatPercent } from '@/shared/lib/formatters'
-import {
-  CHART_MARGIN,
-  Y_AXIS_WIDTH,
-  barPayload,
-  useCategoryXAxis,
-} from '@/shared/lib/rechartsHelpers'
+import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import type { AnalyticsData, CauseComparisonRow } from '../../model/analyticsData'
 
 interface Props {
@@ -21,6 +28,7 @@ interface Props {
 // проценты (не абсолютные числа), чтобы автоколонны разного размера были
 // сравнимы.
 export function CausesComparisonChart({ data, period }: Props) {
+  const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)
   const chartData = data.causeComparison.filter(
     (row) => row.rowsA.length > 0 || row.rowsB.length > 0
@@ -50,6 +58,7 @@ export function CausesComparisonChart({ data, period }: Props) {
     <ChartCard
       table={table}
       title="Сравнение структуры причин ДТП"
+      subtitle={'Доля ДТП каждой категории'}
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },
         { label: data.b.name, color: COMPARISON_COLOR_B },
@@ -58,36 +67,34 @@ export function CausesComparisonChart({ data, period }: Props) {
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={chartData} margin={CHART_MARGIN}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-            <XAxis dataKey="label" stroke="var(--color-text-secondary)" {...xAxisProps} />
-            <YAxis
-              stroke="var(--color-text-secondary)"
-              fontSize={12}
-              tickFormatter={(v: number) => formatPercent(v)}
-              width={Y_AXIS_WIDTH}
-            />
+            <defs>
+              <BarGradient id={`${gradientId}-0`} color={COMPARISON_COLOR_A} />
+              <BarGradient id={`${gradientId}-1`} color={COMPARISON_COLOR_B} />
+            </defs>
+            <CartesianGrid {...GRID_PROPS} />
+            <XAxis dataKey="label" {...X_AXIS_PROPS} {...xAxisProps} />
+            <YAxis {...Y_AXIS_PROPS} tickFormatter={(v: number) => formatPercent(v)} />
             <Tooltip
-              formatter={(value) => formatPercent(Number(value))}
-              contentStyle={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid var(--color-border)',
-                borderRadius: 8,
-                color: 'var(--color-text)',
-              }}
+              cursor={BAR_CURSOR}
+              content={<ChartTooltip valueFormatter={formatPercent} />}
             />
             <Bar
+              maxBarSize={BAR_SIZE_GROUPED}
+              {...ANIMATION}
               dataKey="shareA"
               name={data.a.name}
-              fill={COMPARISON_COLOR_A}
-              radius={[4, 4, 0, 0]}
+              fill={`url(#${gradientId}-0)`}
+              radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => openCause(barPayload<CauseComparisonRow>(entry).category, 'a')}
             />
             <Bar
+              maxBarSize={BAR_SIZE_GROUPED}
+              {...ANIMATION}
               dataKey="shareB"
               name={data.b.name}
-              fill={COMPARISON_COLOR_B}
-              radius={[4, 4, 0, 0]}
+              fill={`url(#${gradientId}-1)`}
+              radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => openCause(barPayload<CauseComparisonRow>(entry).category, 'b')}
             />

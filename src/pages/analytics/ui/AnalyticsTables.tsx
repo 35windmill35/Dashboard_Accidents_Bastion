@@ -23,15 +23,30 @@ function formatByKind(kind: SummaryRow['kind'], value: number | null): string {
 }
 
 const worstDriverColumns: DataTableColumn<WorstDriverRow>[] = [
-  { key: 'rank', label: '#', align: 'center', render: (r) => r.rank },
-  { key: 'name', label: 'Водитель', render: (r) => r.name },
-  { key: 'motorcadeName', label: 'Автоколонна', render: (r) => r.motorcadeName },
-  { key: 'count', label: 'ДТП', align: 'center', render: (r) => formatNumber(r.count) },
-  { key: 'sumDamage', label: 'Ущерб', align: 'center', render: (r) => formatCurrency(r.sumDamage) },
+  { key: 'name', label: 'Водитель', grow: true, render: (r) => r.name, title: (r) => r.name },
+  {
+    key: 'motorcadeName',
+    label: 'Автоколонна',
+    dim: true,
+    render: (r) => r.motorcadeName,
+    title: (r) => r.motorcadeName,
+  },
+  {
+    key: 'count',
+    label: 'ДТП',
+    align: 'right',
+    render: (r) => formatNumber(r.count),
+  },
+  {
+    key: 'sumDamage',
+    label: 'Ущерб',
+    align: 'right',
+    render: (r) => formatCurrency(r.sumDamage),
+  },
   {
     key: 'driverFaultShare',
-    label: 'Доля «вина водителя»',
-    align: 'center',
+    label: 'Вина водителя',
+    align: 'right',
     render: (r) => formatPercent(r.driverFaultShare),
   },
 ]
@@ -40,23 +55,24 @@ export function AnalyticsTables({ data, period }: AnalyticsTablesProps) {
   const periodLabel = formatPeriodLabel(period)
 
   const summaryColumns: DataTableColumn<SummaryRow>[] = [
-    { key: 'label', label: 'Показатель', render: (r) => r.label },
+    { key: 'label', label: 'Показатель', grow: true, wrap: true, render: (r) => r.label },
     {
       key: 'valueA',
       label: data.a.name,
-      align: 'center',
+      align: 'right',
       render: (r) => formatByKind(r.kind, r.valueA),
     },
     {
       key: 'valueB',
       label: data.b.name,
-      align: 'center',
+      align: 'right',
       render: (r) => formatByKind(r.kind, r.valueB),
     },
     {
       key: 'diff',
       label: 'Разница',
-      align: 'center',
+      align: 'right',
+      dim: true,
       render: (r) => formatDelta(calcDelta(r.valueB, r.valueA)),
     },
   ]
@@ -75,6 +91,7 @@ export function AnalyticsTables({ data, period }: AnalyticsTablesProps) {
         columns={worstDriverColumns}
         rows={data.worstDrivers}
         getRowKey={(r) => r.key}
+        showRank
         initialLimit={data.worstDrivers.length}
         onRowClick={(r) =>
           drilldownStore.open(`${r.name} — ${r.motorcadeName}, ${periodLabel}`, r.rows)

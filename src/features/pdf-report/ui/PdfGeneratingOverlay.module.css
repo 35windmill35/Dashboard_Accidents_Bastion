@@ -79,3 +79,61 @@
     transform: translateY(14px) scale(0.985);
   }
 }
+
+/* Итог формирования: предупреждение или ошибка, внизу экрана до закрытия */
+.notice {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  z-index: 1000;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: min(560px, calc(100vw - 32px));
+  padding: 12px 14px 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  border: 1px solid var(--color-warning-line);
+  box-shadow: var(--shadow-lg);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text);
+  animation: notice-in 0.3s var(--ease-out);
+}
+
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+}
+
+.noticeError {
+  border-color: var(--color-negative);
+  background:
+    linear-gradient(0deg, var(--color-negative-soft), var(--color-negative-soft)),
+    var(--color-surface);
+}
+
+.noticeText {
+  flex: 1;
+  min-width: 0;
+}
+
+.noticeClose {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.noticeClose:hover {
+  color: var(--color-text);
+}

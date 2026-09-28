@@ -52,6 +52,4 @@ export interface AccidentRow {
 
   // добавляется клиентом при склейке результатов по базам
   DB_INDEX: number
-
-  [key: string]: unknown
 }

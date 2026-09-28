@@ -4,6 +4,7 @@ import { computeAccidentScope, type AccidentScopeData } from '@/entities/acciden
 import {
   buildCauseSlices,
   causeCategoryShare,
+  compareByCountThenDamage,
   driversWithThreeOrMoreAccidents,
   monthlyTrend,
   type DriverAggregate,
@@ -27,7 +28,7 @@ export interface SummaryRow {
   kind: SummaryMetricKind
   valueA: number | null
   valueB: number | null
-  // "Комментарий о сопоставимости" (ТЗ §4.5) — колонка временно скрыта
+  // "Комментарий о сопоставимости" — колонка временно скрыта
   // по решению заказчика (экран и PDF), значение по-прежнему считается
   comment: string
 }
@@ -65,7 +66,7 @@ export interface AnalyticsData {
   causeComparison: CauseComparisonRow[]
   summaryRows: SummaryRow[]
   worstDrivers: WorstDriverRow[]
-  // Предупреждения о сопоставимости — баннер на экране и в PDF (ТЗ §4.5, §6)
+  // Предупреждения о сопоставимости — баннер на экране и в PDF
   comparabilityWarnings: string[]
 }
 
@@ -101,16 +102,17 @@ function driverFaultShareOf(driver: DriverAggregate): number | null {
   return causeCategoryShare(slices, driver.count, 'driverFault')
 }
 
-// Топ-10 худших водителей сразу по обеим автоколоннам — объединяем оба
-// рейтинга и берём топ по количеству ДТП.
+// Топ-10 водителей с наибольшим числом ДТП сразу по обеим автоколоннам —
+// объединяем оба рейтинга (без строки «Водитель не указан») и берём топ.
 function buildWorstDrivers(a: AnalyticsSide, b: AnalyticsSide): WorstDriverRow[] {
-  const combined = [
-    ...a.scope.driversRanking.map((driver) => ({ driver, motorcadeName: a.name })),
-    ...b.scope.driversRanking.map((driver) => ({ driver, motorcadeName: b.name })),
-  ]
+  const combined = [a, b].flatMap((side) =>
+    side.scope.driversRanking
+      .filter((driver) => driver.key !== 'unknown')
+      .map((driver) => ({ driver, motorcadeName: side.name }))
+  )
 
   return combined
-    .sort((x, y) => y.driver.count - x.driver.count)
+    .sort((x, y) => compareByCountThenDamage(x.driver, y.driver))
     .slice(0, 10)
     .map(({ driver, motorcadeName }, index) => ({
       rank: index + 1,

@@ -4,17 +4,39 @@ import styles from './PdfGeneratingOverlay.module.css'
 
 // Полноэкранная блокирующая подложка на время формирования PDF — это же и
 // есть блокировка повторного клика (кнопка в шапке тоже дизейблится, но
-// оверлей не даёт взаимодействовать вообще ни с чем на экране). Рисуется
-// поверх контента, на сам захват html2canvas не влияет — тот снимает
-// конкретные DOM-узлы независимо от того, что визуально поверх них.
+// оверлей не даёт взаимодействовать вообще ни с чем на экране).
+//
+// После формирования здесь же показывается итог, если что-то пошло не так:
+// ошибка (файла нет) или предупреждение (файл сохранён без части разделов).
 export const PdfGeneratingOverlay = observer(function PdfGeneratingOverlay() {
-  if (!pdfReportStore.isGenerating) return null
+  const { isGenerating, lastError, lastWarning } = pdfReportStore
+
+  if (!isGenerating) {
+    const message = lastError ?? lastWarning
+    if (!message) return null
+    return (
+      <div
+        className={`${styles.notice} ${lastError ? styles.noticeError : ''}`}
+        role={lastError ? 'alert' : 'status'}
+      >
+        <span className={styles.noticeText}>{message}</span>
+        <button
+          type="button"
+          className={styles.noticeClose}
+          onClick={() => pdfReportStore.dismissNotice()}
+          aria-label="Закрыть сообщение"
+        >
+          ×
+        </button>
+      </div>
+    )
+  }
 
   const { current, total } = pdfReportStore.progress
   const hasProgress = total > 0
 
   return (
-    <div className={styles.overlay} role="alert" aria-live="polite">
+    <div className={styles.overlay} role="status" aria-live="polite">
       <div className={styles.card}>
         <div className={styles.spinner} />
         <div className={styles.title}>Формируется PDF-отчёт…</div>

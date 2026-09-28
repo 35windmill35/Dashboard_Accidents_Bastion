@@ -1,6 +1,7 @@
 import { ApiError, getAuthorized } from '@/shared/api/httpClient'
 import { mapWithConcurrencyLimit } from '@/shared/lib/concurrencyLimit'
 import type { AccidentRow } from '../model/types'
+import { parseAccidentRows, type RejectReason } from '../lib/parseRow'
 
 // Сервер отдаёт DashboardAccidentStat порциями (на практике по 200 строк) и
 // сообщает полный объём в totalRecords. Остальное дозапрашивается тем же
@@ -17,17 +18,25 @@ interface StatResponse {
   }
 }
 
+type RawRow = Omit<AccidentRow, 'DB_INDEX'>
+
 interface StatPage {
-  rows: AccidentRow[]
+  rawCount: number
+  rows: RawRow[]
+  rejected: number
+  rejectReasons: Partial<Record<RejectReason, number>>
   totalRecords: number | null
 }
 
 export interface AccidentStatResult {
-  rows: AccidentRow[]
+  rows: RawRow[]
   // Сколько строк сервер заявил в totalRecords (null — не сообщил)
   totalRecords: number | null
   // Получены все заявленные строки
   isComplete: boolean
+  // Строки, отброшенные при разборе (нет ID, некорректная дата)
+  rejected: number
+  rejectReasons: Partial<Record<RejectReason, number>>
 }
 
 async function fetchPage(dbIndex: number, offset: number, signal?: AbortSignal): Promise<StatPage> {
@@ -44,8 +53,12 @@ async function fetchPage(dbIndex: number, offset: number, signal?: AbortSignal):
   }
 
   const total = Number(stat.totalRecords)
+  const parsed = parseAccidentRows(stat.data)
   return {
-    rows: stat.data as AccidentRow[],
+    rawCount: stat.data.length,
+    rows: parsed.rows,
+    rejected: parsed.rejected,
+    rejectReasons: parsed.rejectReasons,
     totalRecords: Number.isFinite(total) && total >= 0 ? total : null,
   }
 }
@@ -64,9 +77,10 @@ export async function getAccidentStat(
 ): Promise<AccidentStatResult> {
   const first = await fetchPage(dbIndex, 0, signal)
   const total = first.totalRecords
-  const pageSize = first.rows.length
+  // Размер порции — по сырому ответу, до отбраковки строк
+  const pageSize = first.rawCount
 
-  const collected: AccidentRow[][] = [first.rows]
+  const collected: StatPage[] = [first]
 
   if (total !== null && pageSize > 0 && total > pageSize) {
     const offsets: number[] = []
@@ -80,24 +94,33 @@ export async function getAccidentStat(
 
     for (const page of pages) {
       if (page.status === 'rejected') throw page.reason
-      collected.push(page.value.rows)
+      collected.push(page.value)
     }
   }
 
   // Между запросами страниц в базе могли добавиться/сторнироваться записи —
   // тогда соседние страницы пересекаются. Один ДТП = один ACCIDENT_ID.
+  // ACCIDENT_ID после разбора всегда число.
   const seen = new Set<number>()
-  const rows: AccidentRow[] = []
-  collected.flat().forEach((row) => {
-    const id = row.ACCIDENT_ID
-    if (typeof id === 'number') {
-      if (seen.has(id)) return
-      seen.add(id)
-    }
-    rows.push(row)
+  const rows: RawRow[] = []
+  let rejected = 0
+  const rejectReasons: Partial<Record<RejectReason, number>> = {}
+  collected.forEach((page) => {
+    rejected += page.rejected
+    Object.entries(page.rejectReasons).forEach(([reason, count]) => {
+      const key = reason as RejectReason
+      rejectReasons[key] = (rejectReasons[key] ?? 0) + (count ?? 0)
+    })
+    page.rows.forEach((row) => {
+      if (seen.has(row.ACCIDENT_ID)) return
+      seen.add(row.ACCIDENT_ID)
+      rows.push(row)
+    })
   })
 
-  const isComplete = total === null || rows.length >= total
+  // Полнота — по числу уникальных полученных записей, включая отбракованные:
+  // отбраковка показывается отдельным предупреждением.
+  const isComplete = total === null || rows.length + rejected >= total
   if (!isComplete) {
     console.warn('[api] DashboardAccidentStat: получено меньше строк, чем totalRecords', {
       dbIndex,
@@ -106,5 +129,5 @@ export async function getAccidentStat(
     })
   }
 
-  return { rows, totalRecords: total, isComplete }
+  return { rows, totalRecords: total, isComplete, rejected, rejectReasons }
 }

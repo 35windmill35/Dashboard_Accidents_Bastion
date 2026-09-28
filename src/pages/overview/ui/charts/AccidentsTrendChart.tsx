@@ -70,7 +70,7 @@ export function AccidentsTrendChart({ data }: Props) {
     count: m.count,
   }))
 
-  // ТЗ §4.3: клик по точке — период дашборда = этот месяц
+  // Клик по точке — период дашборда = этот месяц
   const handleClick = (ym: number) => filtersStore.setPeriod({ mode: 'month', value: ym })
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))

@@ -6,7 +6,7 @@ export interface ChartLegendItem {
   color: string
 }
 
-// Текстовая альтернатива графику (ТЗ §8, доступность): те же числа, что на
+// Текстовая альтернатива графику (доступность): те же числа, что на
 // графике, уже отформатированные для показа.
 export interface ChartDataTable {
   columns: string[]
@@ -127,7 +127,14 @@ export function ChartCard({
           )}
         </div>
       ) : (
-        <div className={styles.body} style={{ height }}>
+        // Для скринридера график — одна картинка с подписью; сами числа
+        // доступны переключателем «Данные»
+        <div
+          className={styles.body}
+          style={{ height }}
+          role="img"
+          aria-label={table ? `${title}. Числа — во вкладке «Данные»` : title}
+        >
           {children}
         </div>
       )}

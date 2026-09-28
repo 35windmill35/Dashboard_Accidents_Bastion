@@ -29,14 +29,18 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
 }: RequireAccidentsAccessProps) {
   const location = useLocation()
 
+  // Сессия могла истечь, пока вкладка была закрыта или спала, — проверяем
+  // при открытии защищённого экрана и смене маршрута
   useEffect(() => {
-    // сессия истекла по времени, пока вкладка была закрыта/спала —
-    // разлогиниваем с сообщением на экране входа
     authStore.checkSessionExpiry()
-    if (authStore.rightsNeedCheck) {
-      void authStore.checkAccidentsAccess()
-    }
-  })
+  }, [location.pathname])
+
+  // Права по базам не проверялись в этой сессии (например, после
+  // перезагрузки страницы) — запускаем проверку
+  const rightsNeedCheck = authStore.rightsNeedCheck
+  useEffect(() => {
+    if (rightsNeedCheck) void authStore.checkAccidentsAccess()
+  }, [rightsNeedCheck])
 
   if (!authStore.isAuthenticated) {
     return <Navigate to={`/login${location.search}`} replace />

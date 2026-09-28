@@ -7,15 +7,27 @@ function isEmpty(value: number | null | undefined): boolean {
   return value === null || value === undefined || Number.isNaN(value)
 }
 
-export function formatNumber(value: number | null | undefined, decimals = 0): string {
-  if (isEmpty(value)) return '—'
-  return new Intl.NumberFormat('ru-RU', {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value as number)
+// Intl.NumberFormat дорогой в создании, а форматируются тысячи ячеек
+const numberFormats = new Map<number, Intl.NumberFormat>()
+
+function numberFormat(decimals: number): Intl.NumberFormat {
+  let format = numberFormats.get(decimals)
+  if (!format) {
+    format = new Intl.NumberFormat('ru-RU', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    })
+    numberFormats.set(decimals, format)
+  }
+  return format
 }
 
-// Валюта берётся из CURRENCY_CODE загруженных данных (ТЗ §8):
+export function formatNumber(value: number | null | undefined, decimals = 0): string {
+  if (isEmpty(value)) return '—'
+  return numberFormat(decimals).format(value as number)
+}
+
+// Валюта берётся из CURRENCY_CODE загруженных данных:
 // accidentsStore после загрузки вызывает setCurrencyCode с единственной
 // валютой датасета. Если валют несколько или данных нет — подписи без
 // знака валюты (экран отдельно предупреждает о смешанных валютах).
@@ -72,6 +84,7 @@ export function formatPercent(value: number | null | undefined, decimals = 0): s
   return `${formatNumber((value as number) * 100, decimals)}%`
 }
 
+// Относительное изменение: 10 → 15 = +50%. Для количеств и сумм.
 export function calcDelta(
   cur: number | null | undefined,
   prev: number | null | undefined
@@ -87,6 +100,46 @@ export function formatDelta(delta: number | null | undefined, decimals = 0): str
   return `${sign}${formatNumber(Math.abs(value) * 100, decimals)}%`
 }
 
+// Изменение доли — в процентных пунктах: 40% → 50% = «+10 п.п.», а не
+// «+25%». Доли на входе — 0…1.
+export function calcPointDelta(
+  cur: number | null | undefined,
+  prev: number | null | undefined
+): number | null {
+  if (isEmpty(cur) || isEmpty(prev)) return null
+  return (cur as number) - (prev as number)
+}
+
+export function formatPointDelta(delta: number | null | undefined, decimals = 0): string {
+  if (isEmpty(delta)) return '—'
+  const value = delta as number
+  const points = Math.abs(value) * 100
+  const rounded = Number(points.toFixed(decimals))
+  const sign = rounded === 0 ? '' : value > 0 ? '+' : '−'
+  return `${sign}${formatNumber(points, decimals)}${NBSP}п.п.`
+}
+
+export type KpiKind = 'count' | 'currency' | 'percent'
+
+// Дельта KPI с учётом вида показателя: доли — в п.п., остальное — в %.
+export interface KpiDelta {
+  value: number
+  text: string
+}
+
+export function kpiDelta(
+  kind: KpiKind,
+  cur: number | null | undefined,
+  prev: number | null | undefined
+): KpiDelta | null {
+  if (kind === 'percent') {
+    const value = calcPointDelta(cur, prev)
+    return value === null ? null : { value, text: formatPointDelta(value) }
+  }
+  const value = calcDelta(cur, prev)
+  return value === null ? null : { value, text: formatDelta(value) }
+}
+
 export function isDeltaPositive(
   delta: number | null | undefined,
   higherIsBetter = true
@@ -96,21 +149,26 @@ export function isDeltaPositive(
   return higherIsBetter ? isIncrease : !isIncrease
 }
 
-// "2026-04-19T..." -> "19.04.2026"
+// "2026-04-19T..." -> "19.04.2026". Разбор по символам, без Date — иначе в
+// часовых поясах западнее UTC дата сдвигается на сутки.
 export function formatDate(value: string | null | undefined): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return new Intl.DateTimeFormat('ru-RU').format(date)
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '')
+  if (!match) return '—'
+  return `${match[3]}.${match[2]}.${match[1]}`
 }
 
 // ACCIDENT_TIME приходит с фиктивной датой 1900-01-01, значение — только
-// время.
+// время. 12:00 и 00:00 — заглушки импорта исторических записей (так
+// записано подавляющее большинство старых ДТП), настоящим временем их не
+// показываем.
+const PLACEHOLDER_TIMES = new Set(['12:00:00', '00:00:00'])
+
 export function formatTime(value: string | null | undefined): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
-  return new Intl.DateTimeFormat('ru-RU', { hour: '2-digit', minute: '2-digit' }).format(date)
+  const match = /(\d{2}):(\d{2})(?::(\d{2}))?/.exec(value ?? '')
+  if (!match) return '—'
+  const full = `${match[1]}:${match[2]}:${match[3] ?? '00'}`
+  if (PLACEHOLDER_TIMES.has(full)) return '—'
+  return `${match[1]}:${match[2]}`
 }
 
 // Подпись с единицей измерения для пояснений под заголовком графика:

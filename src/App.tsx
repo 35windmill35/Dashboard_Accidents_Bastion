@@ -1,50 +1,69 @@
-import { Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, type ReactNode } from 'react'
+import { Navigate, Routes, Route } from 'react-router-dom'
 import { LoginPage } from '@/pages/login/LoginPage'
-import { RegisterPage } from '@/pages/register/RegisterPage'
-import { OverviewPage } from '@/pages/overview/OverviewPage'
-import { MotorcadePage } from '@/pages/motorcade/MotorcadePage'
-import { AnalyticsPage } from '@/pages/analytics/AnalyticsPage'
 import { RequireAccidentsAccess } from '@/app/providers/RequireAccidentsAccess'
 import { AccidentDrilldownModal } from '@/widgets/accident-drilldown/AccidentDrilldownModal'
 import { PdfGeneratingOverlay } from '@/features/pdf-report/ui/PdfGeneratingOverlay'
+import { Skeleton } from '@/shared/ui/Skeleton/Skeleton'
 
-// /register — заглушка, регистрацию по телефону не делаем (заказчик
-// пользуется своей формой), ссылки на неё в UI нет.
+// Экраны с графиками грузятся отдельными чанками: Recharts не нужен на
+// экране входа.
+const OverviewPage = lazy(() =>
+  import('@/pages/overview/OverviewPage').then((m) => ({ default: m.OverviewPage }))
+)
+const MotorcadePage = lazy(() =>
+  import('@/pages/motorcade/MotorcadePage').then((m) => ({ default: m.MotorcadePage }))
+)
+const AnalyticsPage = lazy(() =>
+  import('@/pages/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage }))
+)
+
+function Protected({ children }: { children: ReactNode }) {
+  return (
+    <RequireAccidentsAccess>
+      <Suspense fallback={<Skeleton height={320} />}>{children}</Suspense>
+    </RequireAccidentsAccess>
+  )
+}
+
+// Регистрации в дашборде нет — у заказчика своя форма; старая ссылка
+// /register ведёт на вход.
 //
 // Три защищённых экрана обёрнуты в RequireAccidentsAccess — проверка
 // сессии, прав по базам и общий сайдбар/шапка (см. AppShell внутри guard).
 // Модалка детализации — одна на всё приложение, монтируется здесь и сама
-// решает, показываться ли (drilldownStore.isOpen).
+// решает, показываться ли (drilldownStore.isOpen + активная сессия).
 function App() {
   return (
     <>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<Navigate to="/login" replace />} />
         <Route
           path="/"
           element={
-            <RequireAccidentsAccess>
+            <Protected>
               <OverviewPage />
-            </RequireAccidentsAccess>
+            </Protected>
           }
         />
         <Route
           path="/motorcade"
           element={
-            <RequireAccidentsAccess>
+            <Protected>
               <MotorcadePage />
-            </RequireAccidentsAccess>
+            </Protected>
           }
         />
         <Route
           path="/analytics"
           element={
-            <RequireAccidentsAccess>
+            <Protected>
               <AnalyticsPage />
-            </RequireAccidentsAccess>
+            </Protected>
           }
         />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <AccidentDrilldownModal />
       <PdfGeneratingOverlay />

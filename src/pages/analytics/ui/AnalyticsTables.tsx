@@ -1,12 +1,6 @@
 import { DataTable, type DataTableColumn } from '@/widgets/data-table/DataTable'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
-import {
-  formatCurrency,
-  formatNumber,
-  formatPercent,
-  formatDelta,
-  calcDelta,
-} from '@/shared/lib/formatters'
+import { formatCurrency, formatNumber, formatPercent, kpiDelta } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import type { AnalyticsData, SummaryRow, WorstDriverRow } from '../model/analyticsData'
 import styles from './AnalyticsTables.module.css'
@@ -73,7 +67,7 @@ export function AnalyticsTables({ data, period }: AnalyticsTablesProps) {
       label: 'Разница',
       align: 'right',
       dim: true,
-      render: (r) => formatDelta(calcDelta(r.valueB, r.valueA)),
+      render: (r) => kpiDelta(r.kind, r.valueB, r.valueA)?.text ?? '—',
     },
   ]
 
@@ -87,7 +81,7 @@ export function AnalyticsTables({ data, period }: AnalyticsTablesProps) {
         initialLimit={data.summaryRows.length}
       />
       <DataTable
-        title="Топ-10 худших водителей (обе автоколонны)"
+        title="Топ-10 водителей по числу ДТП (обе автоколонны)"
         columns={worstDriverColumns}
         rows={data.worstDrivers}
         getRowKey={(r) => r.key}

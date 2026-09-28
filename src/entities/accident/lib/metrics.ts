@@ -2,6 +2,7 @@ import type { AccidentRow } from '../model/types'
 import {
   getCauseCategory,
   CAUSE_CATEGORY_LABELS,
+  NO_DAMAGE_CATEGORY_ENABLED,
   type CauseCategory,
 } from '@/shared/config/accidentCauses'
 import { getMotorcadeKey, getMotorcadeName } from './motorcade'
@@ -75,15 +76,11 @@ export interface CauseSlice {
   rows: AccidentRow[]
 }
 
-const CAUSE_ORDER: CauseCategory[] = [
-  'driverFault',
-  'thirdPartyFault',
-  'noDamage',
-  'undetermined',
-  'underReview',
-]
+const CAUSE_ORDER: CauseCategory[] = (
+  ['driverFault', 'thirdPartyFault', 'noDamage', 'undetermined', 'underReview'] as const
+).filter((category) => category !== 'noDamage' || NO_DAMAGE_CATEGORY_ENABLED)
 
-// Разбивка на 5 категорий причин с суммами — общая для "Обзора" и
+// Разбивка по категориям причин с суммами — общая для "Обзора" и
 // "Автоколонны" (порядок категорий фиксирован, см. CAUSE_ORDER).
 export function buildCauseSlices(rows: AccidentRow[]): CauseSlice[] {
   const grouped = groupByCauseCategory(rows)
@@ -112,6 +109,28 @@ export function causeCategoryShare(
   const slice = slices.find((s) => s.category === category)
   return (slice?.count ?? 0) / totalCount
 }
+
+// Стабильный порядок рейтингов: больше ДТП → больше ущерб → по имени →
+// по ключу. Без вторичных ключей порядок при равенстве зависел бы от
+// порядка строк в ответе API, и «топ-8» обрезался бы произвольно.
+interface Rankable {
+  key: string
+  name: string
+  count: number
+  sumDamage: number
+}
+
+export function compareByCountThenDamage(a: Rankable, b: Rankable): number {
+  return (
+    b.count - a.count ||
+    b.sumDamage - a.sumDamage ||
+    a.name.localeCompare(b.name, 'ru') ||
+    (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)
+  )
+}
+
+export const UNKNOWN_DRIVER_NAME = 'Водитель не указан'
+export const UNKNOWN_VEHICLE_NAME = 'ТС не указано'
 
 export interface MotorcadeAggregate {
   key: string
@@ -159,15 +178,16 @@ export interface DriverAggregate {
   rows: AccidentRow[]
 }
 
-// Водитель уникален в пределах одной базы (DB_INDEX+DRIVER_ID), записи без
-// DRIVER_ID в рейтинг не попадают. Возвращает полный список — экраны сами
+// Водитель уникален в пределах одной базы (DB_INDEX+DRIVER_ID). Записи без
+// DRIVER_ID собираются в одну строку «Водитель не указан» — иначе сумма
+// таблицы не сходится с итогом. Возвращает полный список — экраны сами
 // берут top-N и разворачивают остальное по "Показать все".
 export function rankDrivers(rows: AccidentRow[]): DriverAggregate[] {
   const map = new Map<string, DriverAggregate>()
 
   rows.forEach((row) => {
-    if (row.DRIVER_ID == null) return
-    const key = `${row.DB_INDEX}:${row.DRIVER_ID}`
+    const isKnown = row.DRIVER_ID != null
+    const key = isKnown ? `${row.DB_INDEX}:${row.DRIVER_ID}` : 'unknown'
     const existing = map.get(key)
     const damage = row.ACCIDENT_DAMAGE ?? 0
 
@@ -180,14 +200,14 @@ export function rankDrivers(rows: AccidentRow[]): DriverAggregate[] {
 
     map.set(key, {
       key,
-      name: row.DRIVER_NAME || 'Без имени',
+      name: isKnown ? row.DRIVER_NAME || 'Без имени' : UNKNOWN_DRIVER_NAME,
       count: 1,
       sumDamage: damage,
       rows: [row],
     })
   })
 
-  return Array.from(map.values()).sort((a, b) => b.count - a.count)
+  return Array.from(map.values()).sort(compareByCountThenDamage)
 }
 
 export interface VehicleAggregate {
@@ -199,17 +219,24 @@ export interface VehicleAggregate {
 }
 
 // Машина уникальна в пределах одной базы (DB_INDEX+CAR_ID), запасной ключ —
-// гаражный номер, если CAR_ID не пришёл. Полный список, top-N берут экраны.
+// гаражный номер, если CAR_ID не пришёл (префиксы разводят два
+// пространства значений: CAR_ID 123 и гаражный "123" — разные машины).
+// Записи без обоих — одна строка «ТС не указано». Полный список, top-N
+// берут экраны.
 export function rankVehicles(rows: AccidentRow[]): VehicleAggregate[] {
   const map = new Map<string, VehicleAggregate>()
 
   rows.forEach((row) => {
-    const idPart = row.CAR_ID ?? row.GARAGE_NUM
-    if (idPart == null) return
-    const key = `${row.DB_INDEX}:${idPart}`
+    const idPart =
+      row.CAR_ID != null ? `car:${row.CAR_ID}` : row.GARAGE_NUM ? `garage:${row.GARAGE_NUM}` : null
+    const key = idPart ? `${row.DB_INDEX}:${idPart}` : 'unknown'
     const existing = map.get(key)
     const damage = row.ACCIDENT_DAMAGE ?? 0
-    const name = row.GARAGE_NUM ? `№${row.GARAGE_NUM}` : row.CAR_MAKE_MODEL || 'Без номера'
+    const name = !idPart
+      ? UNKNOWN_VEHICLE_NAME
+      : row.GARAGE_NUM
+        ? `№${row.GARAGE_NUM}`
+        : row.CAR_MAKE_MODEL || 'Без номера'
 
     if (existing) {
       existing.count += 1
@@ -221,7 +248,7 @@ export function rankVehicles(rows: AccidentRow[]): VehicleAggregate[] {
     map.set(key, { key, name, count: 1, sumDamage: damage, rows: [row] })
   })
 
-  return Array.from(map.values()).sort((a, b) => b.count - a.count)
+  return Array.from(map.values()).sort(compareByCountThenDamage)
 }
 
 export interface MonthlyAggregate {
@@ -254,7 +281,7 @@ export function monthlyTrend(rows: AccidentRow[], months: number[]): MonthlyAggr
   })
 }
 
-// Срезы для drill-through из KPI (ТЗ §4.3): "список ДТП с ущербом",
+// Срезы для drill-through из KPI: "список ДТП с ущербом",
 // "с возмещением", "непокрытые".
 export function rowsWithDamage(rows: AccidentRow[]): AccidentRow[] {
   return rows.filter((row) => (row.ACCIDENT_DAMAGE ?? 0) > 0)

@@ -43,17 +43,32 @@ export function getMotorcadeOptions(rows: AccidentRow[]): MotorcadeOption[] {
   return Array.from(map.values())
 }
 
-// Для селекторов на экранах "Автоколонна"/"Аналитика" — псевдо-автоколонна
-// "Не указана" туда не попадает, она участвует только в общих показателях
-// Обзора.
-export function getSelectableMotorcadeOptions(rows: AccidentRow[]): MotorcadeOption[] {
-  return getMotorcadeOptions(rows).filter((option) => option.motorcadeId !== null)
-}
-
 export function sortByNameAsc(options: MotorcadeOption[]): MotorcadeOption[] {
   return [...options].sort((a, b) => a.name.localeCompare(b.name, 'ru'))
 }
 
 export function sortByAccidentCountDesc(options: MotorcadeOption[]): MotorcadeOption[] {
-  return [...options].sort((a, b) => b.accidentCount - a.accidentCount)
+  return [...options].sort(
+    (a, b) => b.accidentCount - a.accidentCount || a.name.localeCompare(b.name, 'ru')
+  )
+}
+
+// Одноимённые автоколонны из разных баз («Автоколонна №1» в двух
+// компаниях) в селекторах и на графиках неразличимы — к таким именам
+// добавляется название базы.
+export function disambiguateMotorcadeNames(
+  options: MotorcadeOption[],
+  firmName: (dbIndex: number) => string
+): MotorcadeOption[] {
+  const dbsByName = new Map<string, Set<number>>()
+  options.forEach((option) => {
+    const dbs = dbsByName.get(option.name) ?? new Set<number>()
+    dbs.add(option.dbIndex)
+    dbsByName.set(option.name, dbs)
+  })
+  return options.map((option) =>
+    (dbsByName.get(option.name)?.size ?? 0) > 1
+      ? { ...option, name: `${option.name} · ${firmName(option.dbIndex)}` }
+      : option
+  )
 }

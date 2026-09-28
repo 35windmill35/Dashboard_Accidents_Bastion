@@ -15,7 +15,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Strict linting — обязательное требование ТЗ §1 и §8 */
+    /* Strict linting */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,

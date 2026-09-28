@@ -72,10 +72,13 @@ export function DataTable<T>({
   const [expanded, setExpanded] = useState(false)
   const [page, setPage] = useState(0)
 
-  const visibleRows = expanded ? rows : rows.slice(0, initialLimit)
-  const pageOffset = expanded ? page * PAGE_SIZE : 0
-  const pageRows = expanded ? visibleRows.slice(pageOffset, pageOffset + PAGE_SIZE) : visibleRows
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  // После смены периода строк может стать меньше — номер страницы
+  // ограничивается сверху, иначе «Страница 5 из 2» и пустая таблица
+  const currentPage = Math.min(page, totalPages - 1)
+  const visibleRows = expanded ? rows : rows.slice(0, initialLimit)
+  const pageOffset = expanded ? currentPage * PAGE_SIZE : 0
+  const pageRows = expanded ? visibleRows.slice(pageOffset, pageOffset + PAGE_SIZE) : visibleRows
   const canExpand = rows.length > initialLimit
 
   // Строка с детализацией открывается и с клавиатуры (Tab → Enter/Пробел)
@@ -158,16 +161,20 @@ export function DataTable<T>({
 
       {expanded && rows.length > PAGE_SIZE && (
         <div className={styles.pagination}>
-          <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+          <button
+            type="button"
+            disabled={currentPage === 0}
+            onClick={() => setPage(currentPage - 1)}
+          >
             Назад
           </button>
           <span>
-            Страница {page + 1} из {totalPages}
+            Страница {currentPage + 1} из {totalPages}
           </span>
           <button
             type="button"
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => p + 1)}
+            disabled={currentPage >= totalPages - 1}
+            onClick={() => setPage(currentPage + 1)}
           >
             Вперёд
           </button>

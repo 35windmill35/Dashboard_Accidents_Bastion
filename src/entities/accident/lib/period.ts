@@ -42,10 +42,13 @@ const QUARTER_ROMAN = ['I', 'II', 'III', 'IV']
 
 // ACCIDENT_DATE — ISO-строка, берём год и месяц напрямую из символов,
 // не через Date (часовой пояс браузера не должен сдвигать дату на сутки).
+// Строки с некорректной датой отбрасываются ещё при загрузке (parseRow),
+// здесь 0 — только защита от пустого значения.
 export function accidentDateToYm(dateStr: string | null | undefined): number {
   if (!dateStr || dateStr.length < 7) return 0
   const year = Number(dateStr.slice(0, 4))
   const month = Number(dateStr.slice(5, 7))
+  if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return 0
   return year * 100 + month
 }
 
@@ -105,17 +108,6 @@ export function isInPeriod(row: AccidentRow, period: Period): boolean {
   return ym === period.value
 }
 
-// Последний месяц, за который есть хотя бы одна запись — период по
-// умолчанию.
-export function getLatestMonth(rows: AccidentRow[]): number | null {
-  let max = 0
-  rows.forEach((row) => {
-    const ym = accidentDateToYm(row.ACCIDENT_DATE)
-    if (ym > max) max = ym
-  })
-  return max || null
-}
-
 export function getAvailableMonths(rows: AccidentRow[]): number[] {
   const months = new Set(rows.map((row) => accidentDateToYm(row.ACCIDENT_DATE)).filter(Boolean))
   return Array.from(months).sort((a, b) => b - a)
@@ -147,11 +139,19 @@ export function getPreviousPeriod(period: Period): Period | null {
 }
 
 // Графики "по месяцам" всегда показывают 12 месяцев, заканчивая выбранным
-// периодом — год даёт янв-дек этого года, весь период — все месяцы данных.
+// периодом — год даёт янв-дек этого года, весь период — непрерывную шкалу
+// от первого до последнего месяца с данными (пустые месяцы — нули, а не
+// пропуск точки).
 export function getTrendMonths(period: Period, rows: AccidentRow[]): number[] {
   if (period.mode === 'all') {
-    const months = new Set(rows.map((row) => accidentDateToYm(row.ACCIDENT_DATE)).filter(Boolean))
-    return Array.from(months).sort((a, b) => a - b)
+    const months = rows.map((row) => accidentDateToYm(row.ACCIDENT_DATE)).filter(Boolean)
+    if (months.length === 0) return []
+    // reduce, а не Math.min(...): на сотнях тысяч строк spread переполняет стек
+    const first = months.reduce((min, ym) => (ym < min ? ym : min))
+    const last = months.reduce((max, ym) => (ym > max ? ym : max))
+    const result: number[] = []
+    for (let ym = first; ym <= last; ym = ymAddMonths(ym, 1)) result.push(ym)
+    return result
   }
 
   let endYm: number
@@ -166,6 +166,84 @@ export function getTrendMonths(period: Period, rows: AccidentRow[]): number[] {
   }
 
   return Array.from({ length: 12 }, (_, i) => ymAddMonths(endYm, i - 11))
+}
+
+// Незавершённый период (текущий месяц/квартал/год) нельзя сравнивать с
+// полным предыдущим: 24 сентября "−60% ДТП к августу" — это не улучшение,
+// а просто неполный месяц. Поэтому для текущего периода предыдущий
+// берётся за то же число дней от начала.
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function periodStartUtc(period: Exclude<Period, { mode: 'all' }>): number {
+  if (period.mode === 'year') return Date.UTC(period.value, 0, 1)
+  if (period.mode === 'quarter') {
+    const year = Math.floor(period.value / 10)
+    const quarter = period.value % 10
+    return Date.UTC(year, (quarter - 1) * 3, 1)
+  }
+  return Date.UTC(ymToYear(period.value), (period.value % 100) - 1, 1)
+}
+
+function dateStrToUtc(dateStr: string | null | undefined): number | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr ?? '')
+  if (!match) return null
+  return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))
+}
+
+function todayUtc(today: Date): number {
+  return Date.UTC(today.getFullYear(), today.getMonth(), today.getDate())
+}
+
+function todayAsPeriodValue(mode: Exclude<PeriodMode, 'all'>, today: Date): number {
+  const ym = today.getFullYear() * 100 + today.getMonth() + 1
+  if (mode === 'year') return today.getFullYear()
+  if (mode === 'quarter') return ymToYq(ym)
+  return ym
+}
+
+export interface PeriodComparison {
+  // Период, с которым сравниваются KPI (null — сравнивать не с чем)
+  previous: Period | null
+  // Выбранный период ещё идёт — сравнение по первым elapsedDays дням
+  isPartial: boolean
+  // Сколько дней периода прошло, включая сегодня (только для isPartial)
+  elapsedDays: number | null
+}
+
+export function getPeriodComparison(period: Period, today: Date = new Date()): PeriodComparison {
+  const previous = getPreviousPeriod(period)
+  if (period.mode === 'all' || !previous || previous.mode === 'all') {
+    return { previous, isPartial: false, elapsedDays: null }
+  }
+  if (period.value !== todayAsPeriodValue(period.mode, today)) {
+    return { previous, isPartial: false, elapsedDays: null }
+  }
+  const elapsedDays = Math.floor((todayUtc(today) - periodStartUtc(period)) / DAY_MS) + 1
+  return { previous, isPartial: true, elapsedDays }
+}
+
+// Строка попадает в сравнение: в предыдущем периоде и (для незавершённого
+// текущего) не дальше того же числа дней от его начала.
+export function isInComparisonWindow(row: AccidentRow, comparison: PeriodComparison): boolean {
+  const { previous, isPartial, elapsedDays } = comparison
+  if (!previous || !isInPeriod(row, previous)) return false
+  if (!isPartial || elapsedDays === null || previous.mode === 'all') return true
+  const date = dateStrToUtc(row.ACCIDENT_DATE)
+  if (date === null) return false
+  return date - periodStartUtc(previous) < elapsedDays * DAY_MS
+}
+
+// Подпись к дельте KPI — короткая, чтобы влезать в одну строку карточки;
+// за сколько дней идёт сравнение, пишет partialPeriodNote в шапке
+export function comparisonLabel(comparison: PeriodComparison): string {
+  return comparison.isPartial ? 'к тем же дням' : 'к пред. периоду'
+}
+
+// Пометка для шапки экрана и PDF
+export function partialPeriodNote(comparison: PeriodComparison): string | null {
+  if (!comparison.isPartial || comparison.elapsedDays === null) return null
+  return `Период не завершён: сравнение с тем же числом дней (${comparison.elapsedDays}) пред. периода`
 }
 
 // Доступные значения периода для режима — по убыванию (первый — самый

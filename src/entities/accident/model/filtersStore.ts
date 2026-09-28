@@ -3,7 +3,8 @@ import { accidentsStore } from './accidentsStore'
 import { authStore } from '@/entities/user/model/authStore'
 import { getAvailablePeriodValues, type Period, type PeriodMode } from '../lib/period'
 import {
-  getSelectableMotorcadeOptions,
+  disambiguateMotorcadeNames,
+  getMotorcadeOptions,
   sortByAccidentCountDesc,
   sortByNameAsc,
   type MotorcadeOption,
@@ -17,7 +18,7 @@ import {
 // (то, что реально на экране) считается геттерами: если выбора нет или он
 // не существует в данных (опечатка в ссылке, другая учётка) — берётся
 // значение по умолчанию. Так селектор в шапке и цифры на экране не могут
-// разойтись (P0-2).
+// разойтись.
 class FiltersStore {
   periodMode: PeriodMode = 'month'
   periodValue: number | null = null
@@ -71,8 +72,22 @@ class FiltersStore {
     this.periodValue = period.mode === 'all' ? null : period.value
   }
 
+  // Все автоколонны, включая «Не указана», с именами, различимыми между
+  // базами («Автоколонна №1 · ТОО Альфа»)
+  get allMotorcadeOptions(): MotorcadeOption[] {
+    return disambiguateMotorcadeNames(getMotorcadeOptions(accidentsStore.rows), (dbIndex) =>
+      authStore.getFirmName(dbIndex)
+    )
+  }
+
+  // Ключ автоколонны → подпись для графиков и таблиц
+  get motorcadeLabels(): Map<string, string> {
+    return new Map(this.allMotorcadeOptions.map((option) => [option.key, option.name]))
+  }
+
+  // Для селекторов: без псевдо-автоколонны «Не указана»
   get motorcadeOptions(): MotorcadeOption[] {
-    return sortByNameAsc(getSelectableMotorcadeOptions(accidentsStore.rows))
+    return sortByNameAsc(this.allMotorcadeOptions.filter((option) => option.motorcadeId !== null))
   }
 
   private hasOption(key: string | null): key is string {
@@ -116,6 +131,32 @@ class FiltersStore {
       (option) => option.key !== keyA
     )
     return fallback?.key ?? null
+  }
+
+  // Автоколонна из ссылки не найдена в данных этого пользователя (другой
+  // набор баз, устаревшая ссылка) — экран показывает значение по
+  // умолчанию и должен об этом сказать.
+  get isLinkedMotorcadeMissing(): boolean {
+    return this.motorcadeKey !== null && !this.hasOption(this.motorcadeKey)
+  }
+
+  get isLinkedAnalyticsMissing(): boolean {
+    return [this.analyticsMotorcadeKeyA, this.analyticsMotorcadeKeyB].some(
+      (key) => key !== null && !this.hasOption(key)
+    )
+  }
+
+  // Применение пары автоколонн из ссылки: сначала сбрасывается B, иначе
+  // "a=X&b=Y" поверх текущего "a=Y" упрётся в запрет одинакового выбора.
+  setAnalyticsPair(keyA: string | null, keyB: string | null): void {
+    if (keyA && keyB && keyA !== keyB) {
+      this.analyticsMotorcadeKeyB = null
+      this.setAnalyticsMotorcadeA(keyA)
+      this.setAnalyticsMotorcadeB(keyB)
+      return
+    }
+    if (keyA) this.setAnalyticsMotorcadeA(keyA)
+    if (keyB) this.setAnalyticsMotorcadeB(keyB)
   }
 
   // выбор одинаковой автоколонны в обоих селекторах запрещён

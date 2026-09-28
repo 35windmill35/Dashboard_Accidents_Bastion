@@ -10,10 +10,12 @@ import { SectionDivider } from '@/shared/ui/SectionDivider/SectionDivider'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import { ErrorState } from '@/shared/ui/ErrorState/ErrorState'
 import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
+import { getReportDataContext } from '@/features/pdf-report/model/reportContext'
 import { computeAnalytics, type AnalyticsData } from './model/analyticsData'
 import { AnalyticsKpiGroups } from './ui/AnalyticsKpiGroups'
 import { AnalyticsCharts } from './ui/AnalyticsCharts'
 import { AnalyticsTables } from './ui/AnalyticsTables'
+import { themeStore } from '@/shared/lib/theme/themeStore'
 import styles from './AnalyticsPage.module.css'
 
 interface AnalyticsSnapshot {
@@ -50,7 +52,7 @@ function computeCurrentAnalytics(): AnalyticsSnapshot | null {
 // уже реализован в filtersStore (setAnalyticsMotorcadeA/B). Период общий с
 // остальными экранами.
 //
-// Баннер о сопоставимости (ui/ComparabilityBanner, ТЗ §4.5/§6) временно
+// Баннер о сопоставимости (ui/ComparabilityBanner) временно
 // скрыт по решению заказчика — и на экране, и в PDF. Тексты по-прежнему
 // считаются в analyticsData.comparabilityWarnings: чтобы вернуть, достаточно
 // снова отрисовать <ComparabilityBanner> здесь и noticeBlock в
@@ -62,8 +64,9 @@ export const AnalyticsPage = observer(function AnalyticsPage() {
 
     const { saveAnalyticsReport } = await import('@/features/pdf-report/lib/buildAnalyticsReport')
     const dbIndexes = Array.from(new Set([snapshot.data.a.dbIndex, snapshot.data.b.dbIndex]))
-    saveAnalyticsReport({
+    return saveAnalyticsReport({
       data: snapshot.data,
+      context: getReportDataContext(null),
       period: snapshot.period,
       firmNames: dbIndexes.map((dbIndex) => authStore.getFirmName(dbIndex)),
       onSection: (done, total) => pdfReportStore.setProgress(done, total),
@@ -94,9 +97,18 @@ export const AnalyticsPage = observer(function AnalyticsPage() {
         title="Аналитика"
         meta={[formatPeriodLabel(period), `${data.a.name} и ${data.b.name}`]}
       />
-      <AnalyticsKpiGroups data={data} period={period} />
+      <AnalyticsKpiGroups key={themeStore.theme} data={data} period={period} />
       <SectionDivider title="Динамика и структура" />
-      <AnalyticsCharts data={data} period={period} rowsA={rowsA} rowsB={rowsB} />
+      {/* Цвета графиков — JS-константы (Recharts не читает CSS-переменные):
+          при смене системной темы перемонтируются только графики, а не весь
+          экран с развёрнутыми таблицами */}
+      <AnalyticsCharts
+        key={themeStore.theme}
+        data={data}
+        period={period}
+        rowsA={rowsA}
+        rowsB={rowsB}
+      />
       <SectionDivider title="Детализация" />
       <AnalyticsTables data={data} period={period} />
     </div>

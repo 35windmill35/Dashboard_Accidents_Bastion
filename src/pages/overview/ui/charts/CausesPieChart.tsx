@@ -10,7 +10,7 @@ interface Props {
   period: Period
 }
 
-// Структура причин ДТП за период, 5 категорий (см. shared/config/accidentCauses).
+// Структура причин ДТП за период по категориям (см. shared/config/accidentCauses).
 // Кольцо с итогом в центре и список категорий с долями — по эталону (см.
 // widgets/cause-donut); клик по сектору или строке — таблица ДТП категории.
 export function CausesPieChart({ data, period }: Props) {

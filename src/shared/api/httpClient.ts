@@ -90,6 +90,17 @@ function dedupedFetch<T>(
   return promise
 }
 
+// btoa принимает только Latin-1 и падает на кириллице в пароле, поэтому
+// строка сначала кодируется в UTF-8.
+export function encodeBasicCredentials(username: string, password: string): string {
+  const bytes = new TextEncoder().encode(`${username}:${password}`)
+  let binary = ''
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte)
+  })
+  return btoa(binary)
+}
+
 interface BasicAuthOptions {
   username: string
   password: string
@@ -103,7 +114,7 @@ export async function getWithBasicAuth<T = unknown>(
   { username, password, params, headers }: BasicAuthOptions
 ): Promise<ApiResult<T>> {
   const url = buildUrl(path, params)
-  const authHeader = `Basic ${btoa(`${username}:${password}`)}`
+  const authHeader = `Basic ${encodeBasicCredentials(username, password)}`
   const key = `${url}::${authHeader}`
 
   return dedupedFetch(key, async () => {

@@ -13,6 +13,28 @@ import styles from './AccidentDrilldownModal.module.css'
 const PAGE_SIZE = 50
 const VIRTUALIZE_THRESHOLD = 200
 
+// ACCIDENT_ID уникален только в пределах базы
+function rowKey(row: AccidentRow): string {
+  return `${row.DB_INDEX}:${row.ACCIDENT_ID}`
+}
+
+function dateTimeLabel(row: AccidentRow): string {
+  const time = formatTime(row.ACCIDENT_TIME)
+  return time === '—' ? formatDate(row.ACCIDENT_DATE) : `${formatDate(row.ACCIDENT_DATE)} ${time}`
+}
+
+// Необязательные колонки: если во всём списке поле пустое (в текущих данных
+// так с маршрутом, страховой и пострадавшими), колонка — сплошные «—» и
+// только расширяет таблицу. Такие колонки скрываются и на экране, и в CSV.
+const OPTIONAL_COLUMNS = [
+  { key: 'route', label: 'Маршрут', value: (row: AccidentRow) => row.ROUTE_NAME },
+  { key: 'address', label: 'Адрес', value: (row: AccidentRow) => row.ACCIDENT_ADDRESS },
+  { key: 'insurance', label: 'Страховая', value: (row: AccidentRow) => row.INSURANCE_COMPANY_NAME },
+  { key: 'victim', label: 'Пострадавшие', value: (row: AccidentRow) => row.ACCIDENT_VICTIM },
+] as const
+
+type OptionalColumnKey = (typeof OPTIONAL_COLUMNS)[number]['key']
+
 function vehicleLabel(row: AccidentRow): string {
   const parts = [row.GARAGE_NUM ? `№${row.GARAGE_NUM}` : null, row.CAR_MAKE_MODEL].filter(Boolean)
   return parts.join(', ') || '—'
@@ -44,7 +66,9 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
   const [sortKey, setSortKey] = useState<SortKey>('date')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(0)
-  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [expandedKey, setExpandedKey] = useState<string | null>(null)
+  // Куда вернуть фокус после закрытия — на кнопку/карточку, открывшую модалку
+  const returnFocusRef = useRef<HTMLElement | null>(null)
 
   const showBaseColumn = (authStore.allowedDbIndexes?.length ?? 0) > 1
   const isOpen = drilldownStore.isOpen
@@ -57,7 +81,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     setSortKey('date')
     setSortDir('desc')
     setPage(0)
-    setExpandedId(null)
+    setExpandedKey(null)
   }, [isOpen, title])
 
   useEffect(() => {
@@ -85,10 +109,28 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
       }
     }
 
+    returnFocusRef.current = document.activeElement as HTMLElement | null
+    // Страница под модалкой не прокручивается
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     document.addEventListener('keydown', handleKeyDown)
     dialogRef.current?.querySelector<HTMLElement>('button')?.focus()
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = previousOverflow
+      const target = returnFocusRef.current
+      if (target && document.contains(target)) target.focus()
+    }
   }, [isOpen])
+
+  const visibleOptional = useMemo(() => {
+    const visible = new Set<OptionalColumnKey>()
+    OPTIONAL_COLUMNS.forEach((column) => {
+      if (rows.some((row) => Boolean(column.value(row)))) visible.add(column.key)
+    })
+    return visible
+  }, [rows])
 
   const filteredSorted = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -132,49 +174,57 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
       setSortKey(key)
       setSortDir('asc')
     }
+    setPage(0)
   }
 
   const sortProps = { sortKey, sortDir, onSort: toggleSort }
 
   const handleExport = () => {
+    const optional = OPTIONAL_COLUMNS.filter((column) => visibleOptional.has(column.key))
     const headers = [
       'Дата',
       'Время',
       'Автоколонна',
       'ТС',
       'Водитель',
-      'Маршрут',
-      'Адрес',
+      ...optional.map((column) => column.label),
       'Причина',
       'Категория',
       'Виновник',
       'Ущерб',
       'Возмещение',
       'Статус',
-      'Страховая',
-      'Пострадавшие',
+      ...(showBaseColumn ? ['База'] : []),
     ]
 
-    const rows = filteredSorted.map((row) => [
-      formatDate(row.ACCIDENT_DATE),
-      formatTime(row.ACCIDENT_TIME),
-      getMotorcadeName(row),
-      vehicleLabel(row),
-      row.DRIVER_NAME || '',
-      row.ROUTE_NAME || '',
-      row.ACCIDENT_ADDRESS || '',
-      row.ACCIDENT_CAUSE_NAME || '',
-      CAUSE_CATEGORY_LABELS[getCauseCategory(row)],
-      row.ACCIDENT_CAUSER_NAME || '',
-      String(row.ACCIDENT_DAMAGE ?? 0),
-      String(row.ACCIDENT_COMPENSATED_DAMAGE ?? 0),
-      row.ACCIDENT_STATUS_NAME || '',
-      row.INSURANCE_COMPANY_NAME || '',
-      row.ACCIDENT_VICTIM || '',
-    ])
+    const csvRows = filteredSorted.map((row) => {
+      const time = formatTime(row.ACCIDENT_TIME)
+      return [
+        formatDate(row.ACCIDENT_DATE),
+        time === '—' ? '' : time,
+        getMotorcadeName(row),
+        vehicleLabel(row),
+        row.DRIVER_NAME || '',
+        ...optional.map((column) => column.value(row) || ''),
+        row.ACCIDENT_CAUSE_NAME || '',
+        CAUSE_CATEGORY_LABELS[getCauseCategory(row)],
+        row.ACCIDENT_CAUSER_NAME || '',
+        String(row.ACCIDENT_DAMAGE ?? 0),
+        String(row.ACCIDENT_COMPENSATED_DAMAGE ?? 0),
+        row.ACCIDENT_STATUS_NAME || '',
+        ...(showBaseColumn ? [authStore.getFirmName(row.DB_INDEX)] : []),
+      ]
+    })
 
-    downloadCsv(`dtp-detalizaciya-${Date.now()}.csv`, headers, rows)
+    const stamp = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    const fileStamp = `${stamp.getFullYear()}${pad(stamp.getMonth() + 1)}${pad(stamp.getDate())}-${pad(stamp.getHours())}${pad(stamp.getMinutes())}`
+    downloadCsv(`dtp-spisok-${fileStamp}.csv`, headers, csvRows)
   }
+
+  // Колонок в таблице: кнопка раскрытия + 9 постоянных + необязательные +
+  // база. Строка подробностей занимает всё, кроме первой.
+  const totalColumns = 1 + 9 + visibleOptional.size + (showBaseColumn ? 1 : 0)
 
   return (
     <div className={styles.backdrop} onClick={() => drilldownStore.close()}>
@@ -274,8 +324,8 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                   <SortHeader label="Автоколонна" column="motorcade" {...sortProps} />
                   <SortHeader label="ТС" column="vehicle" {...sortProps} />
                   <SortHeader label="Водитель" column="driver" {...sortProps} />
-                  <th scope="col">Маршрут</th>
-                  <th scope="col">Адрес</th>
+                  {visibleOptional.has('route') && <th scope="col">Маршрут</th>}
+                  {visibleOptional.has('address') && <th scope="col">Адрес</th>}
                   <th scope="col">Причина</th>
                   <th scope="col">Виновник</th>
                   <SortHeader label="Ущерб" column="damage" align="right" {...sortProps} />
@@ -286,24 +336,25 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                     {...sortProps}
                   />
                   <th scope="col">Статус</th>
-                  <th scope="col">Страховая</th>
-                  <th scope="col">Пострадавшие</th>
+                  {visibleOptional.has('insurance') && <th scope="col">Страховая</th>}
+                  {visibleOptional.has('victim') && <th scope="col">Пострадавшие</th>}
                   {showBaseColumn && <th scope="col">База</th>}
                 </tr>
               </thead>
               <tbody>
                 {pageRows.map((row) => {
-                  const isExpanded = expandedId === row.ACCIDENT_ID
+                  const key = rowKey(row)
+                  const isExpanded = expandedKey === key
                   const hasDetails = Boolean(row.ACCIDENT_DETAILS || row.ACCIDENT_COMMENT)
                   return (
-                    <Fragment key={row.ACCIDENT_ID}>
+                    <Fragment key={key}>
                       <tr className={isExpanded ? styles.rowExpanded : undefined}>
                         <td>
                           {hasDetails && (
                             <button
                               type="button"
                               className={styles.expandButton}
-                              onClick={() => setExpandedId(isExpanded ? null : row.ACCIDENT_ID)}
+                              onClick={() => setExpandedKey(isExpanded ? null : key)}
                               aria-label={
                                 isExpanded ? 'Скрыть подробности' : 'Показать подробности'
                               }
@@ -313,19 +364,21 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                             </button>
                           )}
                         </td>
-                        <td className={styles.muted}>
-                          {formatDate(row.ACCIDENT_DATE)} {formatTime(row.ACCIDENT_TIME)}
-                        </td>
+                        <td className={styles.muted}>{dateTimeLabel(row)}</td>
                         <td>{getMotorcadeName(row)}</td>
                         <td>{vehicleLabel(row)}</td>
                         <td>{row.DRIVER_NAME || '—'}</td>
-                        <td className={styles.muted}>{row.ROUTE_NAME || '—'}</td>
-                        <td
-                          className={`${styles.muted} ${styles.address}`}
-                          title={row.ACCIDENT_ADDRESS || undefined}
-                        >
-                          {row.ACCIDENT_ADDRESS || '—'}
-                        </td>
+                        {visibleOptional.has('route') && (
+                          <td className={styles.muted}>{row.ROUTE_NAME || '—'}</td>
+                        )}
+                        {visibleOptional.has('address') && (
+                          <td
+                            className={`${styles.muted} ${styles.address}`}
+                            title={row.ACCIDENT_ADDRESS || undefined}
+                          >
+                            {row.ACCIDENT_ADDRESS || '—'}
+                          </td>
+                        )}
                         <td>
                           {row.ACCIDENT_CAUSE_NAME || '—'}
                           <span className={styles.causeTag}>
@@ -348,16 +401,16 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                             '—'
                           )}
                         </td>
-                        <td>{row.INSURANCE_COMPANY_NAME || '—'}</td>
-                        <td>{row.ACCIDENT_VICTIM || '—'}</td>
-                        {showBaseColumn && (
-                          <td>{authStore.firms[row.DB_INDEX]?.FIRM_SHORT_NAME || row.DB_INDEX}</td>
+                        {visibleOptional.has('insurance') && (
+                          <td>{row.INSURANCE_COMPANY_NAME || '—'}</td>
                         )}
+                        {visibleOptional.has('victim') && <td>{row.ACCIDENT_VICTIM || '—'}</td>}
+                        {showBaseColumn && <td>{authStore.getFirmName(row.DB_INDEX)}</td>}
                       </tr>
                       {isExpanded && (
                         <tr className={styles.detailsRow}>
                           <td />
-                          <td colSpan={showBaseColumn ? 13 : 12}>
+                          <td colSpan={totalColumns - 1}>
                             {row.ACCIDENT_DETAILS && <p>{row.ACCIDENT_DETAILS}</p>}
                             {row.ACCIDENT_COMMENT && <p>{row.ACCIDENT_COMMENT}</p>}
                           </td>

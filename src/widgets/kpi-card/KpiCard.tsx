@@ -1,15 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import {
-  formatDelta,
   formatNumber,
   getCurrencySymbol,
   isDeltaPositive,
+  kpiDelta,
+  type KpiKind,
 } from '@/shared/lib/formatters'
 import styles from './KpiCard.module.css'
 
 // Что за число в карточке: от этого зависят формат и подпись единицы
 // (валюта — знак валюты датасета, доля — «%», количество — без единицы).
-export type KpiValueKind = 'count' | 'currency' | 'percent'
+export type KpiValueKind = KpiKind
 
 interface KpiCardProps {
   label: string
@@ -17,7 +18,10 @@ interface KpiCardProps {
   // null — «нет данных», карточка показывает прочерк.
   value: number | null
   kind: KpiValueKind
-  delta?: number | null
+  // С чем сравнивать (прошлый период или другая автоколонна). undefined —
+  // сравнения нет. Дельта считается по виду показателя: доли — в п.п.,
+  // количества и суммы — в %.
+  compareValue?: number | null
   deltaHigherIsBetter?: boolean
   // Подпись рядом с дельтой. По умолчанию "к пред. периоду" (Обзор/Автоколонна);
   // "Аналитика" сравнивает не с прошлым периодом, а со второй автоколонной
@@ -27,7 +31,7 @@ interface KpiCardProps {
   // Drill-through: кнопка-иконка в правом верхнем углу открывает таблицу ДТП,
   // из которых сложилось число.
   onOpenList: () => void
-  // Drill-down (ТЗ §4.3): клик по самой карточке ведёт на связанный экран с
+  // Drill-down: клик по самой карточке ведёт на связанный экран с
   // сохранением фильтров. `label` — куда именно, для подсказки и скринридера.
   // Если перехода нет, клик по карточке делает то же, что и кнопка в углу.
   navigate?: { label: string; onClick: () => void }
@@ -131,7 +135,7 @@ export function KpiCard({
   label,
   value,
   kind,
-  delta,
+  compareValue,
   deltaHigherIsBetter = true,
   deltaLabel = 'к пред. периоду',
   tooltip,
@@ -144,10 +148,11 @@ export function KpiCard({
   const unit = value === null ? '' : unitFor(kind)
   const exactText = `${formatValue(value, kind)}${unit ? `${NBSP}${unit}` : ''}`
 
-  const hasDelta = delta !== undefined && delta !== null
-  const positive = isDeltaPositive(delta, deltaHigherIsBetter)
+  const delta = compareValue === undefined ? null : kpiDelta(kind, value, compareValue)
+  const hasDelta = delta !== null
+  const positive = isDeltaPositive(delta?.value, deltaHigherIsBetter)
   const deltaTone = positive === null ? '' : positive ? styles.deltaUp : styles.deltaDown
-  const summary = `${label}: ${exactText}${hasDelta ? `, ${formatDelta(delta)} ${deltaLabel}` : ''}`
+  const summary = `${label}: ${exactText}${delta ? `, ${delta.text} ${deltaLabel}` : ''}`
 
   const body = (
     <>
@@ -162,13 +167,11 @@ export function KpiCard({
           сетке оказываются ниже соседних и ряд карточек "плывёт" по высоте. */}
       <span className={styles.deltaLine} aria-hidden="true">
         {hasDelta && (
-          <>
-            {/* Как до редизайна: одна строка «−94% к пред. периоду» цветом
-                оценки (по просьбе заказчика — вместо чипа эталона) */}
-            <span className={`${styles.delta} ${deltaTone}`}>
-              {formatDelta(delta)} {deltaLabel}
-            </span>
-          </>
+          // одна строка «−94% к пред. периоду» цветом оценки — по просьбе
+          // заказчика вместо чипа
+          <span className={`${styles.delta} ${deltaTone}`}>
+            {delta.text} {deltaLabel}
+          </span>
         )}
       </span>
     </>

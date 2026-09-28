@@ -12,6 +12,37 @@ import {
 } from './pdfKit'
 import type { BlockFactory } from './pdfFlow'
 
+export interface ReportDataContext {
+  loadedAt: Date | null
+  unavailableFirms: string[]
+  staleFirms: { name: string; loadedAt: Date }[]
+  partialNote: string | null
+}
+
+function formatDateTime(date: Date): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+// Строки шапки об актуальности и полноте данных
+export function dataContextLines(context: ReportDataContext): string[] {
+  const lines: string[] = []
+  if (context.loadedAt) lines.push(`Данные на ${formatDateTime(context.loadedAt)}`)
+  if (context.unavailableFirms.length > 0) {
+    lines.push(`Нет данных баз: ${context.unavailableFirms.join(', ')} — показатели неполные`)
+  }
+  context.staleFirms.forEach((firm) => {
+    lines.push(`${firm.name}: данные на ${formatDateTime(firm.loadedAt)} (не обновились)`)
+  })
+  if (context.partialNote) lines.push(context.partialNote)
+  return lines
+}
+
 export interface ReportHeaderMeta {
   kicker: string
   title: string
@@ -107,9 +138,12 @@ function fitFontSize(
   return size
 }
 
-export function kpiRow(doc: jsPDF, cards: KpiCardData[]): BlockFactory {
+// slots — на сколько карточек рассчитана ширина ряда: неполный второй ряд
+// выравнивается по сетке первого, а не растягивается
+export function kpiRow(doc: jsPDF, cards: KpiCardData[], slots = cards.length): BlockFactory {
   return (x, width) => {
-    const cardWidth = (width - KPI_GAP * (cards.length - 1)) / cards.length
+    const columnsCount = Math.max(slots, cards.length)
+    const cardWidth = (width - KPI_GAP * (columnsCount - 1)) / columnsCount
 
     return {
       height: KPI_HEIGHT,
@@ -170,7 +204,7 @@ const NOTICE_PAD_X = 10
 const NOTICE_LINE = 9.5
 
 // Плашка-предупреждение во всю ширину: заголовок и пункты с переносом.
-// Используется для баннера о сопоставимости на "Аналитике" (ТЗ §6).
+// Используется для баннера о сопоставимости на "Аналитике".
 export function noticeBlock(doc: jsPDF, title: string, lines: string[]): BlockFactory {
   return (x, width) => {
     const style: TextStyle = { size: 7, color: COLOR.ink }

@@ -2,11 +2,11 @@ import { useCallback, useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
 import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
-import { authStore } from '@/entities/user/model/authStore'
 import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { ErrorState } from '@/shared/ui/ErrorState/ErrorState'
 import { pdfReportStore } from '@/features/pdf-report/model/pdfReportStore'
-import { formatPeriodLabel } from '@/entities/accident/lib/period'
+import { getReportDataContext } from '@/features/pdf-report/model/reportContext'
+import { formatPeriodLabel, partialPeriodNote } from '@/entities/accident/lib/period'
 import { formatNumber } from '@/shared/lib/formatters'
 import { PageHeader } from '@/widgets/page-header/PageHeader'
 import { SectionDivider } from '@/shared/ui/SectionDivider/SectionDivider'
@@ -14,6 +14,7 @@ import { computeMotorcade } from './model/motorcadeData'
 import { MotorcadeKpiRow } from './ui/MotorcadeKpiRow'
 import { MotorcadeCharts } from './ui/MotorcadeCharts'
 import { MotorcadeTables } from './ui/MotorcadeTables'
+import { themeStore } from '@/shared/lib/theme/themeStore'
 import styles from './MotorcadePage.module.css'
 
 // Экран "Статистика по автоколонне" — одна выбранная автоколонна за
@@ -41,12 +42,12 @@ export const MotorcadePage = observer(function MotorcadePage() {
 
     const { saveMotorcadeReport } = await import('@/features/pdf-report/lib/buildMotorcadeReport')
     const currentRows = accidentsStore.rows.filter((row) => getMotorcadeKey(row) === currentKey)
-    saveMotorcadeReport({
-      data: computeMotorcade(currentRows, currentPeriod),
+    const currentData = computeMotorcade(currentRows, currentPeriod)
+    return saveMotorcadeReport({
+      data: currentData,
+      context: getReportDataContext(currentData.comparison),
       period: currentPeriod,
       motorcadeName: currentOption.name,
-      firmName:
-        authStore.firms[currentOption.dbIndex]?.FIRM_SHORT_NAME || `база #${currentOption.dbIndex}`,
       onSection: (done, total) => pdfReportStore.setProgress(done, total),
     })
   }, [])
@@ -66,18 +67,26 @@ export const MotorcadePage = observer(function MotorcadePage() {
 
   const motorcadeRows = accidentsStore.rows.filter((row) => getMotorcadeKey(row) === selectedKey)
   const data = computeMotorcade(motorcadeRows, period)
+  const partialNote = partialPeriodNote(data.comparison)
 
   return (
     <div className={styles.page}>
       <PageHeader
         eyebrow="Статистика по автоколонне"
         title={selectedOption.name}
-        meta={[formatPeriodLabel(period), `${formatNumber(data.kpi.count)} ДТП за период`]}
+        meta={[
+          formatPeriodLabel(period),
+          `${formatNumber(data.kpi.count)} ДТП за период`,
+          ...(partialNote ? [partialNote] : []),
+        ]}
       />
 
       <MotorcadeKpiRow data={data} period={period} />
       <SectionDivider title="Динамика и структура" />
-      <MotorcadeCharts data={data} period={period} />
+      {/* Цвета графиков — JS-константы (Recharts не читает CSS-переменные):
+          при смене системной темы перемонтируются только графики, а не весь
+          экран с развёрнутыми таблицами */}
+      <MotorcadeCharts key={themeStore.theme} data={data} period={period} />
       <SectionDivider title="Детализация" />
       <MotorcadeTables data={data} period={period} />
     </div>

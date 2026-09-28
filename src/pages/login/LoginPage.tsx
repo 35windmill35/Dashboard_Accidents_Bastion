@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { observer } from 'mobx-react-lite'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { formatPhoneInput } from '@/shared/lib/phoneMask'
 import { PasswordInput } from '@/shared/ui/PasswordInput/PasswordInput'
@@ -14,6 +14,7 @@ import styles from './LoginPage.module.css'
 // свечением, логотип, узкий заголовок.
 export const LoginPage = observer(function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
 
@@ -28,9 +29,16 @@ export const LoginPage = observer(function LoginPage() {
     // сразу после успешного входа, а состояние загрузки/отказа доступа
     // покажет RequireAccidentsAccess.
     const success = await authStore.login(phone, password)
+    // replace — «Назад» после входа не возвращает на форму логина;
+    // query (DB_GUID) сохраняется
     if (success) {
-      navigate('/')
+      navigate({ pathname: '/', search: location.search }, { replace: true })
     }
+  }
+
+  // Уже вошедшему пользователю форма входа не нужна
+  if (authStore.isAuthenticated && !authStore.isLoggingIn) {
+    return <Navigate to={{ pathname: '/', search: location.search }} replace />
   }
 
   return (

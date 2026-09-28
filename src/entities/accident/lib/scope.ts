@@ -1,5 +1,12 @@
 import type { AccidentRow } from '../model/types'
-import { type Period, isInPeriod, getPreviousPeriod, getTrendMonths } from './period'
+import {
+  type Period,
+  type PeriodComparison,
+  isInPeriod,
+  isInComparisonWindow,
+  getPeriodComparison,
+  getTrendMonths,
+} from './period'
 import {
   countAccidents,
   sumDamage,
@@ -14,11 +21,10 @@ import {
   type CauseSlice,
 } from './metrics'
 
-// Общий расчёт показателей одного среза (одна автоколонна за период) —
-// используется и "Статистикой по автоколонне" (один срез), и "Аналитикой"
-// (два среза рядом, для сравнения). Имя нейтральное (scope, а не
-// motorcade), т.к. по сути это просто "метрики по произвольному
-// подмножеству ДТП за период".
+// Единый расчёт показателей среза ДТП за период — для «Обзора» (вся
+// компания), «Статистики по автоколонне» (одна автоколонна) и «Аналитики»
+// (две автоколонны рядом). Один расчёт на все экраны — цифры не могут
+// разойтись между ними.
 export interface AccidentScopeKpi {
   count: number
   sumDamage: number
@@ -33,7 +39,10 @@ export interface AccidentScopeKpi {
 export interface AccidentScopeData {
   periodRows: AccidentRow[]
   kpi: AccidentScopeKpi
+  // KPI периода сравнения; для незавершённого периода — за то же число
+  // дней от начала (см. comparison)
   previousKpi: AccidentScopeKpi | null
+  comparison: PeriodComparison
   causeSlices: CauseSlice[]
   driversRanking: ReturnType<typeof rankDrivers>
   vehiclesRanking: ReturnType<typeof rankVehicles>
@@ -57,13 +66,17 @@ function buildScopeKpi(rows: AccidentRow[], slices: CauseSlice[]): AccidentScope
 
 // scopeRows на входе — уже отфильтрованы по нужному подмножеству (одна
 // автоколонна и т.п.), но не по периоду — период фильтруется здесь.
-export function computeAccidentScope(scopeRows: AccidentRow[], period: Period): AccidentScopeData {
+export function computeAccidentScope(
+  scopeRows: AccidentRow[],
+  period: Period,
+  today: Date = new Date()
+): AccidentScopeData {
   const periodRows = scopeRows.filter((row) => isInPeriod(row, period))
   const causeSlices = buildCauseSlices(periodRows)
 
-  const previousPeriod = getPreviousPeriod(period)
-  const previousRows = previousPeriod
-    ? scopeRows.filter((row) => isInPeriod(row, previousPeriod))
+  const comparison = getPeriodComparison(period, today)
+  const previousRows = comparison.previous
+    ? scopeRows.filter((row) => isInComparisonWindow(row, comparison))
     : null
 
   const trendMonths = getTrendMonths(period, scopeRows)
@@ -72,6 +85,7 @@ export function computeAccidentScope(scopeRows: AccidentRow[], period: Period): 
     periodRows,
     kpi: buildScopeKpi(periodRows, causeSlices),
     previousKpi: previousRows ? buildScopeKpi(previousRows, buildCauseSlices(previousRows)) : null,
+    comparison,
     causeSlices,
     driversRanking: rankDrivers(periodRows),
     vehiclesRanking: rankVehicles(periodRows),

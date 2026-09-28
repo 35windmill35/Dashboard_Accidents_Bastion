@@ -4,7 +4,7 @@ interface ComparabilityBannerProps {
   warnings: string[]
 }
 
-// Баннер о сопоставимости двух автоколонн (ТЗ §4.5). Тексты считаются в
+// Баннер о сопоставимости двух автоколонн. Тексты считаются в
 // analyticsData.buildComparabilityWarnings — те же строки уходят в PDF.
 export function ComparabilityBanner({ warnings }: ComparabilityBannerProps) {
   if (warnings.length === 0) return null

@@ -1,2 +1,2 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+# Всегда LF в рабочей копии — одинаково на Windows и в CI (prettier)
+* text=auto eol=lf

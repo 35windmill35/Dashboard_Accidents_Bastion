@@ -1,16 +1,22 @@
 import { jsPDF } from 'jspdf'
 import {
-  calcDelta,
-  formatDelta,
   formatNumber,
   formatPercent,
   isDeltaPositive,
+  kpiDelta,
+  type KpiKind,
 } from '@/shared/lib/formatters'
-import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
+import { comparisonLabel, formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import type { OverviewData } from '@/pages/overview/model/overviewData'
 import { COLOR, PAGE, registerPdfFonts } from './pdfKit'
-import { columns, drawPageFooters, flowBlocks, type BlockFactory } from './pdfFlow'
-import { kpiRow, reportHeader, type KpiCardData } from './pdfChrome'
+import { columns, drawPageFooters, flowBlocks, type BlockFactory, type FlowResult } from './pdfFlow'
+import {
+  dataContextLines,
+  kpiRow,
+  reportHeader,
+  type KpiCardData,
+  type ReportDataContext,
+} from './pdfChrome'
 import {
   DISTRIBUTION_ROW_HEIGHT,
   DUAL_ROW_HEIGHT,
@@ -45,7 +51,8 @@ const DAMAGE_CHART_HEIGHT = 76
 export interface OverviewReportInput {
   data: OverviewData
   period: Period
-  firmNames: string[]
+  // Актуальность и полнота данных для шапки
+  context: ReportDataContext
   onSection?: (done: number, total: number) => void
 }
 
@@ -55,25 +62,27 @@ function kpiCards(data: OverviewData): KpiCardData[] {
   const build = (
     label: string,
     value: string,
+    kind: KpiKind,
     current: number | null,
     previous: number | null | undefined,
     higherIsBetter: boolean
   ): KpiCardData => {
-    const delta = previousKpi ? calcDelta(current, previous) : null
-    const positive = isDeltaPositive(delta, higherIsBetter)
+    const delta = previousKpi ? kpiDelta(kind, current, previous) : null
+    const positive = isDeltaPositive(delta?.value, higherIsBetter)
     return {
       label,
       value,
-      delta: delta === null ? null : `${formatDelta(delta)} к пред. периоду`,
+      delta: delta === null ? null : `${delta.text} ${comparisonLabel(data.comparison)}`,
       deltaTone: positive === null ? 'neutral' : positive ? 'positive' : 'negative',
     }
   }
 
   return [
-    build('Всего ДТП', formatNumber(kpi.count), kpi.count, previousKpi?.count, false),
+    build('Всего ДТП', formatNumber(kpi.count), 'count', kpi.count, previousKpi?.count, false),
     build(
       'Сумма ущерба',
       formatPdfCurrency(kpi.sumDamage),
+      'currency',
       kpi.sumDamage,
       previousKpi?.sumDamage,
       false
@@ -81,6 +90,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
     build(
       'Сумма возмещения',
       formatPdfCurrency(kpi.sumCompensated),
+      'currency',
       kpi.sumCompensated,
       previousKpi?.sumCompensated,
       true
@@ -88,6 +98,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
     build(
       'Доля возмещения',
       formatPercent(kpi.compensationShare),
+      'percent',
       kpi.compensationShare,
       previousKpi?.compensationShare,
       true
@@ -95,6 +106,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
     build(
       'Средний ущерб на ДТП',
       formatPdfCurrency(kpi.averageDamage),
+      'currency',
       kpi.averageDamage,
       previousKpi?.averageDamage,
       false
@@ -309,7 +321,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
       generatedAt: new Date(),
       // Перечисление баз, из которых собраны данные, в шапке не нужно
       // пользователю — это внутренняя деталь интеграции, не фильтр отчёта.
-      filterLines: ['Автоколонны: все'],
+      filterLines: ['Автоколонны: все', ...dataContextLines(input.context)],
     }),
     kpiRow(doc, kpiCards(data)),
     columns([trendCard, causesCard], [0.58, 0.42]),
@@ -323,17 +335,23 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 // Собирает отчёт «Обзор» целиком векторной отрисовкой — без снимков экрана,
 // поэтому текст в PDF остаётся текстом (ищется и выделяется), файл весит
 // сотни килобайт, а вёрстка не зависит от размера окна пользователя.
-export function buildOverviewReport(input: OverviewReportInput): jsPDF {
+export function buildOverviewReport(input: OverviewReportInput): {
+  doc: jsPDF
+  result: FlowResult
+} {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
   registerPdfFonts(doc)
 
-  flowBlocks(doc, overviewBlocks(doc, input), PAGE.marginTop, { onSection: input.onSection })
-  drawPageFooters(doc)
+  const result = flowBlocks(doc, overviewBlocks(doc, input), PAGE.marginTop, {
+    onSection: input.onSection,
+  })
+  drawPageFooters(doc, result.failed)
 
-  return doc
+  return { doc, result }
 }
 
-export function saveOverviewReport(input: OverviewReportInput): void {
-  const doc = buildOverviewReport(input)
+export function saveOverviewReport(input: OverviewReportInput): FlowResult {
+  const { doc, result } = buildOverviewReport(input)
   doc.save(buildReportFilename('obzor', input.period, new Date()))
+  return result
 }

@@ -89,7 +89,9 @@ export function flowBlocks(
 }
 
 // Колонтитул рисуется в самом конце, когда известно общее число страниц.
-export function drawPageFooters(doc: jsPDF): void {
+// failed > 0 — часть разделов не отрисовалась; об этом пишется в каждом
+// колонтитуле, чтобы неполный отчёт не выглядел полным.
+export function drawPageFooters(doc: jsPDF, failed = 0): void {
   const total = doc.getNumberOfPages()
   const y = PAGE.height - PAGE.marginBottom + 22
 
@@ -97,6 +99,15 @@ export function drawPageFooters(doc: jsPDF): void {
     doc.setPage(page)
     drawLine(doc, PAGE.marginX, y - 10, PAGE.width - PAGE.marginX, y - 10, COLOR.line, 0.5)
     drawText(doc, 'Дашборд ДТП', PAGE.marginX, y, { size: 6.2, color: COLOR.muted })
+    if (failed > 0) {
+      drawText(
+        doc,
+        `Внимание: не удалось сформировать разделов — ${failed}, отчёт неполный`,
+        PAGE.width / 2,
+        y,
+        { size: 6.2, color: COLOR.negative, align: 'center' }
+      )
+    }
     drawText(doc, `Стр. ${page} из ${total}`, PAGE.width - PAGE.marginX, y, {
       font: 'mono',
       size: 6.2,

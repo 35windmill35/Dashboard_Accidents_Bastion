@@ -37,7 +37,7 @@ interface Point {
 }
 
 // Водители с 3 и более ДТП за период — по автоколонне. Без drill-through:
-// ТЗ не задаёт для этого клика конкретный список (водители считаются в
+// Для этого клика не задан конкретный список (водители считаются в
 // пределах базы, а не по конкретным записям одного ДТП).
 export function RepeatDriversComparisonChart({ data }: Props) {
   const gradientId = useGradientId()

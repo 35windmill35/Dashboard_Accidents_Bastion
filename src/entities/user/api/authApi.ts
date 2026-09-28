@@ -4,7 +4,6 @@ import { APP_CODE, ACCIDENTS_RIGHT_CODE } from '@/shared/config/api'
 export interface Firm {
   DBIndex?: number
   FIRM_SHORT_NAME?: string
-  [key: string]: unknown
 }
 
 interface LoginAppUserArgs {
@@ -20,8 +19,8 @@ interface LoginAppUserResult {
 }
 
 // Ответ — массив баз, доступных пользователю. DBIndex, который принимают
-// остальные методы, — это порядковый индекс элемента в этом массиве, а не
-// PFIRM_ID.
+// остальные методы, приходит в поле Firm.DBIndex каждой базы (сейчас он
+// совпадает с позицией в массиве), а не PFIRM_ID.
 //
 // DB_GUID отправляется и query-параметром, и заголовком одновременно —
 // бэкенд на практике смотрит то в один, то в другой.

@@ -4,6 +4,8 @@ import type { AccidentRow } from './types'
 import { authStore } from '@/entities/user/model/authStore'
 import { mapWithConcurrencyLimit } from '@/shared/lib/concurrencyLimit'
 import { setCurrencyCode } from '@/shared/lib/formatters'
+import { isKnownCauseId } from '@/shared/config/accidentCauses'
+import { REJECT_REASON_LABELS, type RejectReason } from '../lib/parseRow'
 
 const DATA_LOAD_CONCURRENCY = 5
 
@@ -13,6 +15,25 @@ export interface IncompleteFirm {
   name: string
   received: number
   totalRecords: number
+}
+
+export interface RejectedFirm {
+  name: string
+  count: number
+  // "некорректная дата — 3, нет ID ДТП — 1"
+  details: string
+}
+
+// Строки одной базы из последней удачной загрузки
+interface FirmSnapshot {
+  rows: AccidentRow[]
+  loadedAt: Date
+}
+
+function describeRejects(reasons: Partial<Record<RejectReason, number>>): string {
+  return Object.entries(reasons)
+    .map(([reason, count]) => `${REJECT_REASON_LABELS[reason as RejectReason]} — ${count}`)
+    .join(', ')
 }
 
 class AccidentsStore {
@@ -34,10 +55,21 @@ class AccidentsStore {
   // базы, где сервер отдал меньше строк, чем заявил в totalRecords
   incompleteFirms: IncompleteFirm[] = []
 
+  // базы, где часть строк отброшена при разборе (нет ID, кривая дата)
+  rejectedFirms: RejectedFirm[] = []
+
+  // Базы, не ответившие при обновлении, по которым на экране остались
+  // данные прошлой загрузки: имя → момент той загрузки.
+  staleFirms: { name: string; loadedAt: Date }[] = []
+
+  // Последние удачные данные по каждой базе. Отказ базы при обновлении не
+  // выбрасывает её строки, а оставляет прежние с пометкой в баннере.
+  private snapshots = new Map<number, FirmSnapshot>()
+
   // Момент последней успешной загрузки — "данные на ..." в шапке/PDF.
   loadedAt: Date | null = null
 
-  // Защита от гонок (P0-1): каждая загрузка получает свой номер и свой
+  // Защита от гонок: каждая загрузка получает свой номер и свой
   // AbortController. Выход, новый вход или новая загрузка увеличивают
   // номер — результат устаревшей загрузки молча отбрасывается и не
   // попадает к следующему пользователю.
@@ -45,7 +77,10 @@ class AccidentsStore {
   private abortController: AbortController | null = null
 
   constructor() {
-    makeAutoObservable(this, { rows: observableRef })
+    makeAutoObservable<AccidentsStore, 'snapshots'>(this, {
+      rows: observableRef,
+      snapshots: false,
+    })
 
     // Загрузка запускается сама, как только шаг 2 подтвердил хотя бы одну
     // базу с доступом (в том числе после каждого нового входа). Дальше —
@@ -93,6 +128,14 @@ class AccidentsStore {
     return this.currencyCodes.length > 1
   }
 
+  // Записи с ACCIDENT_CAUSE_ID, которого нет в справочнике категорий, — они
+  // попадают в «Виновный не определён», и об этом надо сказать явно.
+  get unknownCauseCount(): number {
+    return this.rows.filter(
+      (row) => row.ACCIDENT_CAUSE_ID != null && !isKnownCauseId(row.ACCIDENT_CAUSE_ID)
+    ).length
+  }
+
   async load(): Promise<void> {
     const dbIndexes = authStore.allowedDbIndexes ?? []
     if (dbIndexes.length === 0) return
@@ -125,7 +168,7 @@ class AccidentsStore {
         })
         return {
           ...result,
-          rows: result.rows.map((row) => ({ ...row, DB_INDEX: dbIndex })),
+          rows: result.rows.map((row): AccidentRow => ({ ...row, DB_INDEX: dbIndex })),
         }
       }
     )
@@ -139,44 +182,60 @@ class AccidentsStore {
     }
 
     runInAction(() => {
-      const merged: AccidentRow[] = []
       const failed: string[] = []
+      const stale: { name: string; loadedAt: Date }[] = []
       const incomplete: IncompleteFirm[] = []
+      const rejected: RejectedFirm[] = []
+      const now = new Date()
 
       results.forEach((result, i) => {
         const dbIndex = dbIndexes[i]
+        const name = authStore.getFirmName(dbIndex)
         if (result.status === 'fulfilled') {
-          const { rows, totalRecords, isComplete } = result.value
-          merged.push(...rows)
+          const {
+            rows,
+            totalRecords,
+            isComplete,
+            rejected: rejectedCount,
+            rejectReasons,
+          } = result.value
+          this.snapshots.set(dbIndex, { rows, loadedAt: now })
           if (!isComplete && totalRecords !== null) {
-            incomplete.push({
-              name: authStore.getFirmName(dbIndex),
-              received: rows.length,
-              totalRecords,
-            })
+            incomplete.push({ name, received: rows.length, totalRecords })
+          }
+          if (rejectedCount > 0) {
+            rejected.push({ name, count: rejectedCount, details: describeRejects(rejectReasons) })
           }
         } else {
-          failed.push(authStore.getFirmName(dbIndex))
+          failed.push(name)
+          const previous = this.snapshots.get(dbIndex)
+          if (previous) stale.push({ name, loadedAt: previous.loadedAt })
         }
       })
 
       this.abortController = null
       this.isRefreshing = false
       this.failedFirms = failed
+      this.staleFirms = stale
 
-      if (failed.length === dbIndexes.length) {
-        // При обновлении поверх готовых данных полный отказ не стирает то,
-        // что уже на экране — баннер покажет, что обновить не удалось.
-        if (!hasData) {
-          this.rows = []
-          this.status = 'failed'
-        }
+      if (failed.length === dbIndexes.length && !hasData) {
+        this.rows = []
+        this.status = 'failed'
         return
       }
 
+      // Базы, у которых вообще нет данных (ни свежих, ни прошлых), просто
+      // не попадают в набор — о них говорит баннер failedFirms.
+      const merged: AccidentRow[] = []
+      dbIndexes.forEach((dbIndex) => {
+        const snapshot = this.snapshots.get(dbIndex)
+        if (snapshot) merged.push(...snapshot.rows)
+      })
+
       this.rows = merged
       this.incompleteFirms = incomplete
-      this.loadedAt = new Date()
+      this.rejectedFirms = rejected
+      if (failed.length < dbIndexes.length) this.loadedAt = now
       this.status = 'ready'
       setCurrencyCode(this.currencyCodes.length === 1 ? this.currencyCodes[0] : null)
     })
@@ -209,6 +268,9 @@ class AccidentsStore {
     this.totalCount = 0
     this.failedFirms = []
     this.incompleteFirms = []
+    this.rejectedFirms = []
+    this.staleFirms = []
+    this.snapshots.clear()
     this.loadedAt = null
     setCurrencyCode(null)
   }

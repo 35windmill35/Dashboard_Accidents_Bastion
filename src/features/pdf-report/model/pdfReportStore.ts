@@ -1,6 +1,8 @@
-import { makeAutoObservable, observableRef } from 'mobx'
+import { makeAutoObservable, observableRef, runInAction } from 'mobx'
 
-export type PdfExporter = () => Promise<void>
+// Экспортёр возвращает, сколько разделов не отрисовалось (void — нечего
+// сообщать, например нет данных для отчёта)
+export type PdfExporter = () => Promise<{ failed: number } | void>
 
 // Кнопка "PDF отчёт" в шапке общая на все экраны, но саму генерацию умеет
 // собрать только тот экран, что сейчас отрисован ("Обзор", "Автоколонна",
@@ -10,7 +12,10 @@ class PdfReportStore {
   exporter: PdfExporter | null = null
   isGenerating = false
   progress: { current: number; total: number } = { current: 0, total: 0 }
+  // Сообщение пользователю по итогам формирования: ошибка (файла нет) или
+  // предупреждение (файл сохранён, но часть разделов пропущена)
   lastError: string | null = null
+  lastWarning: string | null = null
 
   constructor() {
     makeAutoObservable(this, { exporter: observableRef })
@@ -32,26 +37,43 @@ class PdfReportStore {
     this.progress = { current, total }
   }
 
-  // Блокирует повторный клик, пока идёт формирование — сам генератор
-  // (generatePdfReport) уже терпим к отказу отдельных секций, здесь ловим
-  // только катастрофический сбой (например, jsPDF не смог инициализироваться).
+  dismissNotice(): void {
+    this.lastError = null
+    this.lastWarning = null
+  }
+
+  // Блокирует повторный клик, пока идёт формирование. Движок раскладки сам
+  // переживает отказ отдельных разделов (результат — failed), здесь ловится
+  // только полный сбой (например, не загрузился модуль отчёта).
   async trigger(): Promise<void> {
-    if (this.isGenerating || !this.exporter) return
+    const exporter = this.exporter
+    if (this.isGenerating || !exporter) return
 
     this.isGenerating = true
     this.lastError = null
+    this.lastWarning = null
     this.progress = { current: 0, total: 0 }
 
     try {
       // Сборка PDF синхронная и на пару сотен миллисекунд блокирует поток —
       // отдаём браузеру кадр, чтобы оверлей успел отрисоваться до этого.
       await new Promise((resolve) => requestAnimationFrame(resolve))
-      await this.exporter()
+      const result = await exporter()
+      runInAction(() => {
+        if (result && result.failed > 0) {
+          this.lastWarning = `PDF сохранён, но ${result.failed} разд. не удалось сформировать — отчёт неполный. Попробуйте ещё раз или сообщите в поддержку.`
+        }
+      })
     } catch (err) {
-      this.lastError = err instanceof Error ? err.message : 'Не удалось сформировать PDF-отчёт'
       console.error('[pdf-report] формирование отчёта прервано:', err)
+      runInAction(() => {
+        this.lastError =
+          'Не удалось сформировать PDF-отчёт. Обновите страницу и попробуйте ещё раз.'
+      })
     } finally {
-      this.isGenerating = false
+      runInAction(() => {
+        this.isGenerating = false
+      })
     }
   }
 }

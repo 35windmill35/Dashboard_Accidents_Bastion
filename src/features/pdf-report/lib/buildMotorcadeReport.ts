@@ -1,16 +1,23 @@
 import { jsPDF } from 'jspdf'
 import {
-  calcDelta,
-  formatDelta,
   formatNumber,
   formatPercent,
   isDeltaPositive,
+  kpiDelta,
+  type KpiKind,
 } from '@/shared/lib/formatters'
-import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
+import { NO_DAMAGE_CATEGORY_ENABLED } from '@/shared/config/accidentCauses'
+import { comparisonLabel, formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import type { MotorcadeData } from '@/pages/motorcade/model/motorcadeData'
 import { COLOR, PAGE, registerPdfFonts } from './pdfKit'
-import { columns, drawPageFooters, flowBlocks, type BlockFactory } from './pdfFlow'
-import { kpiRow, reportHeader, type KpiCardData } from './pdfChrome'
+import { columns, drawPageFooters, flowBlocks, type BlockFactory, type FlowResult } from './pdfFlow'
+import {
+  dataContextLines,
+  kpiRow,
+  reportHeader,
+  type KpiCardData,
+  type ReportDataContext,
+} from './pdfChrome'
 import {
   DISTRIBUTION_ROW_HEIGHT,
   barChartBody,
@@ -42,7 +49,8 @@ export interface MotorcadeReportInput {
   data: MotorcadeData
   period: Period
   motorcadeName: string
-  firmName: string
+  // Актуальность и полнота данных для шапки
+  context: ReportDataContext
   onSection?: (done: number, total: number) => void
 }
 
@@ -56,25 +64,27 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
   const build = (
     label: string,
     value: string,
+    kind: KpiKind,
     current: number | null,
     previous: number | null | undefined,
     higherIsBetter: boolean
   ): KpiCardData => {
-    const delta = previousKpi ? calcDelta(current, previous) : null
-    const positive = isDeltaPositive(delta, higherIsBetter)
+    const delta = previousKpi ? kpiDelta(kind, current, previous) : null
+    const positive = isDeltaPositive(delta?.value, higherIsBetter)
     return {
       label,
       value,
-      delta: delta === null ? null : `${formatDelta(delta)} к пред. периоду`,
+      delta: delta === null ? null : `${delta.text} ${comparisonLabel(data.comparison)}`,
       deltaTone: positive === null ? 'neutral' : positive ? 'positive' : 'negative',
     }
   }
 
-  return [
-    build('Количество ДТП', formatNumber(kpi.count), kpi.count, previousKpi?.count, false),
+  const cards = [
+    build('Количество ДТП', formatNumber(kpi.count), 'count', kpi.count, previousKpi?.count, false),
     build(
       'Сумма ущерба',
       formatPdfCurrency(kpi.sumDamage),
+      'currency',
       kpi.sumDamage,
       previousKpi?.sumDamage,
       false
@@ -82,6 +92,7 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
     build(
       'Сумма возмещения',
       formatPdfCurrency(kpi.sumCompensated),
+      'currency',
       kpi.sumCompensated,
       previousKpi?.sumCompensated,
       true
@@ -89,6 +100,7 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
     build(
       'Доля возмещения',
       formatPercent(kpi.compensationShare),
+      'percent',
       kpi.compensationShare,
       previousKpi?.compensationShare,
       true
@@ -96,6 +108,7 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
     build(
       'Средний ущерб на 1 ДТП',
       formatPdfCurrency(kpi.averageDamage),
+      'currency',
       kpi.averageDamage,
       previousKpi?.averageDamage,
       false
@@ -103,6 +116,7 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
     build(
       'Доля ДТП по вине водителя',
       formatPercent(kpi.driverFaultShare),
+      'percent',
       kpi.driverFaultShare,
       previousKpi?.driverFaultShare,
       false
@@ -110,18 +124,27 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
     build(
       'Доля ДТП по вине третьей стороны',
       formatPercent(kpi.thirdPartyFaultShare),
+      'percent',
       kpi.thirdPartyFaultShare,
       previousKpi?.thirdPartyFaultShare,
       false
     ),
-    build(
-      'Доля ДТП без повреждений',
-      formatPercent(kpi.noDamageShare),
-      kpi.noDamageShare,
-      previousKpi?.noDamageShare,
-      false
-    ),
   ]
+
+  // Правило «Без повреждения» не подтверждено — карточку не печатаем
+  if (NO_DAMAGE_CATEGORY_ENABLED) {
+    cards.push(
+      build(
+        'Доля ДТП без повреждений',
+        formatPercent(kpi.noDamageShare),
+        'percent',
+        kpi.noDamageShare,
+        previousKpi?.noDamageShare,
+        false
+      )
+    )
+  }
+  return cards
 }
 
 function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[] {
@@ -278,13 +301,11 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
       title: `Отчёт по автоколонне «${input.motorcadeName}»`,
       periodLabel,
       generatedAt: new Date(),
-      // Перечисление баз, из которых собраны данные, в шапке не нужно
-      // пользователю — это внутренняя деталь интеграции, не фильтр отчёта
-      // (см. buildOverviewReport).
-      filterLines: [],
+      // Перечень баз в шапке не нужен — это деталь интеграции, не фильтр
+      filterLines: dataContextLines(input.context),
     }),
     kpiRow(doc, cards.slice(0, 4)),
-    kpiRow(doc, cards.slice(4, 8)),
+    kpiRow(doc, cards.slice(4, 8), 4),
     columns([trendCard, causesCard], [0.58, 0.42]),
     damageTrendCard,
     columns([driversTable, vehiclesTable], [0.5, 0.5]),
@@ -296,17 +317,23 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
 // (buildOverviewReport) — векторной отрисовкой, без снимков экрана. Блоков
 // меньше: у одной автоколонны нет смысла в сравнении "ДТП/ущерб по
 // автоколоннам" — это графики только "Обзора".
-export function buildMotorcadeReport(input: MotorcadeReportInput): jsPDF {
+export function buildMotorcadeReport(input: MotorcadeReportInput): {
+  doc: jsPDF
+  result: FlowResult
+} {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
   registerPdfFonts(doc)
 
-  flowBlocks(doc, motorcadeBlocks(doc, input), PAGE.marginTop, { onSection: input.onSection })
-  drawPageFooters(doc)
+  const result = flowBlocks(doc, motorcadeBlocks(doc, input), PAGE.marginTop, {
+    onSection: input.onSection,
+  })
+  drawPageFooters(doc, result.failed)
 
-  return doc
+  return { doc, result }
 }
 
-export function saveMotorcadeReport(input: MotorcadeReportInput): void {
-  const doc = buildMotorcadeReport(input)
+export function saveMotorcadeReport(input: MotorcadeReportInput): FlowResult {
+  const { doc, result } = buildMotorcadeReport(input)
   doc.save(buildReportFilename('avtokolonna', input.period, new Date()))
+  return result
 }

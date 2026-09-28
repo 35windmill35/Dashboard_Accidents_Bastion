@@ -1,6 +1,5 @@
 import { KpiCard } from '@/widgets/kpi-card/KpiCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
-import { calcDelta } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { rowsNotFullyCompensated, rowsWithDamage } from '@/entities/accident/lib/metrics'
@@ -15,7 +14,7 @@ interface AnalyticsKpiGroupsProps {
 
 // Две группы KPI (по эталону — заголовок группы с цветной точкой серии,
 // тем же цветом, что автоколонна на графиках): слева — Автоколонна 1
-// без дельты, справа — Автоколонна 2 с относительной разницей к первой
+// без дельты, справа — Автоколонна 2 с разницей к первой (доли — в п.п.)
 // (см. KpiCard.deltaLabel). Дельта показывает разницу между автоколоннами,
 // а не с прошлым периодом — поэтому previousKpi здесь не участвует.
 export function AnalyticsKpiGroups({ data, period }: AnalyticsKpiGroupsProps) {
@@ -54,8 +53,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
   const rows = side.scope.periodRows
   const deltaLabel = compareTo ? `к ${compareTo.name}` : undefined
 
-  const delta = (value: number | null, otherValue: number | null) =>
-    compareTo ? calcDelta(value, otherValue) : null
+  const other = compareTo?.scope.kpi
 
   return (
     <section className={styles.group} aria-label={side.name}>
@@ -76,7 +74,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           label="Количество ДТП"
           value={kpi.count}
           kind="count"
-          delta={compareTo ? delta(kpi.count, compareTo.scope.kpi.count) : undefined}
+          compareValue={other?.count}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Масштаб аварийности автоколонны"
@@ -87,7 +85,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           label="Сумма ущерба"
           value={kpi.sumDamage}
           kind="currency"
-          delta={compareTo ? delta(kpi.sumDamage, compareTo.scope.kpi.sumDamage) : undefined}
+          compareValue={other?.sumDamage}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Финансовый эффект ДТП этой автоколонны"
@@ -98,11 +96,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           label="Доля возмещения"
           value={kpi.compensationShare}
           kind="percent"
-          delta={
-            compareTo
-              ? delta(kpi.compensationShare, compareTo.scope.kpi.compensationShare)
-              : undefined
-          }
+          compareValue={other?.compensationShare}
           deltaLabel={deltaLabel}
           tooltip="Качество претензионной работы. Сравнимо между автоколоннами"
           onOpenList={() => onOpen('ДТП, возмещённые не полностью', rowsNotFullyCompensated(rows))}
@@ -112,9 +106,7 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
           label="Средний ущерб на 1 ДТП"
           value={kpi.averageDamage}
           kind="currency"
-          delta={
-            compareTo ? delta(kpi.averageDamage, compareTo.scope.kpi.averageDamage) : undefined
-          }
+          compareValue={other?.averageDamage}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
           tooltip="Типичная тяжесть инцидента в этой автоколонне"

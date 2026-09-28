@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
 import { parsePeriodParam, periodToParam } from '@/entities/accident/lib/period'
 
-// Синхронизация фильтров с query-строкой hash-роутера (ТЗ §3.4), чтобы
+// Синхронизация фильтров с query-строкой hash-роутера, чтобы
 // ссылку на конкретный срез можно было переслать:
 //   #/?period=2026-08
 //   #/motorcade?period=2026-Q3&motorcade=0:1
@@ -33,18 +33,7 @@ function applyUrlToStore(pathname: string, params: URLSearchParams): void {
   }
 
   if (pathname === '/analytics') {
-    const keyA = params.get(PARAM_A)
-    const keyB = params.get(PARAM_B)
-    // Сначала сбрасываем B, иначе ссылка "a=X&b=Y" поверх текущего
-    // "a=Y" упрётся в запрет одинакового выбора.
-    if (keyA && keyB && keyA !== keyB) {
-      filtersStore.analyticsMotorcadeKeyB = null
-      filtersStore.setAnalyticsMotorcadeA(keyA)
-      filtersStore.setAnalyticsMotorcadeB(keyB)
-    } else {
-      if (keyA) filtersStore.setAnalyticsMotorcadeA(keyA)
-      if (keyB) filtersStore.setAnalyticsMotorcadeB(keyB)
-    }
+    filtersStore.setAnalyticsPair(params.get(PARAM_A), params.get(PARAM_B))
   }
 }
 

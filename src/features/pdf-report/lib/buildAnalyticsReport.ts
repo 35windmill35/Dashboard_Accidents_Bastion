@@ -1,10 +1,10 @@
 import { jsPDF } from 'jspdf'
 import {
-  calcDelta,
-  formatDelta,
   formatNumber,
   formatPercent,
   isDeltaPositive,
+  kpiDelta,
+  type KpiKind,
 } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import type {
@@ -13,8 +13,14 @@ import type {
   SummaryRow,
 } from '@/pages/analytics/model/analyticsData'
 import { COLOR, PAGE, registerPdfFonts } from './pdfKit'
-import { columns, drawPageFooters, flowBlocks, type BlockFactory } from './pdfFlow'
-import { kpiRow, reportHeader, type KpiCardData } from './pdfChrome'
+import { columns, drawPageFooters, flowBlocks, type BlockFactory, type FlowResult } from './pdfFlow'
+import {
+  dataContextLines,
+  kpiRow,
+  reportHeader,
+  type KpiCardData,
+  type ReportDataContext,
+} from './pdfChrome'
 import {
   DUAL_ROW_HEIGHT,
   barChartBody,
@@ -41,6 +47,8 @@ export interface AnalyticsReportInput {
   data: AnalyticsData
   period: Period
   firmNames: string[]
+  // Актуальность и полнота данных для шапки
+  context: ReportDataContext
   onSection?: (done: number, total: number) => void
 }
 
@@ -53,26 +61,35 @@ function sideCards(side: AnalyticsSide, compareTo: AnalyticsSide | null): KpiCar
   const build = (
     label: string,
     value: string,
+    kind: KpiKind,
     current: number | null,
     reference: number | null | undefined,
     higherIsBetter: boolean
   ): KpiCardData => {
-    const delta = compareTo ? calcDelta(current, reference) : null
-    const positive = isDeltaPositive(delta, higherIsBetter)
+    const delta = compareTo ? kpiDelta(kind, current, reference) : null
+    const positive = isDeltaPositive(delta?.value, higherIsBetter)
     return {
       label: `${label} · ${side.name}`,
       value,
-      delta: delta === null ? null : `${formatDelta(delta)} к ${compareTo?.name ?? ''}`,
+      delta: delta === null ? null : `${delta.text} к ${compareTo?.name ?? ''}`,
       deltaTone: positive === null ? 'neutral' : positive ? 'positive' : 'negative',
     }
   }
 
   return [
-    build('ДТП', formatNumber(kpi.count), kpi.count, other?.count, false),
-    build('Ущерб', formatPdfCurrency(kpi.sumDamage), kpi.sumDamage, other?.sumDamage, false),
+    build('ДТП', formatNumber(kpi.count), 'count', kpi.count, other?.count, false),
+    build(
+      'Ущерб',
+      formatPdfCurrency(kpi.sumDamage),
+      'currency',
+      kpi.sumDamage,
+      other?.sumDamage,
+      false
+    ),
     build(
       'Доля возмещения',
       formatPercent(kpi.compensationShare),
+      'percent',
       kpi.compensationShare,
       other?.compensationShare,
       true
@@ -80,6 +97,7 @@ function sideCards(side: AnalyticsSide, compareTo: AnalyticsSide | null): KpiCar
     build(
       'Средний ущерб',
       formatPdfCurrency(kpi.averageDamage),
+      'currency',
       kpi.averageDamage,
       other?.averageDamage,
       false
@@ -213,15 +231,15 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
           row.label,
           formatSummaryValue(row.kind, row.valueA),
           formatSummaryValue(row.kind, row.valueB),
-          formatDelta(calcDelta(row.valueB, row.valueA)),
+          kpiDelta(row.kind, row.valueB, row.valueA)?.text ?? '—',
         ],
       })),
-      note: 'Разница — относительное отличие второй автоколонны от первой.',
+      note: 'Разница — отличие второй автоколонны от первой: для долей в п.п., для остальных в %.',
     })
 
   const worstDriversTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
-      title: 'Топ-10 худших водителей (обе автоколонны)',
+      title: 'Топ-10 водителей по числу ДТП (обе автоколонны)',
       columns: [
         { header: '#', ratio: 0.05, mono: true },
         { header: 'Водитель', ratio: 0.33 },
@@ -252,9 +270,10 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
         `Автоколонна 1: ${a.name}`,
         `Автоколонна 2: ${b.name}`,
         `Базы: ${input.firmNames.join(', ')}`,
+        ...dataContextLines(input.context),
       ],
     }),
-    // Баннер о сопоставимости (ТЗ §6) временно скрыт по решению заказчика,
+    // Баннер о сопоставимости временно скрыт по решению заказчика,
     // вернуть: noticeBlock(doc, 'Сопоставимость данных', data.comparabilityWarnings)
     kpiRow(doc, sideCards(a, null)),
     kpiRow(doc, sideCards(b, a)),
@@ -282,17 +301,23 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
 
 // Отчёт "Аналитика" — тем же векторным движком, что "Обзор" и
 // "Автоколонна" (buildOverviewReport/buildMotorcadeReport).
-export function buildAnalyticsReport(input: AnalyticsReportInput): jsPDF {
+export function buildAnalyticsReport(input: AnalyticsReportInput): {
+  doc: jsPDF
+  result: FlowResult
+} {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' })
   registerPdfFonts(doc)
 
-  flowBlocks(doc, analyticsBlocks(doc, input), PAGE.marginTop, { onSection: input.onSection })
-  drawPageFooters(doc)
+  const result = flowBlocks(doc, analyticsBlocks(doc, input), PAGE.marginTop, {
+    onSection: input.onSection,
+  })
+  drawPageFooters(doc, result.failed)
 
-  return doc
+  return { doc, result }
 }
 
-export function saveAnalyticsReport(input: AnalyticsReportInput): void {
-  const doc = buildAnalyticsReport(input)
+export function saveAnalyticsReport(input: AnalyticsReportInput): FlowResult {
+  const { doc, result } = buildAnalyticsReport(input)
   doc.save(buildReportFilename('analitika', input.period, new Date()))
+  return result
 }

@@ -10,6 +10,7 @@ import {
   type PeriodMode,
 } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
+import { themeStore } from '@/shared/lib/theme/themeStore'
 import { IconMenu, IconRefresh, IconPdf } from './icons'
 import { TopBarSelect as Select } from './TopBarSelect'
 import styles from './AppTopBar.module.css'
@@ -51,6 +52,9 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
   const isMotorcadeScreen = location.pathname === '/motorcade'
   const isAnalyticsScreen = location.pathname === '/analytics'
   const isRefreshing = accidentsStore.isRefreshing
+  // Цвета точек серий зависят от темы: чтение theme подписывает шапку на её
+  // смену, сами цвета к этому моменту уже переключены (applyChartScheme)
+  const comparisonColors = themeStore.theme ? [COMPARISON_COLOR_A, COMPARISON_COLOR_B] : []
 
   return (
     <header className={styles.bar}>
@@ -112,7 +116,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
         <div className={styles.compare}>
           <Select
             aria-label="Автоколонна 1"
-            dotColor={COMPARISON_COLOR_A}
+            dotColor={comparisonColors[0]}
             value={filtersStore.selectedAnalyticsKeyA ?? ''}
             onChange={(e) => filtersStore.setAnalyticsMotorcadeA(e.target.value)}
           >
@@ -131,7 +135,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
           </span>
           <Select
             aria-label="Автоколонна 2"
-            dotColor={COMPARISON_COLOR_B}
+            dotColor={comparisonColors[1]}
             value={filtersStore.selectedAnalyticsKeyB ?? ''}
             onChange={(e) => filtersStore.setAnalyticsMotorcadeB(e.target.value)}
           >

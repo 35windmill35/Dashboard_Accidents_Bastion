@@ -15,7 +15,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Прод выкладывается только после зелёных проверок
+  ci:
+    uses: ./.github/workflows/ci.yml
+
   build:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -25,6 +30,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Адрес API для прода задаётся в Settings → Environments → github-pages
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist

@@ -3,6 +3,7 @@ import { rubikRegular } from './fonts/rubikRegular'
 import { rubikMedium } from './fonts/rubikMedium'
 import { rubikTabularRegular } from './fonts/rubikTabularRegular'
 import { rubikTabularMedium } from './fonts/rubikTabularMedium'
+import { PDF_FONT_RANGES } from './fonts/pdfCharset'
 
 export type Rgb = readonly [number, number, number]
 
@@ -68,6 +69,56 @@ export interface TextStyle {
   charSpace?: number
 }
 
+// Символы вне встроенных шрифтов jsPDF рисует пустыми квадратами. Узкие
+// пробелы, неразрывные дефисы и т. п. (их подставляет Intl и копируют из
+// Word) заменяются на ближайшие имеющиеся, остальное — на «?» с одним
+// предупреждением в консоли на символ.
+const PDF_CHAR_FALLBACKS: Record<string, string> = {
+  '\u2007': '\u00a0',
+  '\u2008': ' ',
+  '\u2009': ' ',
+  '\u200a': ' ',
+  '\u202f': '\u00a0',
+  '\u2002': ' ',
+  '\u2003': ' ',
+  '\u200b': '',
+  '\u200c': '',
+  '\u200d': '',
+  '\ufeff': '',
+  '\u2010': '-',
+  '\u2011': '-',
+  '\u2012': '–',
+  '\u2015': '—',
+  '\t': ' ',
+  '\n': ' ',
+  '\r': ' ',
+}
+
+const reportedMissing = new Set<string>()
+
+function isPdfChar(code: number): boolean {
+  return PDF_FONT_RANGES.some(([from, to]) => code >= from && code <= to)
+}
+
+export function sanitizePdfText(text: string): string {
+  let result = ''
+  for (const char of text) {
+    const fallback = PDF_CHAR_FALLBACKS[char]
+    if (fallback !== undefined) {
+      result += fallback
+    } else if (isPdfChar(char.codePointAt(0) ?? 0)) {
+      result += char
+    } else {
+      if (!reportedMissing.has(char)) {
+        reportedMissing.add(char)
+        console.warn(`[pdf-report] символа «${char}» нет в шрифте отчёта, заменён на «?»`)
+      }
+      result += '?'
+    }
+  }
+  return result
+}
+
 function applyTextStyle(doc: jsPDF, style: TextStyle): void {
   doc.setFont(style.font === 'mono' ? FONT_MONO : FONT_SANS, style.weight ?? 'normal')
   doc.setFontSize(style.size ?? 8)
@@ -84,12 +135,13 @@ export function drawText(
   style: TextStyle = {}
 ): void {
   applyTextStyle(doc, style)
-  doc.text(text, x, y, { align: style.align ?? 'left', baseline: 'alphabetic' })
+  doc.text(sanitizePdfText(text), x, y, { align: style.align ?? 'left', baseline: 'alphabetic' })
   doc.setCharSpace(0)
 }
 
-export function measureText(doc: jsPDF, text: string, style: TextStyle = {}): number {
+export function measureText(doc: jsPDF, rawText: string, style: TextStyle = {}): number {
   applyTextStyle(doc, style)
+  const text = sanitizePdfText(rawText)
   const width = doc.getTextWidth(text) + (style.charSpace ?? 0) * Math.max(0, text.length - 1)
   doc.setCharSpace(0)
   return width

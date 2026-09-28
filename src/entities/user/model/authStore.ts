@@ -13,6 +13,14 @@ import { getErrorMessage } from '@/shared/api/errorMessage'
 import { mapWithConcurrencyLimit } from '@/shared/lib/concurrencyLimit'
 
 const FIRMS_STORAGE_KEY = 'road_accidents_firms'
+
+// Индекс базы для остальных методов API. Берётся из Firm.DBIndex, который
+// приходит в ответе логина, — он не зависит от порядка и состава списка, и
+// ссылка на автоколонну ("motorcade=0:1") у коллеги с другим набором баз
+// ведёт туда же. Позиция в массиве — только запасной вариант, если поля нет.
+function firmDbIndex(firm: Firm, index: number): number {
+  return typeof firm.DBIndex === 'number' && Number.isInteger(firm.DBIndex) ? firm.DBIndex : index
+}
 const RIGHTS_CHECK_CONCURRENCY = 5
 
 class AuthStore {
@@ -36,7 +44,7 @@ class AuthStore {
 
   // Номер "поколения" сессии: растёт при каждом входе и выходе. Асинхронные
   // операции запоминают его на старте и не пишут результат, если за время
-  // запроса пользователь вышел или вошёл заново (P0-1).
+  // запроса пользователь вышел или вошёл заново.
   sessionEpoch = 0
   private rightsAbort: AbortController | null = null
 
@@ -145,7 +153,7 @@ class AuthStore {
 
     this.isCheckingRights = true
 
-    const dbIndexes = this.firms.map((_firm, index) => index)
+    const dbIndexes = this.firms.map((firm, index) => firmDbIndex(firm, index))
     const results = await mapWithConcurrencyLimit(dbIndexes, RIGHTS_CHECK_CONCURRENCY, (dbIndex) =>
       checkAccidentsRight(dbIndex, abort.signal)
     )
@@ -158,11 +166,12 @@ class AuthStore {
       const allowed: number[] = []
       const errored: string[] = []
 
-      results.forEach((result, index) => {
+      results.forEach((result, i) => {
+        const dbIndex = dbIndexes[i]
         if (result.status === 'fulfilled') {
-          if (result.value) allowed.push(index)
+          if (result.value) allowed.push(dbIndex)
         } else {
-          errored.push(this.getFirmName(index))
+          errored.push(this.getFirmName(dbIndex))
         }
       })
 
@@ -184,7 +193,8 @@ class AuthStore {
   }
 
   getFirmName(dbIndex: number): string {
-    return this.firms[dbIndex]?.FIRM_SHORT_NAME || `база #${dbIndex}`
+    const firm = this.firms.find((item, index) => firmDbIndex(item, index) === dbIndex)
+    return firm?.FIRM_SHORT_NAME || `база #${dbIndex}`
   }
 
   logout(): void {

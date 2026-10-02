@@ -1,6 +1,6 @@
 import styles from './AccidentDrilldownModal.module.css'
 
-export type SortKey = 'date' | 'motorcade' | 'vehicle' | 'driver' | 'damage' | 'compensated'
+export type SortKey = 'id' | 'date' | 'motorcade' | 'vehicle' | 'driver' | 'damage' | 'compensated'
 export type SortDir = 'asc' | 'desc'
 
 interface SortHeaderProps {

@@ -42,6 +42,8 @@ function vehicleLabel(row: AccidentRow): string {
 
 function sortValue(row: AccidentRow, key: SortKey): number | string {
   switch (key) {
+    case 'id':
+      return row.ACCIDENT_ID
     case 'date':
       return row.ACCIDENT_DATE || ''
     case 'motorcade':
@@ -139,7 +141,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     if (query) {
       filtered = filtered.filter((row) => {
         const haystack =
-          `${row.DRIVER_NAME || ''} ${row.GARAGE_NUM || ''} ${row.ACCIDENT_ADDRESS || ''}`.toLowerCase()
+          `${row.ACCIDENT_ID} ${row.DRIVER_NAME || ''} ${row.GARAGE_NUM || ''} ${row.ACCIDENT_ADDRESS || ''}`.toLowerCase()
         return haystack.includes(query)
       })
     }
@@ -182,6 +184,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
   const handleExport = () => {
     const optional = OPTIONAL_COLUMNS.filter((column) => visibleOptional.has(column.key))
     const headers = [
+      'Номер ДТП',
       'Дата',
       'Время',
       'Автоколонна',
@@ -200,6 +203,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     const csvRows = filteredSorted.map((row) => {
       const time = formatTime(row.ACCIDENT_TIME)
       return [
+        String(row.ACCIDENT_ID),
         formatDate(row.ACCIDENT_DATE),
         time === '—' ? '' : time,
         getMotorcadeName(row),
@@ -222,9 +226,10 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     downloadCsv(`dtp-spisok-${fileStamp}.csv`, headers, csvRows)
   }
 
-  // Колонок в таблице: кнопка раскрытия + 9 постоянных + необязательные +
-  // база. Строка подробностей занимает всё, кроме первой.
-  const totalColumns = 1 + 9 + visibleOptional.size + (showBaseColumn ? 1 : 0)
+  // Колонок в таблице: кнопка раскрытия + 10 постоянных (номер ДТП, дата,
+  // автоколонна, ТС, водитель, причина, виновник, ущерб, возмещение, статус)
+  // + необязательные + база. Строка подробностей занимает всё, кроме первой.
+  const totalColumns = 1 + 10 + visibleOptional.size + (showBaseColumn ? 1 : 0)
 
   return (
     <div className={styles.backdrop} onClick={() => drilldownStore.close()}>
@@ -284,7 +289,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
               className={styles.search}
               type="search"
               aria-label="Поиск по списку ДТП"
-              placeholder="Поиск: водитель, гаражный номер, адрес"
+              placeholder="Поиск: номер ДТП, водитель, гаражный номер, адрес"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -320,6 +325,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
               <thead>
                 <tr>
                   <th scope="col" aria-label="Подробности" />
+                  <SortHeader label="№ ДТП" column="id" {...sortProps} />
                   <SortHeader label="Дата/время" column="date" {...sortProps} />
                   <SortHeader label="Автоколонна" column="motorcade" {...sortProps} />
                   <SortHeader label="ТС" column="vehicle" {...sortProps} />
@@ -364,6 +370,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                             </button>
                           )}
                         </td>
+                        <td className={styles.number}>{row.ACCIDENT_ID}</td>
                         <td className={styles.muted}>{dateTimeLabel(row)}</td>
                         <td>{getMotorcadeName(row)}</td>
                         <td>{vehicleLabel(row)}</td>

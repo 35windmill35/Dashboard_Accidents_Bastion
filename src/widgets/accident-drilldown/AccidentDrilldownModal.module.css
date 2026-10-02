@@ -217,6 +217,11 @@
   color: var(--color-text-secondary) !important;
 }
 
+.number {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 .address {
   max-width: 260px;
   overflow: hidden;

@@ -24,6 +24,7 @@ import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { formatMonthShortLabel, formatMonthLabel } from '@/entities/accident/lib/period'
 import { COLOR_COUNT } from '@/shared/lib/chartColors'
 import { CHART_MARGIN, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -76,15 +77,18 @@ export function AccidentsTrendChart({ data }: Props) {
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
   const table: ChartDataTable = {
-    columns: ['Месяц', 'ДТП'],
+    columns: [t('roadAccidents.common.month'), t('roadAccidents.common.accidents')],
     rows: chartData.map((d) => [formatMonthLabel(d.ym), formatNumber(d.count)]),
   }
 
   return (
     <ChartCard
       table={table}
-      title="Динамика ДТП по месяцам"
-      subtitle={`${formatNumber(chartData.reduce((sum, d) => sum + d.count, 0))} ДТП за ${chartData.length} мес.`}
+      title={t('roadAccidents.chart.accidentsTrend')}
+      subtitle={t('roadAccidents.chart.accidentsForMonths', {
+        count: formatNumber(chartData.reduce((sum, d) => sum + d.count, 0)),
+        months: chartData.length,
+      })}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -107,7 +111,7 @@ export function AccidentsTrendChart({ data }: Props) {
               {...ANIMATION}
               type="monotone"
               dataKey="count"
-              name="ДТП"
+              name={t('roadAccidents.common.accidents')}
               stroke={COLOR_COUNT}
               strokeWidth={2}
               dot={<TrendDot onPointClick={handleClick} />}

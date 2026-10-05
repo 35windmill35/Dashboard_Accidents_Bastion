@@ -25,6 +25,7 @@ import { formatMonthShortLabel, formatMonthLabel } from '@/entities/accident/lib
 import { COLOR_DAMAGE, COLOR_COMPENSATION } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
 import { CHART_MARGIN, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { OverviewData } from '../../model/overviewData'
 
 interface Props {
@@ -48,7 +49,11 @@ export function DamageTrendChart({ data }: Props) {
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
   const table: ChartDataTable = {
-    columns: ['Месяц', 'Ущерб', 'Возмещение'],
+    columns: [
+      t('roadAccidents.common.month'),
+      t('roadAccidents.common.damage'),
+      t('roadAccidents.common.compensation'),
+    ],
     rows: chartData.map((d) => [
       formatMonthLabel(d.ym),
       formatCurrency(d.sumDamage),
@@ -59,11 +64,11 @@ export function DamageTrendChart({ data }: Props) {
   return (
     <ChartCard
       table={table}
-      title="Динамика ущерба и возмещения по месяцам"
-      subtitle={withCurrencyUnit('Суммы по месяцам')}
+      title={t('roadAccidents.chart.damageTrend')}
+      subtitle={withCurrencyUnit(t('roadAccidents.chart.sumsByMonth'))}
       legend={[
-        { label: 'Ущерб', color: COLOR_DAMAGE },
-        { label: 'Возмещение', color: COLOR_COMPENSATION },
+        { label: t('roadAccidents.common.damage'), color: COLOR_DAMAGE },
+        { label: t('roadAccidents.common.compensation'), color: COLOR_COMPENSATION },
       ]}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
@@ -99,7 +104,7 @@ export function DamageTrendChart({ data }: Props) {
               {...ANIMATION}
               type="monotone"
               dataKey="sumDamage"
-              name="Ущерб"
+              name={t('roadAccidents.common.damage')}
               stroke={COLOR_DAMAGE}
               strokeWidth={2}
               dot={lineDot(COLOR_DAMAGE)}
@@ -110,7 +115,7 @@ export function DamageTrendChart({ data }: Props) {
               {...ANIMATION}
               type="monotone"
               dataKey="sumCompensated"
-              name="Возмещение"
+              name={t('roadAccidents.common.compensation')}
               stroke={COLOR_COMPENSATION}
               strokeWidth={2}
               dot={lineDot(COLOR_COMPENSATION)}

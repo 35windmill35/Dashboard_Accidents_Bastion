@@ -1,4 +1,5 @@
 import type { AccidentRow } from '../model/types'
+import { hasTranslation, t } from '@/shared/i18n'
 
 export type PeriodMode = 'month' | 'quarter' | 'year' | 'all'
 
@@ -8,35 +9,12 @@ export type Period =
   | { mode: 'year'; value: number } // YYYY
   | { mode: 'all' }
 
-const MONTH_NAMES = [
-  'Январь',
-  'Февраль',
-  'Март',
-  'Апрель',
-  'Май',
-  'Июнь',
-  'Июль',
-  'Август',
-  'Сентябрь',
-  'Октябрь',
-  'Ноябрь',
-  'Декабрь',
-]
-
-const MONTH_SHORT = [
-  'Янв',
-  'Фев',
-  'Мар',
-  'Апр',
-  'Май',
-  'Июн',
-  'Июл',
-  'Авг',
-  'Сен',
-  'Окт',
-  'Ноя',
-  'Дек',
-]
+// Названия месяцев — общие ключи translation.json (month_0…month_11 и
+// short.month_0…), месяц на входе — 1…12
+function monthName(month: number, short = false): string {
+  const key = `${short ? 'short.' : ''}month_${month - 1}`
+  return hasTranslation(key) ? t(key) : '?'
+}
 
 const QUARTER_ROMAN = ['I', 'II', 'III', 'IV']
 
@@ -74,19 +52,22 @@ function ymAddMonths(ym: number, delta: number): number {
 export function formatMonthLabel(ym: number): string {
   const year = ymToYear(ym)
   const month = ym % 100
-  return `${MONTH_NAMES[month - 1] || '?'} ${year}`
+  return `${monthName(month)} ${year}`
 }
 
 export function formatMonthShortLabel(ym: number): string {
   const year = ymToYear(ym)
   const month = ym % 100
-  return `${MONTH_SHORT[month - 1] || '?'} ${year}`
+  return `${monthName(month, true)} ${year}`
 }
 
 export function formatQuarterLabel(yq: number): string {
   const year = Math.floor(yq / 10)
   const quarter = yq % 10
-  return `${QUARTER_ROMAN[quarter - 1] || quarter} квартал ${year}`
+  return t('roadAccidents.period.quarterLabel', {
+    quarter: QUARTER_ROMAN[quarter - 1] || quarter,
+    year,
+  })
 }
 
 export function formatYearLabel(year: number): string {
@@ -94,7 +75,7 @@ export function formatYearLabel(year: number): string {
 }
 
 export function formatPeriodLabel(period: Period): string {
-  if (period.mode === 'all') return 'Весь период'
+  if (period.mode === 'all') return t('roadAccidents.period.all')
   if (period.mode === 'year') return formatYearLabel(period.value)
   if (period.mode === 'quarter') return formatQuarterLabel(period.value)
   return formatMonthLabel(period.value)
@@ -237,13 +218,15 @@ export function isInComparisonWindow(row: AccidentRow, comparison: PeriodCompari
 // Подпись к дельте KPI — короткая, чтобы влезать в одну строку карточки;
 // за сколько дней идёт сравнение, пишет partialPeriodNote в шапке
 export function comparisonLabel(comparison: PeriodComparison): string {
-  return comparison.isPartial ? 'к тем же дням' : 'к пред. периоду'
+  return comparison.isPartial
+    ? t('roadAccidents.period.vsSameDays')
+    : t('roadAccidents.period.vsPrevious')
 }
 
 // Пометка для шапки экрана и PDF
 export function partialPeriodNote(comparison: PeriodComparison): string | null {
   if (!comparison.isPartial || comparison.elapsedDays === null) return null
-  return `Период не завершён: сравнение с тем же числом дней (${comparison.elapsedDays}) пред. периода`
+  return t('roadAccidents.period.partialNote', { days: comparison.elapsedDays })
 }
 
 // Доступные значения периода для режима — по убыванию (первый — самый

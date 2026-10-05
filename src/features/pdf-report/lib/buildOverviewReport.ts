@@ -7,6 +7,7 @@ import {
   type KpiKind,
 } from '@/shared/lib/formatters'
 import { comparisonLabel, formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
+import { t } from '@/shared/i18n'
 import type { OverviewData } from '@/pages/overview/model/overviewData'
 import { COLOR, PAGE, registerPdfFonts } from './pdfKit'
 import { columns, drawPageFooters, flowBlocks, type BlockFactory, type FlowResult } from './pdfFlow'
@@ -78,9 +79,16 @@ function kpiCards(data: OverviewData): KpiCardData[] {
   }
 
   return [
-    build('Всего ДТП', formatNumber(kpi.count), 'count', kpi.count, previousKpi?.count, false),
     build(
-      'Сумма ущерба',
+      t('roadAccidents.kpi.totalAccidents'),
+      formatNumber(kpi.count),
+      'count',
+      kpi.count,
+      previousKpi?.count,
+      false
+    ),
+    build(
+      t('roadAccidents.kpi.damageSum'),
       formatPdfCurrency(kpi.sumDamage),
       'currency',
       kpi.sumDamage,
@@ -88,7 +96,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
       false
     ),
     build(
-      'Сумма возмещения',
+      t('roadAccidents.kpi.compensationSum'),
       formatPdfCurrency(kpi.sumCompensated),
       'currency',
       kpi.sumCompensated,
@@ -96,7 +104,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
       true
     ),
     build(
-      'Доля возмещения',
+      t('roadAccidents.kpi.compensationShare'),
       formatPercent(kpi.compensationShare),
       'percent',
       kpi.compensationShare,
@@ -104,7 +112,7 @@ function kpiCards(data: OverviewData): KpiCardData[] {
       true
     ),
     build(
-      'Средний ущерб на ДТП',
+      t('roadAccidents.kpi.averageDamagePdf'),
       formatPdfCurrency(kpi.averageDamage),
       'currency',
       kpi.averageDamage,
@@ -119,13 +127,18 @@ function kpiCards(data: OverviewData): KpiCardData[] {
 // автоколонн между собой), поэтому здесь, а не в общем pdfFormat.
 function motorcadeNote(data: OverviewData): string | undefined {
   const aggregates = data.motorcadeAgg
-  if (aggregates.length === 0) return 'За выбранный период ДТП не зарегистрировано.'
-  if (aggregates.length === 1) return 'Данные за период поступили только по одной автоколонне.'
+  if (aggregates.length === 0) return t('roadAccidents.pdf.insight.noAccidents')
+  if (aggregates.length === 1) return t('roadAccidents.pdf.insight.singleMotorcade')
 
   const top = aggregates[0]
   const total = data.kpi.count
   if (!total) return undefined
-  return `Лидирует «${top.name}» — ${formatNumber(top.count)} из ${formatNumber(total)} ДТП (${formatPercent(top.count / total)}).`
+  return t('roadAccidents.pdf.insight.motorcadeLeader', {
+    name: top.name,
+    count: formatNumber(top.count),
+    total: formatNumber(total),
+    share: formatPercent(top.count / total),
+  })
 }
 
 function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] {
@@ -149,8 +162,8 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   const trendCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'Динамика ДТП по месяцам',
-      legend: [{ label: 'ДТП', color: COLOR.accent }],
+      title: t('roadAccidents.chart.accidentsTrend'),
+      legend: [{ label: t('roadAccidents.common.accidents'), color: COLOR.accent }],
       bodyHeight: TREND_CHART_HEIGHT,
       drawBody: barChartBody(
         doc,
@@ -168,7 +181,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   const causesCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'Структура причин ДТП',
+      title: t('roadAccidents.chart.causes'),
       bodyHeight: data.causeSlices.length * DISTRIBUTION_ROW_HEIGHT,
       note: causesNote(data.causeSlices, data.kpi.count),
       drawBody: distributionBody(
@@ -184,10 +197,10 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   const damageTrendCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'Динамика ущерба и возмещения по месяцам',
+      title: t('roadAccidents.chart.damageTrend'),
       legend: [
-        { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.compensation },
+        { label: t('roadAccidents.common.damage'), color: COLOR.accent },
+        { label: t('roadAccidents.common.compensation'), color: COLOR.compensation },
       ],
       bodyHeight: DAMAGE_CHART_HEIGHT,
       drawBody: groupedBarChartBody(
@@ -208,7 +221,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   const motorcadeCountCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'ДТП по автоколоннам',
+      title: t('roadAccidents.chart.accidentsByMotorcade'),
       bodyHeight: Math.max(1, motorcades.length) * RANKED_ROW_HEIGHT,
       note: motorcadeNote(data),
       drawBody: rankedBarsBody(
@@ -224,13 +237,13 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   const motorcadeDamageCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'Ущерб и возмещение по автоколоннам',
+      title: t('roadAccidents.chart.damageByMotorcade'),
       legend: [
-        { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.compensation },
+        { label: t('roadAccidents.common.damage'), color: COLOR.accent },
+        { label: t('roadAccidents.common.compensation'), color: COLOR.compensation },
       ],
       bodyHeight: Math.max(1, motorcades.length) * DUAL_ROW_HEIGHT,
-      note: motorcades.length === 0 ? 'За выбранный период ДТП не зарегистрировано.' : undefined,
+      note: motorcades.length === 0 ? t('roadAccidents.pdf.insight.noAccidents') : undefined,
       drawBody: dualBarsBody(
         doc,
         motorcades.map((item) => ({
@@ -245,47 +258,58 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   const driversTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
-      title: `Топ-${DRIVERS_TOP_N} водителей по числу ДТП`,
+      title: t('roadAccidents.table.topDrivers', { count: DRIVERS_TOP_N }),
       columns: [
-        { header: 'Водитель', ratio: 0.55 },
-        { header: 'ДТП', ratio: 0.15, align: 'right', mono: true },
-        { header: 'Ущерб', ratio: 0.3, align: 'right', mono: true },
+        { header: t('roadAccidents.common.driver'), ratio: 0.55 },
+        { header: t('roadAccidents.common.accidents'), ratio: 0.15, align: 'right', mono: true },
+        { header: t('roadAccidents.common.damage'), ratio: 0.3, align: 'right', mono: true },
       ],
       rows: drivers.map((row) => ({
         cells: [row.name, formatNumber(row.count), formatPdfCurrency(row.sumDamage)],
       })),
       note:
         data.driversRanking.length > DRIVERS_TOP_N
-          ? `Показаны ${DRIVERS_TOP_N} из ${formatNumber(data.driversRanking.length)} — полный список в выгрузке CSV на экране.`
+          ? t('roadAccidents.pdf.note.truncated', {
+              shown: DRIVERS_TOP_N,
+              total: formatNumber(data.driversRanking.length),
+            })
           : undefined,
     })
 
   const vehiclesTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
-      title: `Топ-${VEHICLES_TOP_N} автобусов по числу ДТП`,
+      title: t('roadAccidents.table.topVehicles', { count: VEHICLES_TOP_N }),
       columns: [
-        { header: 'ТС', ratio: 0.55 },
-        { header: 'ДТП', ratio: 0.15, align: 'right', mono: true },
-        { header: 'Ущерб', ratio: 0.3, align: 'right', mono: true },
+        { header: t('roadAccidents.common.vehicle'), ratio: 0.55 },
+        { header: t('roadAccidents.common.accidents'), ratio: 0.15, align: 'right', mono: true },
+        { header: t('roadAccidents.common.damage'), ratio: 0.3, align: 'right', mono: true },
       ],
       rows: vehicles.map((row) => ({
         cells: [row.name, formatNumber(row.count), formatPdfCurrency(row.sumDamage)],
       })),
       note:
         data.vehiclesRanking.length > VEHICLES_TOP_N
-          ? `Показаны ${VEHICLES_TOP_N} из ${formatNumber(data.vehiclesRanking.length)} — полный список в выгрузке CSV на экране.`
+          ? t('roadAccidents.pdf.note.truncated', {
+              shown: VEHICLES_TOP_N,
+              total: formatNumber(data.vehiclesRanking.length),
+            })
           : undefined,
     })
 
   const causesTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
-      title: 'Ущерб и возмещение по категориям причин',
+      title: t('roadAccidents.chart.damageByCause'),
       columns: [
-        { header: 'Категория', ratio: 0.34 },
-        { header: 'ДТП', ratio: 0.12, align: 'right', mono: true },
-        { header: 'Ущерб', ratio: 0.2, align: 'right', mono: true },
-        { header: 'Возмещение', ratio: 0.2, align: 'right', mono: true },
-        { header: 'Доля возмещения', ratio: 0.14, align: 'right', mono: true },
+        { header: t('roadAccidents.common.category'), ratio: 0.34 },
+        { header: t('roadAccidents.common.accidents'), ratio: 0.12, align: 'right', mono: true },
+        { header: t('roadAccidents.common.damage'), ratio: 0.2, align: 'right', mono: true },
+        { header: t('roadAccidents.common.compensation'), ratio: 0.2, align: 'right', mono: true },
+        {
+          header: t('roadAccidents.kpi.compensationShare'),
+          ratio: 0.14,
+          align: 'right',
+          mono: true,
+        },
       ],
       rows: [
         ...data.causeSlices.map((slice, index) => ({
@@ -300,7 +324,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
         })),
         {
           cells: [
-            'Итого',
+            t('roadAccidents.common.total'),
             formatNumber(causeTotal.count),
             formatPdfCurrency(causeTotal.sumDamage),
             formatPdfCurrency(causeTotal.sumCompensated),
@@ -315,13 +339,16 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
 
   return [
     reportHeader(doc, {
-      kicker: 'Дашборд ДТП · Обзор',
-      title: 'Отчёт по общим показателям',
+      kicker: t('roadAccidents.pdf.kicker.overview'),
+      title: t('roadAccidents.pdf.title.overview'),
       periodLabel,
       generatedAt: new Date(),
       // Перечисление баз, из которых собраны данные, в шапке не нужно
       // пользователю — это внутренняя деталь интеграции, не фильтр отчёта.
-      filterLines: ['Автоколонны: все', ...dataContextLines(input.context)],
+      filterLines: [
+        t('roadAccidents.pdf.filter.allMotorcades'),
+        ...dataContextLines(input.context),
+      ],
     }),
     kpiRow(doc, kpiCards(data)),
     columns([trendCard, causesCard], [0.58, 0.42]),

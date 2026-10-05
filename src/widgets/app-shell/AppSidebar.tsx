@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite'
 import { NavLink, matchPath, useLocation, useNavigate } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { BrandLogo } from '@/shared/ui/BrandLogo/BrandLogo'
+import { t } from '@/shared/i18n'
 import { IconGrid, IconBus, IconChart, IconLogout } from './icons'
 import styles from './AppSidebar.module.css'
 
@@ -14,9 +15,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Обзор', end: true, Icon: IconGrid },
-  { to: '/motorcade', label: 'Статистика по автоколонне', Icon: IconBus },
-  { to: '/analytics', label: 'Аналитика', Icon: IconChart },
+  { to: '/', label: t('roadAccidents.nav.overview'), end: true, Icon: IconGrid },
+  { to: '/motorcade', label: t('roadAccidents.nav.motorcade'), Icon: IconBus },
+  { to: '/analytics', label: t('roadAccidents.nav.analytics'), Icon: IconChart },
 ]
 
 interface AppSidebarProps {
@@ -51,14 +52,14 @@ export const AppSidebar = observer(function AppSidebar({ isOpen, onNavigate }: A
       <div className={styles.brand}>
         <BrandLogo size={40} />
         <div className={styles.brandText}>
-          <span className={styles.brandName}>Дашборд ДТП</span>
-          <span className={styles.brandCaption}>Аналитика аварийности</span>
+          <span className={styles.brandName}>{t('roadAccidents.appTitle')}</span>
+          <span className={styles.brandCaption}>{t('roadAccidents.appSubtitle')}</span>
         </div>
       </div>
 
-      <span className={styles.sectionLabel}>Разделы</span>
+      <span className={styles.sectionLabel}>{t('roadAccidents.nav.sections')}</span>
 
-      <nav className={styles.nav} aria-label="Разделы">
+      <nav className={styles.nav} aria-label={t('roadAccidents.nav.sections')}>
         {activeIndex >= 0 && (
           <span
             className={styles.indicator}
@@ -90,7 +91,7 @@ export const AppSidebar = observer(function AppSidebar({ isOpen, onNavigate }: A
         >
           <span className={styles.footerButtonLabel}>
             <IconLogout />
-            <span>Выйти</span>
+            <span>{t('roadAccidents.common.logout')}</span>
           </span>
         </button>
       </div>

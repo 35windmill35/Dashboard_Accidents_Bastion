@@ -17,6 +17,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatPercent } from '@/shared/lib/formatters'
 import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { AnalyticsData, CauseComparisonRow } from '../../model/analyticsData'
 
 interface Props {
@@ -50,15 +51,15 @@ export function CausesComparisonChart({ data, period }: Props) {
   )
 
   const table: ChartDataTable = {
-    columns: ['Категория', data.a.name, data.b.name],
+    columns: [t('roadAccidents.common.category'), data.a.name, data.b.name],
     rows: chartData.map((r) => [r.label, formatPercent(r.shareA), formatPercent(r.shareB)]),
   }
 
   return (
     <ChartCard
       table={table}
-      title="Сравнение структуры причин ДТП"
-      subtitle={'Доля ДТП каждой категории'}
+      title={t('roadAccidents.chart.causesComparison')}
+      subtitle={t('roadAccidents.chart.causesComparisonSubtitle')}
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },
         { label: data.b.name, color: COMPARISON_COLOR_B },

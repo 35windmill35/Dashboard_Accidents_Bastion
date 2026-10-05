@@ -23,6 +23,7 @@ import {
   withCurrencyUnit,
 } from '@/shared/lib/formatters'
 import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -50,7 +51,12 @@ export function MotorcadeDamageChart({ data, period }: Props) {
   )
 
   const table: ChartDataTable = {
-    columns: ['Автоколонна', 'Ущерб', 'Возмещение', 'Доля возмещения'],
+    columns: [
+      t('roadAccidents.common.motorcade'),
+      t('roadAccidents.common.damage'),
+      t('roadAccidents.common.compensation'),
+      t('roadAccidents.kpi.compensationShare'),
+    ],
     rows: data.motorcadeAgg.map((m) => [
       m.name,
       formatCurrency(m.sumDamage),
@@ -62,11 +68,11 @@ export function MotorcadeDamageChart({ data, period }: Props) {
   return (
     <ChartCard
       table={table}
-      title="Ущерб и возмещение по автоколоннам"
-      subtitle={withCurrencyUnit('Суммы за период')}
+      title={t('roadAccidents.chart.damageByMotorcade')}
+      subtitle={withCurrencyUnit(t('roadAccidents.chart.sumsForPeriod'))}
       legend={[
-        { label: 'Ущерб', color: COLOR_DAMAGE },
-        { label: 'Возмещение', color: COLOR_COMPENSATION },
+        { label: t('roadAccidents.common.damage'), color: COLOR_DAMAGE },
+        { label: t('roadAccidents.common.compensation'), color: COLOR_COMPENSATION },
       ]}
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
@@ -87,7 +93,7 @@ export function MotorcadeDamageChart({ data, period }: Props) {
               maxBarSize={BAR_SIZE_GROUPED}
               {...ANIMATION}
               dataKey="sumDamage"
-              name="Ущерб"
+              name={t('roadAccidents.common.damage')}
               fill={`url(#${gradientId}-0)`}
               radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
@@ -97,7 +103,7 @@ export function MotorcadeDamageChart({ data, period }: Props) {
               maxBarSize={BAR_SIZE_GROUPED}
               {...ANIMATION}
               dataKey="sumCompensated"
-              name="Возмещение"
+              name={t('roadAccidents.common.compensation')}
               fill={`url(#${gradientId}-1)`}
               radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}

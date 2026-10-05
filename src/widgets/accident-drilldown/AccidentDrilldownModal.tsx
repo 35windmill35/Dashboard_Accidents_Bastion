@@ -7,6 +7,7 @@ import { getMotorcadeName } from '@/entities/accident/lib/motorcade'
 import { getCauseCategory, CAUSE_CATEGORY_LABELS } from '@/shared/config/accidentCauses'
 import { formatCurrency, formatDate, formatTime } from '@/shared/lib/formatters'
 import { downloadCsv } from '@/shared/lib/csvExport'
+import { t } from '@/shared/i18n'
 import { SortHeader, type SortDir, type SortKey } from './SortHeader'
 import styles from './AccidentDrilldownModal.module.css'
 
@@ -27,10 +28,26 @@ function dateTimeLabel(row: AccidentRow): string {
 // так с маршрутом, страховой и пострадавшими), колонка — сплошные «—» и
 // только расширяет таблицу. Такие колонки скрываются и на экране, и в CSV.
 const OPTIONAL_COLUMNS = [
-  { key: 'route', label: 'Маршрут', value: (row: AccidentRow) => row.ROUTE_NAME },
-  { key: 'address', label: 'Адрес', value: (row: AccidentRow) => row.ACCIDENT_ADDRESS },
-  { key: 'insurance', label: 'Страховая', value: (row: AccidentRow) => row.INSURANCE_COMPANY_NAME },
-  { key: 'victim', label: 'Пострадавшие', value: (row: AccidentRow) => row.ACCIDENT_VICTIM },
+  {
+    key: 'route',
+    label: t('roadAccidents.common.route'),
+    value: (row: AccidentRow) => row.ROUTE_NAME,
+  },
+  {
+    key: 'address',
+    label: t('roadAccidents.common.address'),
+    value: (row: AccidentRow) => row.ACCIDENT_ADDRESS,
+  },
+  {
+    key: 'insurance',
+    label: t('roadAccidents.common.insurance'),
+    value: (row: AccidentRow) => row.INSURANCE_COMPANY_NAME,
+  },
+  {
+    key: 'victim',
+    label: t('roadAccidents.common.victims'),
+    value: (row: AccidentRow) => row.ACCIDENT_VICTIM,
+  },
 ] as const
 
 type OptionalColumnKey = (typeof OPTIONAL_COLUMNS)[number]['key']
@@ -184,20 +201,20 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
   const handleExport = () => {
     const optional = OPTIONAL_COLUMNS.filter((column) => visibleOptional.has(column.key))
     const headers = [
-      'Номер ДТП',
-      'Дата',
-      'Время',
-      'Автоколонна',
-      'ТС',
-      'Водитель',
+      t('roadAccidents.common.accidentNumber'),
+      t('roadAccidents.common.date'),
+      t('roadAccidents.common.time'),
+      t('roadAccidents.common.motorcade'),
+      t('roadAccidents.common.vehicle'),
+      t('roadAccidents.common.driver'),
       ...optional.map((column) => column.label),
-      'Причина',
-      'Категория',
-      'Виновник',
-      'Ущерб',
-      'Возмещение',
-      'Статус',
-      ...(showBaseColumn ? ['База'] : []),
+      t('roadAccidents.common.cause'),
+      t('roadAccidents.common.category'),
+      t('roadAccidents.common.causer'),
+      t('roadAccidents.common.damage'),
+      t('roadAccidents.common.compensation'),
+      t('roadAccidents.common.status'),
+      ...(showBaseColumn ? [t('roadAccidents.common.base')] : []),
     ]
 
     const csvRows = filteredSorted.map((row) => {
@@ -243,15 +260,17 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
       >
         <div className={styles.header}>
           <div className={styles.titles}>
-            <span className={styles.eyebrow}>Список ДТП</span>
+            <span className={styles.eyebrow}>{t('roadAccidents.drilldown.eyebrow')}</span>
             <h2 className={styles.title}>{title}</h2>
-            <p className={styles.subtitle}>Найдено записей: {filteredSorted.length}</p>
+            <p className={styles.subtitle}>
+              {t('roadAccidents.drilldown.found', { count: filteredSorted.length })}
+            </p>
           </div>
           <button
             type="button"
             className={styles.closeButton}
             onClick={() => drilldownStore.close()}
-            aria-label="Закрыть"
+            aria-label={t('close')}
           >
             <svg
               width="14"
@@ -288,8 +307,8 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
             <input
               className={styles.search}
               type="search"
-              aria-label="Поиск по списку ДТП"
-              placeholder="Поиск: номер ДТП, водитель, гаражный номер, адрес"
+              aria-label={t('roadAccidents.drilldown.searchLabel')}
+              placeholder={t('roadAccidents.drilldown.searchPlaceholder')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value)
@@ -313,38 +332,71 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
               <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
               <path d="M5 20h14" />
             </svg>
-            Выгрузить CSV
+            {t('roadAccidents.drilldown.exportCsv')}
           </button>
         </div>
 
         {filteredSorted.length === 0 ? (
-          <div className={styles.empty}>Ничего не найдено</div>
+          <div className={styles.empty}>{t('roadAccidents.drilldown.nothingFound')}</div>
         ) : (
           <div className={styles.tableWrap}>
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th scope="col" aria-label="Подробности" />
-                  <SortHeader label="№ ДТП" column="id" {...sortProps} />
-                  <SortHeader label="Дата/время" column="date" {...sortProps} />
-                  <SortHeader label="Автоколонна" column="motorcade" {...sortProps} />
-                  <SortHeader label="ТС" column="vehicle" {...sortProps} />
-                  <SortHeader label="Водитель" column="driver" {...sortProps} />
-                  {visibleOptional.has('route') && <th scope="col">Маршрут</th>}
-                  {visibleOptional.has('address') && <th scope="col">Адрес</th>}
-                  <th scope="col">Причина</th>
-                  <th scope="col">Виновник</th>
-                  <SortHeader label="Ущерб" column="damage" align="right" {...sortProps} />
+                  <th scope="col" aria-label={t('roadAccidents.drilldown.details')} />
                   <SortHeader
-                    label="Возмещение"
+                    label={t('roadAccidents.common.accidentNumberShort')}
+                    column="id"
+                    {...sortProps}
+                  />
+                  <SortHeader
+                    label={t('roadAccidents.common.dateTime')}
+                    column="date"
+                    {...sortProps}
+                  />
+                  <SortHeader
+                    label={t('roadAccidents.common.motorcade')}
+                    column="motorcade"
+                    {...sortProps}
+                  />
+                  <SortHeader
+                    label={t('roadAccidents.common.vehicle')}
+                    column="vehicle"
+                    {...sortProps}
+                  />
+                  <SortHeader
+                    label={t('roadAccidents.common.driver')}
+                    column="driver"
+                    {...sortProps}
+                  />
+                  {visibleOptional.has('route') && (
+                    <th scope="col">{t('roadAccidents.common.route')}</th>
+                  )}
+                  {visibleOptional.has('address') && (
+                    <th scope="col">{t('roadAccidents.common.address')}</th>
+                  )}
+                  <th scope="col">{t('roadAccidents.common.cause')}</th>
+                  <th scope="col">{t('roadAccidents.common.causer')}</th>
+                  <SortHeader
+                    label={t('roadAccidents.common.damage')}
+                    column="damage"
+                    align="right"
+                    {...sortProps}
+                  />
+                  <SortHeader
+                    label={t('roadAccidents.common.compensation')}
                     column="compensated"
                     align="right"
                     {...sortProps}
                   />
-                  <th scope="col">Статус</th>
-                  {visibleOptional.has('insurance') && <th scope="col">Страховая</th>}
-                  {visibleOptional.has('victim') && <th scope="col">Пострадавшие</th>}
-                  {showBaseColumn && <th scope="col">База</th>}
+                  <th scope="col">{t('roadAccidents.common.status')}</th>
+                  {visibleOptional.has('insurance') && (
+                    <th scope="col">{t('roadAccidents.common.insurance')}</th>
+                  )}
+                  {visibleOptional.has('victim') && (
+                    <th scope="col">{t('roadAccidents.common.victims')}</th>
+                  )}
+                  {showBaseColumn && <th scope="col">{t('roadAccidents.common.base')}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -362,7 +414,9 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                               className={styles.expandButton}
                               onClick={() => setExpandedKey(isExpanded ? null : key)}
                               aria-label={
-                                isExpanded ? 'Скрыть подробности' : 'Показать подробности'
+                                isExpanded
+                                  ? t('roadAccidents.drilldown.hideDetails')
+                                  : t('roadAccidents.drilldown.showDetails')
                               }
                               aria-expanded={isExpanded}
                             >
@@ -434,17 +488,15 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
         {filteredSorted.length > VIRTUALIZE_THRESHOLD && (
           <div className={styles.pagination}>
             <button type="button" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
-              Назад
+              {t('roadAccidents.common.back')}
             </button>
-            <span>
-              Страница {page + 1} из {totalPages}
-            </span>
+            <span>{t('roadAccidents.common.pageOf', { page: page + 1, total: totalPages })}</span>
             <button
               type="button"
               disabled={page >= totalPages - 1}
               onClick={() => setPage((p) => p + 1)}
             >
-              Вперёд
+              {t('roadAccidents.common.forward')}
             </button>
           </div>
         )}

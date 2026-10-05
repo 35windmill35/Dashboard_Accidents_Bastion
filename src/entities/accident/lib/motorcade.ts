@@ -1,6 +1,7 @@
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '../model/types'
 
-export const UNSPECIFIED_MOTORCADE_NAME = 'Не указана'
+export const UNSPECIFIED_MOTORCADE_NAME = t('roadAccidents.common.unknownMotorcade')
 
 export interface MotorcadeOption {
   key: string

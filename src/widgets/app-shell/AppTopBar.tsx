@@ -11,15 +11,16 @@ import {
 } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { themeStore } from '@/shared/lib/theme/themeStore'
+import { t } from '@/shared/i18n'
 import { IconMenu, IconRefresh, IconPdf } from './icons'
 import { TopBarSelect as Select } from './TopBarSelect'
 import styles from './AppTopBar.module.css'
 
 const PERIOD_MODES: { value: PeriodMode; label: string }[] = [
-  { value: 'month', label: 'Месяц' },
-  { value: 'quarter', label: 'Квартал' },
-  { value: 'year', label: 'Год' },
-  { value: 'all', label: 'Весь период' },
+  { value: 'month', label: t('roadAccidents.common.month') },
+  { value: 'quarter', label: t('roadAccidents.period.mode.quarter') },
+  { value: 'year', label: t('roadAccidents.period.mode.year') },
+  { value: 'all', label: t('roadAccidents.period.all') },
 ]
 
 function formatPeriodValue(mode: Exclude<PeriodMode, 'all'>, value: number): string {
@@ -62,12 +63,16 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
         type="button"
         className={styles.menuButton}
         onClick={onToggleSidebar}
-        aria-label="Открыть меню"
+        aria-label={t('roadAccidents.topBar.openMenu')}
       >
         <IconMenu />
       </button>
 
-      <div className={styles.segmented} role="group" aria-label="Гранулярность периода">
+      <div
+        className={styles.segmented}
+        role="group"
+        aria-label={t('roadAccidents.topBar.periodGranularity')}
+      >
         {PERIOD_MODES.map((mode) => {
           const isActive = filtersStore.periodMode === mode.value
           return (
@@ -86,7 +91,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
 
       {period.mode !== 'all' && (
         <Select
-          aria-label="Период"
+          aria-label={t('roadAccidents.topBar.period')}
           value={period.value}
           onChange={(e) => filtersStore.setPeriodValue(Number(e.target.value))}
         >
@@ -100,7 +105,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
 
       {isMotorcadeScreen && (
         <Select
-          aria-label="Автоколонна"
+          aria-label={t('roadAccidents.common.motorcade')}
           value={filtersStore.selectedMotorcadeKey ?? ''}
           onChange={(e) => filtersStore.setMotorcadeKey(e.target.value)}
         >
@@ -115,7 +120,7 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
       {isAnalyticsScreen && (
         <div className={styles.compare}>
           <Select
-            aria-label="Автоколонна 1"
+            aria-label={t('roadAccidents.topBar.motorcadeA')}
             dotColor={comparisonColors[0]}
             value={filtersStore.selectedAnalyticsKeyA ?? ''}
             onChange={(e) => filtersStore.setAnalyticsMotorcadeA(e.target.value)}
@@ -131,10 +136,10 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
             ))}
           </Select>
           <span className={styles.versus} aria-hidden="true">
-            vs
+            {t('roadAccidents.topBar.versus')}
           </span>
           <Select
-            aria-label="Автоколонна 2"
+            aria-label={t('roadAccidents.topBar.motorcadeB')}
             dotColor={comparisonColors[1]}
             value={filtersStore.selectedAnalyticsKeyB ?? ''}
             onChange={(e) => filtersStore.setAnalyticsMotorcadeB(e.target.value)}
@@ -160,8 +165,10 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
           disabled={accidentsStore.isBusy}
           title={
             accidentsStore.loadedAt
-              ? `Перезагрузить данные по всем базам. Данные на ${formatLoadedAt(accidentsStore.loadedAt)}`
-              : 'Перезагрузить данные по всем базам'
+              ? t('roadAccidents.topBar.reloadHintWithDate', {
+                  date: formatLoadedAt(accidentsStore.loadedAt),
+                })
+              : t('roadAccidents.topBar.reloadHint')
           }
         >
           <span className={`${styles.icon} ${isRefreshing ? styles.iconSpin : ''}`}>
@@ -169,8 +176,11 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
           </span>
           <span className={styles.actionLabel}>
             {isRefreshing
-              ? `Загружено баз ${accidentsStore.loadedCount} из ${accidentsStore.totalCount}`
-              : 'Обновить данные'}
+              ? t('roadAccidents.common.loadedBases', {
+                  count: accidentsStore.loadedCount,
+                  total: accidentsStore.totalCount,
+                })
+              : t('roadAccidents.topBar.reload')}
           </span>
         </button>
 
@@ -181,8 +191,8 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
           disabled={!pdfReportStore.isAvailable || pdfReportStore.isGenerating}
           title={
             pdfReportStore.isAvailable
-              ? 'Сформировать PDF-отчёт по текущему экрану'
-              : 'PDF-отчёт недоступен: на экране нет данных для отчёта'
+              ? t('roadAccidents.topBar.pdfHint')
+              : t('roadAccidents.topBar.pdfUnavailable')
           }
         >
           <span className={styles.icon}>
@@ -190,8 +200,11 @@ export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTop
           </span>
           <span className={styles.actionLabel}>
             {pdfReportStore.isGenerating
-              ? `Формирование… ${pdfReportStore.progress.current}/${pdfReportStore.progress.total}`
-              : 'PDF отчёт'}
+              ? t('roadAccidents.topBar.pdfGenerating', {
+                  current: pdfReportStore.progress.current,
+                  total: pdfReportStore.progress.total,
+                })
+              : t('roadAccidents.topBar.pdf')}
           </span>
         </button>
       </div>

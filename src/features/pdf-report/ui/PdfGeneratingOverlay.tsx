@@ -1,4 +1,5 @@
 import { observer } from 'mobx-react-lite'
+import { t } from '@/shared/i18n'
 import { pdfReportStore } from '../model/pdfReportStore'
 import styles from './PdfGeneratingOverlay.module.css'
 
@@ -24,7 +25,7 @@ export const PdfGeneratingOverlay = observer(function PdfGeneratingOverlay() {
           type="button"
           className={styles.noticeClose}
           onClick={() => pdfReportStore.dismissNotice()}
-          aria-label="Закрыть сообщение"
+          aria-label={t('roadAccidents.pdf.closeNotice')}
         >
           ×
         </button>
@@ -39,9 +40,11 @@ export const PdfGeneratingOverlay = observer(function PdfGeneratingOverlay() {
     <div className={styles.overlay} role="status" aria-live="polite">
       <div className={styles.card}>
         <div className={styles.spinner} />
-        <div className={styles.title}>Формируется PDF-отчёт…</div>
+        <div className={styles.title}>{t('roadAccidents.pdf.generating')}</div>
         <div className={styles.subtitle}>
-          {hasProgress ? `Раздел ${current} из ${total}` : 'Подготовка разделов'}
+          {hasProgress
+            ? t('roadAccidents.pdf.section', { current: current, total: total })
+            : t('roadAccidents.pdf.preparing')}
         </div>
         {hasProgress && (
           <div className={styles.progress} aria-hidden="true">

@@ -25,6 +25,7 @@ import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
 import { CHART_MARGIN, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { AnalyticsData } from '../../model/analyticsData'
 
@@ -50,21 +51,21 @@ export function DamageSumTrendChart({ data, rowsA, rowsB }: Props) {
       ...rowsA.filter((row) => isInPeriod(row, monthPeriod)),
       ...rowsB.filter((row) => isInPeriod(row, monthPeriod)),
     ]
-    drilldownStore.open(`Все ДТП — ${formatMonthLabel(ym)}`, rows)
+    drilldownStore.open(t('roadAccidents.list.allForMonth', { month: formatMonthLabel(ym) }), rows)
   }
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
   const table: ChartDataTable = {
-    columns: ['Месяц', data.a.name, data.b.name],
+    columns: [t('roadAccidents.common.month'), data.a.name, data.b.name],
     rows: chartData.map((d) => [formatMonthLabel(d.ym), formatCurrency(d.a), formatCurrency(d.b)]),
   }
 
   return (
     <ChartCard
       table={table}
-      title="Динамика суммы ущерба по месяцам"
-      subtitle={withCurrencyUnit('Суммы по месяцам')}
+      title={t('roadAccidents.chart.damageSumTrend')}
+      subtitle={withCurrencyUnit(t('roadAccidents.chart.sumsByMonth'))}
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },
         { label: data.b.name, color: COMPARISON_COLOR_B },

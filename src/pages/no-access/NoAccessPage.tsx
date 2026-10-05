@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { authStore } from '@/entities/user/model/authStore'
 import { StatusScreen } from '@/shared/ui/StatusScreen/StatusScreen'
+import { t } from '@/shared/i18n'
 
 // Показывается через RequireAccidentsAccess, когда ни одна база не дала
 // право на дашборд ДТП.
@@ -15,11 +16,11 @@ export function NoAccessPage() {
   return (
     <StatusScreen
       tone="locked"
-      title="Нет доступа"
-      message="У вашей учётной записи нет доступа к дашборду ДТП. Обратитесь к администратору, чтобы получить право."
+      title={t('roadAccidents.access.noAccessTitle')}
+      message={t('roadAccidents.access.noAccessMessage')}
     >
       <button type="button" onClick={handleLogout}>
-        Выйти
+        {t('roadAccidents.common.logout')}
       </button>
     </StatusScreen>
   )

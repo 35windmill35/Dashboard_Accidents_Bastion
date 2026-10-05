@@ -11,6 +11,7 @@ import { setUnauthorizedHandler } from '@/shared/api/httpClient'
 import { getDbGuidFromUrl } from '@/shared/config/dbGuid'
 import { getErrorMessage } from '@/shared/api/errorMessage'
 import { mapWithConcurrencyLimit } from '@/shared/lib/concurrencyLimit'
+import { t } from '@/shared/i18n'
 
 const FIRMS_STORAGE_KEY = 'road_accidents_firms'
 
@@ -101,8 +102,7 @@ class AuthStore {
 
       if (!firms || firms.length === 0) {
         runInAction(() => {
-          this.loginError =
-            'Для этого аккаунта не найдено ни одной доступной базы. Проверьте ссылку доступа'
+          this.loginError = t('roadAccidents.login.noBases')
           this.isLoggingIn = false
         })
 
@@ -130,8 +130,8 @@ class AuthStore {
     } catch (err) {
       runInAction(() => {
         this.loginError = getErrorMessage(err, {
-          fallback: 'Не удалось войти. Проверьте телефон и пароль.',
-          statusMessages: { 401: 'Неверный телефон, пароль или ссылка доступа' },
+          fallback: t('roadAccidents.login.failed'),
+          statusMessages: { 401: t('roadAccidents.login.wrongCredentials') },
         })
         this.isLoggingIn = false
       })
@@ -194,7 +194,7 @@ class AuthStore {
 
   getFirmName(dbIndex: number): string {
     const firm = this.firms.find((item, index) => firmDbIndex(item, index) === dbIndex)
-    return firm?.FIRM_SHORT_NAME || `база #${dbIndex}`
+    return firm?.FIRM_SHORT_NAME || t('roadAccidents.common.baseFallback', { index: dbIndex })
   }
 
   logout(): void {
@@ -219,7 +219,7 @@ class AuthStore {
   expireSession(): void {
     if (this.firms.length === 0 && !hasStoredSession()) return
     this.logout()
-    this.sessionNotice = 'Сессия истекла — войдите заново'
+    this.sessionNotice = t('roadAccidents.login.sessionExpired')
   }
 
   // Периодическая проверка срока сессии (10 ч / 30 мин без запросов).

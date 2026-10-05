@@ -15,6 +15,7 @@ import { MotorcadeKpiRow } from './ui/MotorcadeKpiRow'
 import { MotorcadeCharts } from './ui/MotorcadeCharts'
 import { MotorcadeTables } from './ui/MotorcadeTables'
 import { themeStore } from '@/shared/lib/theme/themeStore'
+import { t } from '@/shared/i18n'
 import styles from './MotorcadePage.module.css'
 
 // Экран "Статистика по автоколонне" — одна выбранная автоколонна за
@@ -60,7 +61,7 @@ export const MotorcadePage = observer(function MotorcadePage() {
   if (!selectedKey || !selectedOption) {
     return (
       <div className={styles.page}>
-        <ErrorState message="Не найдено ни одной автоколонны в загруженных данных" />
+        <ErrorState message={t('roadAccidents.motorcade.noMotorcades')} />
       </div>
     )
   }
@@ -72,22 +73,22 @@ export const MotorcadePage = observer(function MotorcadePage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Статистика по автоколонне"
+        eyebrow={t('roadAccidents.nav.motorcade')}
         title={selectedOption.name}
         meta={[
           formatPeriodLabel(period),
-          `${formatNumber(data.kpi.count)} ДТП за период`,
+          t('roadAccidents.motorcade.accidentsForPeriod', { count: formatNumber(data.kpi.count) }),
           ...(partialNote ? [partialNote] : []),
         ]}
       />
 
       <MotorcadeKpiRow data={data} period={period} />
-      <SectionDivider title="Динамика и структура" />
+      <SectionDivider title={t('roadAccidents.common.dynamicsAndStructure')} />
       {/* Цвета графиков — JS-константы (Recharts не читает CSS-переменные):
           при смене системной темы перемонтируются только графики, а не весь
           экран с развёрнутыми таблицами */}
       <MotorcadeCharts key={themeStore.theme} data={data} period={period} />
-      <SectionDivider title="Детализация" />
+      <SectionDivider title={t('roadAccidents.common.details')} />
       <MotorcadeTables data={data} period={period} />
     </div>
   )

@@ -5,6 +5,7 @@ import { authStore } from '@/entities/user/model/authStore'
 import { formatPhoneInput } from '@/shared/lib/phoneMask'
 import { PasswordInput } from '@/shared/ui/PasswordInput/PasswordInput'
 import { BrandLogo } from '@/shared/ui/BrandLogo/BrandLogo'
+import { t } from '@/shared/i18n'
 import styles from './LoginPage.module.css'
 
 // Регистрацию не делаем — у заказчика своя форма, поэтому ссылки на
@@ -46,11 +47,11 @@ export const LoginPage = observer(function LoginPage() {
       <form className={styles.form} onSubmit={handleSubmit}>
         <div className={styles.brand}>
           <BrandLogo size={56} />
-          <h1 className={styles.title}>Дашборд ДТП</h1>
+          <h1 className={styles.title}>{t('roadAccidents.appTitle')}</h1>
         </div>
 
         <label className={styles.field}>
-          <span className={styles.label}>Телефон</span>
+          <span className={styles.label}>{t('phone')}</span>
           <input
             className={styles.input}
             type="tel"
@@ -64,7 +65,7 @@ export const LoginPage = observer(function LoginPage() {
         </label>
 
         <label className={styles.field}>
-          <span className={styles.label}>Пароль</span>
+          <span className={styles.label}>{t('password')}</span>
           <PasswordInput
             className={styles.input}
             value={password}
@@ -87,7 +88,7 @@ export const LoginPage = observer(function LoginPage() {
         )}
 
         <button className={styles.submit} type="submit" disabled={authStore.isLoggingIn}>
-          {authStore.isLoggingIn ? 'Входим…' : 'Войти'}
+          {authStore.isLoggingIn ? t('logining') : t('login')}
         </button>
       </form>
     </div>

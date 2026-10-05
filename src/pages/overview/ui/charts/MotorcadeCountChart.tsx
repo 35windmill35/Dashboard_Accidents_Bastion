@@ -27,6 +27,7 @@ import { getMotorcadeKey } from '@/entities/accident/lib/motorcade'
 import { COLOR_COUNT } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
 import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { MotorcadeAggregate } from '@/entities/accident/lib/metrics'
 import type { OverviewData } from '../../model/overviewData'
 
@@ -46,12 +47,16 @@ export function MotorcadeCountChart({ data, period }: Props) {
   )
 
   const table: ChartDataTable = {
-    columns: ['Автоколонна', 'ДТП'],
+    columns: [t('roadAccidents.common.motorcade'), t('roadAccidents.common.accidents')],
     rows: data.motorcadeAgg.map((m) => [m.name, formatNumber(m.count)]),
   }
 
   return (
-    <ChartCard table={table} title="ДТП по автоколоннам" subtitle={'Количество ДТП за период'}>
+    <ChartCard
+      table={table}
+      title={t('roadAccidents.chart.accidentsByMotorcade')}
+      subtitle={t('roadAccidents.chart.accidentsByMotorcadeSubtitle')}
+    >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data.motorcadeAgg} margin={CHART_MARGIN}>
@@ -66,7 +71,7 @@ export function MotorcadeCountChart({ data, period }: Props) {
               maxBarSize={BAR_SIZE_SINGLE}
               {...ANIMATION}
               dataKey="count"
-              name="ДТП"
+              name={t('roadAccidents.common.accidents')}
               radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
               onClick={(entry) => {

@@ -1,4 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
+import { t } from '@/shared/i18n'
 import styles from './ChartCard.module.css'
 
 export interface ChartLegendItem {
@@ -69,14 +70,18 @@ export function ChartCard({
             ))}
 
           {table && (
-            <div className={styles.segmented} role="group" aria-label={`${title}: вид`}>
+            <div
+              className={styles.segmented}
+              role="group"
+              aria-label={t('roadAccidents.chart.viewSwitch', { title: title })}
+            >
               <button
                 type="button"
                 className={`${styles.segment} ${!isTableVisible ? styles.segmentActive : ''}`}
                 aria-pressed={!isTableVisible}
                 onClick={() => setShowTable(false)}
               >
-                График
+                {t('roadAccidents.chart.viewChart')}
               </button>
               <button
                 type="button"
@@ -85,7 +90,7 @@ export function ChartCard({
                 aria-controls={tableId}
                 onClick={() => setShowTable(true)}
               >
-                Данные
+                {t('roadAccidents.chart.viewData')}
               </button>
             </div>
           )}
@@ -95,7 +100,7 @@ export function ChartCard({
       {isTableVisible ? (
         <div id={tableId} className={styles.tableWrap} style={{ height }}>
           {table.rows.length === 0 ? (
-            <div className={styles.empty}>Нет данных за период</div>
+            <div className={styles.empty}>{t('roadAccidents.common.noDataForPeriod')}</div>
           ) : (
             <table className={styles.table}>
               <caption className={styles.srOnly}>{title}</caption>
@@ -133,7 +138,7 @@ export function ChartCard({
           className={styles.body}
           style={{ height }}
           role="img"
-          aria-label={table ? `${title}. Числа — во вкладке «Данные»` : title}
+          aria-label={table ? t('roadAccidents.chart.imageLabel', { title: title }) : title}
         >
           {children}
         </div>

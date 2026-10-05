@@ -5,6 +5,8 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
 import { formatNumber } from '@/shared/lib/formatters'
 import styles from './DataStatusBanner.module.css'
+import { CAUSE_CATEGORY_LABELS } from '@/shared/config/accidentCauses'
+import { t } from '@/shared/i18n'
 
 // Значок предупреждения (JSX-константа, а не компонент — файл экспортирует
 // только DataStatusBanner)
@@ -81,8 +83,11 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
       disabled={accidentsStore.isBusy || authStore.isCheckingRights}
     >
       {accidentsStore.isBusy
-        ? `Загружено баз ${accidentsStore.loadedCount} из ${accidentsStore.totalCount}`
-        : 'Повторить'}
+        ? t('roadAccidents.common.loadedBases', {
+            count: accidentsStore.loadedCount,
+            total: accidentsStore.totalCount,
+          })
+        : t('roadAccidents.common.retry')}
     </button>
   )
 
@@ -92,7 +97,7 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
         <div className={styles.banner} role="status">
           {warningIcon}
           <span className={styles.text}>
-            Данные баз: {unavailable.join(', ')} недоступны, показатели неполные.
+            {t('roadAccidents.banner.unavailableBases', { bases: unavailable.join(', ') })}
           </span>
           {retryButton}
         </div>
@@ -102,11 +107,16 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
         <div className={styles.banner} role="status">
           {warningIcon}
           <span className={styles.text}>
-            Не удалось обновить данные баз:{' '}
-            {stale
-              .map((firm) => `${firm.name} (показаны данные на ${formatTime(firm.loadedAt)})`)
-              .join(', ')}
-            .
+            {t('roadAccidents.banner.staleBases', {
+              bases: stale
+                .map((firm) =>
+                  t('roadAccidents.banner.staleBase', {
+                    name: firm.name,
+                    date: formatTime(firm.loadedAt),
+                  })
+                )
+                .join(', '),
+            })}
           </span>
           {unavailable.length === 0 && retryButton}
         </div>
@@ -116,14 +126,17 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
         <div className={styles.banner} role="status">
           {warningIcon}
           <span className={styles.text}>
-            Загружены не все записи:{' '}
-            {incomplete
-              .map(
-                (firm) =>
-                  `${firm.name} — ${formatNumber(firm.received)} из ${formatNumber(firm.totalRecords)}`
-              )
-              .join('; ')}
-            . Показатели неполные.
+            {t('roadAccidents.banner.incompleteBases', {
+              bases: incomplete
+                .map((firm) =>
+                  t('roadAccidents.banner.incompleteBase', {
+                    name: firm.name,
+                    received: formatNumber(firm.received),
+                    total: formatNumber(firm.totalRecords),
+                  })
+                )
+                .join('; '),
+            })}
           </span>
           <button
             type="button"
@@ -131,7 +144,7 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
             onClick={() => accidentsStore.reload()}
             disabled={accidentsStore.isBusy}
           >
-            Повторить
+            {t('roadAccidents.common.retry')}
           </button>
         </div>
       )}
@@ -140,11 +153,17 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
         <div className={styles.banner} role="status">
           {warningIcon}
           <span className={styles.text}>
-            Часть записей не учтена из-за ошибок в данных:{' '}
-            {rejected
-              .map((firm) => `${firm.name} — ${formatNumber(firm.count)} (${firm.details})`)
-              .join('; ')}
-            .
+            {t('roadAccidents.banner.rejectedRows', {
+              bases: rejected
+                .map((firm) =>
+                  t('roadAccidents.banner.rejectedBase', {
+                    name: firm.name,
+                    count: formatNumber(firm.count),
+                    details: firm.details,
+                  })
+                )
+                .join('; '),
+            })}
           </span>
         </div>
       )}
@@ -153,8 +172,10 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
         <div className={styles.banner} role="status">
           {warningIcon}
           <span className={styles.text}>
-            {formatNumber(unknownCauses)} ДТП с причиной, которой нет в справочнике категорий,
-            отнесены к «Виновный не определён».
+            {t('roadAccidents.banner.unknownCauses', {
+              count: formatNumber(unknownCauses),
+              category: CAUSE_CATEGORY_LABELS.undetermined,
+            })}
           </span>
         </div>
       )}
@@ -162,9 +183,7 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
       {linkMissing && (
         <div className={styles.banner} role="status">
           {warningIcon}
-          <span className={styles.text}>
-            Автоколонна из ссылки недоступна в ваших данных — показана автоколонна по умолчанию.
-          </span>
+          <span className={styles.text}>{t('roadAccidents.banner.linkedMotorcadeMissing')}</span>
         </div>
       )}
 
@@ -172,8 +191,7 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
         <div className={styles.banner} role="status">
           {warningIcon}
           <span className={styles.text}>
-            В данных несколько валют ({currencies.join(', ')}). Суммы ущерба и возмещения посчитаны
-            без пересчёта курсов и не сопоставимы между собой.
+            {t('roadAccidents.banner.mixedCurrencies', { currencies: currencies.join(', ') })}
           </span>
         </div>
       )}

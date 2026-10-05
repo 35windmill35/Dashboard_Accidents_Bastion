@@ -1,5 +1,6 @@
 import { ApiError, getAuthorized } from '@/shared/api/httpClient'
 import { mapWithConcurrencyLimit } from '@/shared/lib/concurrencyLimit'
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '../model/types'
 import { parseAccidentRows, type RejectReason } from '../lib/parseRow'
 
@@ -49,7 +50,7 @@ async function fetchPage(dbIndex: number, offset: number, signal?: AbortSignal):
   const stat = data?.DashboardAccidentStat
   // Неожиданная форма ответа — это ошибка базы, а не "ДТП нет".
   if (!stat || !Array.isArray(stat.data)) {
-    throw new ApiError(-1, 'Некорректный ответ DashboardAccidentStat: нет массива data', data)
+    throw new ApiError(-1, t('roadAccidents.error.badStatResponse'), data)
   }
 
   const total = Number(stat.totalRecords)

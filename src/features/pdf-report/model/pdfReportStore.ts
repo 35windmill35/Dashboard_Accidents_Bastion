@@ -1,4 +1,5 @@
 import { makeAutoObservable, observableRef, runInAction } from 'mobx'
+import { t } from '@/shared/i18n'
 
 // Экспортёр возвращает, сколько разделов не отрисовалось (void — нечего
 // сообщать, например нет данных для отчёта)
@@ -61,14 +62,13 @@ class PdfReportStore {
       const result = await exporter()
       runInAction(() => {
         if (result && result.failed > 0) {
-          this.lastWarning = `PDF сохранён, но ${result.failed} разд. не удалось сформировать — отчёт неполный. Попробуйте ещё раз или сообщите в поддержку.`
+          this.lastWarning = t('roadAccidents.pdf.warningIncomplete', { count: result.failed })
         }
       })
     } catch (err) {
       console.error('[pdf-report] формирование отчёта прервано:', err)
       runInAction(() => {
-        this.lastError =
-          'Не удалось сформировать PDF-отчёт. Обновите страницу и попробуйте ещё раз.'
+        this.lastError = t('roadAccidents.pdf.error')
       })
     } finally {
       runInAction(() => {

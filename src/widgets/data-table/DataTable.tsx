@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent, type ReactNode } from 'react'
+import { t } from '@/shared/i18n'
 import styles from './DataTable.module.css'
 
 export interface DataTableColumn<T> {
@@ -103,13 +104,13 @@ export function DataTable<T>({
               setPage(0)
             }}
           >
-            {expanded ? 'Свернуть' : 'Показать все'}
+            {expanded ? t('roadAccidents.table.collapse') : t('roadAccidents.table.showAll')}
           </button>
         )}
       </div>
 
       {rows.length === 0 ? (
-        <div className={styles.empty}>Нет данных за период</div>
+        <div className={styles.empty}>{t('roadAccidents.common.noDataForPeriod')}</div>
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
@@ -166,17 +167,17 @@ export function DataTable<T>({
             disabled={currentPage === 0}
             onClick={() => setPage(currentPage - 1)}
           >
-            Назад
+            {t('roadAccidents.common.back')}
           </button>
           <span>
-            Страница {currentPage + 1} из {totalPages}
+            {t('roadAccidents.common.pageOf', { page: currentPage + 1, total: totalPages })}
           </span>
           <button
             type="button"
             disabled={currentPage >= totalPages - 1}
             onClick={() => setPage(currentPage + 1)}
           >
-            Вперёд
+            {t('roadAccidents.common.forward')}
           </button>
         </div>
       )}

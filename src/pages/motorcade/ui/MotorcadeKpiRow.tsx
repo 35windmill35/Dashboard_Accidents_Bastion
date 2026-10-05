@@ -8,6 +8,7 @@ import {
   rowsWithCompensation,
   rowsWithDamage,
 } from '@/entities/accident/lib/metrics'
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { MotorcadeData, MotorcadeKpi } from '../model/motorcadeData'
 import styles from './MotorcadeKpiRow.module.css'
@@ -31,85 +32,87 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
   return (
     <div className={styles.row}>
       <KpiCard
-        label="Количество ДТП"
+        label={t('roadAccidents.kpi.accidentCount')}
         value={kpi.count}
         kind="count"
         compareValue={prev('count')}
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
-        tooltip="Масштаб аварийности автоколонны"
-        onOpenList={() => open('Все ДТП', periodRows)}
+        tooltip={t('roadAccidents.kpi.hint.motorcadeAccidents')}
+        onOpenList={() => open(t('roadAccidents.list.all'), periodRows)}
       />
       <KpiCard
-        label="Сумма ущерба"
+        label={t('roadAccidents.kpi.damageSum')}
         value={kpi.sumDamage}
         kind="currency"
         compareValue={prev('sumDamage')}
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
-        tooltip="Финансовый эффект ДТП этой автоколонны"
-        onOpenList={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
+        tooltip={t('roadAccidents.kpi.hint.motorcadeDamage')}
+        onOpenList={() => open(t('roadAccidents.list.withDamage'), rowsWithDamage(periodRows))}
       />
       <KpiCard
-        label="Сумма возмещения"
+        label={t('roadAccidents.kpi.compensationSum')}
         value={kpi.sumCompensated}
         kind="currency"
         compareValue={prev('sumCompensated')}
         deltaLabel={deltaLabel}
-        tooltip="Насколько эффективно автоколонна взыскивает ущерб"
-        onOpenList={() => open('ДТП с возмещением', rowsWithCompensation(periodRows))}
+        tooltip={t('roadAccidents.kpi.hint.motorcadeCompensation')}
+        onOpenList={() =>
+          open(t('roadAccidents.list.withCompensation'), rowsWithCompensation(periodRows))
+        }
       />
       <KpiCard
-        label="Доля возмещения"
+        label={t('roadAccidents.kpi.compensationShare')}
         value={kpi.compensationShare}
         kind="percent"
         compareValue={prev('compensationShare')}
         deltaLabel={deltaLabel}
-        tooltip="Качество претензионной работы. Сравнимо между автоколоннами"
+        tooltip={t('roadAccidents.kpi.hint.motorcadeCompensationShare')}
         onOpenList={() =>
-          open('ДТП, возмещённые не полностью', rowsNotFullyCompensated(periodRows))
+          open(t('roadAccidents.list.notFullyCompensated'), rowsNotFullyCompensated(periodRows))
         }
       />
       <KpiCard
-        label="Средний ущерб на 1 ДТП"
+        label={t('roadAccidents.kpi.averageDamage')}
         value={kpi.averageDamage}
         kind="currency"
         compareValue={prev('averageDamage')}
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
-        tooltip="Типичная тяжесть инцидента в этой автоколонне"
-        onOpenList={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
+        tooltip={t('roadAccidents.kpi.hint.motorcadeAverageDamage')}
+        onOpenList={() => open(t('roadAccidents.list.withDamage'), rowsWithDamage(periodRows))}
       />
       <KpiCard
-        label="Доля ДТП по вине водителя"
+        label={t('roadAccidents.kpi.driverFaultShare')}
         value={kpi.driverFaultShare}
         kind="percent"
         compareValue={prev('driverFaultShare')}
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
-        tooltip="Ключевой показатель управляемого риска"
-        onOpenList={() => open('ДТП по вине водителя', byCause.driverFault)}
+        tooltip={t('roadAccidents.kpi.hint.driverFaultShare')}
+        onOpenList={() => open(t('roadAccidents.list.driverFault'), byCause.driverFault)}
       />
       <KpiCard
-        label="Доля ДТП по вине третьей стороны"
+        label={t('roadAccidents.kpi.thirdPartyFaultShare')}
         value={kpi.thirdPartyFaultShare}
         kind="percent"
         compareValue={prev('thirdPartyFaultShare')}
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
-        tooltip="Аварии вне контроля водителей автоколонны"
-        onOpenList={() => open('ДТП по вине третьей стороны', byCause.thirdPartyFault)}
+        tooltip={t('roadAccidents.kpi.hint.thirdPartyFaultShare')}
+        onOpenList={() => open(t('roadAccidents.list.thirdPartyFault'), byCause.thirdPartyFault)}
       />
       {NO_DAMAGE_CATEGORY_ENABLED && (
         <KpiCard
-          label="Доля ДТП без повреждений"
+          label={t('roadAccidents.kpi.noDamageShare')}
           value={kpi.noDamageShare}
           kind="percent"
           compareValue={prev('noDamageShare')}
           deltaLabel={deltaLabel}
           deltaHigherIsBetter={false}
-          tooltip="Доля инцидентов без материального ущерба"
-          onOpenList={() => open('ДТП без повреждений', byCause.noDamage)}
+          tooltip={t('roadAccidents.kpi.hint.noDamageShare')}
+          onOpenList={() => open(t('roadAccidents.list.noDamage'), byCause.noDamage)}
         />
       )}
     </div>

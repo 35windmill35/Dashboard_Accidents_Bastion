@@ -1,4 +1,5 @@
 import type { jsPDF } from 'jspdf'
+import { t } from '@/shared/i18n'
 import {
   COLOR,
   drawLegendChip,
@@ -497,7 +498,13 @@ export function tableCard(
     emptyText?: string
   }
 ): Block {
-  const { title, columns, rows, note, emptyText = 'Нет данных за период' } = options
+  const {
+    title,
+    columns,
+    rows,
+    note,
+    emptyText = t('roadAccidents.common.noDataForPeriod'),
+  } = options
   const visibleRows = rows.length > 0 ? rows : [{ cells: [emptyText] }]
   const bodyHeight = TABLE_HEADER_HEIGHT + visibleRows.length * TABLE_ROW_HEIGHT
 

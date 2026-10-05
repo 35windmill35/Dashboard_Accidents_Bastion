@@ -1,4 +1,5 @@
 import { useState, type InputHTMLAttributes } from 'react'
+import { t } from '@/shared/i18n'
 import { EyeIcon, EyeOffIcon } from './icons'
 import styles from './PasswordInput.module.css'
 
@@ -23,7 +24,9 @@ export function PasswordInput({ className, ...inputProps }: PasswordInputProps) 
         className={styles.toggle}
         onClick={() => setVisible((v) => !v)}
         tabIndex={-1}
-        aria-label={visible ? 'Скрыть пароль' : 'Показать пароль'}
+        aria-label={
+          visible ? t('roadAccidents.login.hidePassword') : t('roadAccidents.login.showPassword')
+        }
       >
         {visible ? <EyeOffIcon /> : <EyeIcon />}
       </button>

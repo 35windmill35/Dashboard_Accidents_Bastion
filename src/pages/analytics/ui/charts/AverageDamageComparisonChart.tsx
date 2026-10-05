@@ -26,6 +26,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
 import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN, barPayload } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { AnalyticsData } from '../../model/analyticsData'
 
 interface Props {
@@ -53,13 +54,13 @@ export function AverageDamageComparisonChart({ data, period }: Props) {
   const handleClick = (side: 'a' | 'b') => {
     const target = side === 'a' ? data.a : data.b
     drilldownStore.open(
-      `Средний ущерб — ${target.name}, ${periodLabel}`,
+      t('roadAccidents.list.averageDamageFor', { name: target.name, period: periodLabel }),
       target.scope.periodRows.filter((row) => (row.ACCIDENT_DAMAGE ?? 0) > 0)
     )
   }
 
   const table: ChartDataTable = {
-    columns: ['Автоколонна', 'Средний ущерб на 1 ДТП'],
+    columns: [t('roadAccidents.common.motorcade'), t('roadAccidents.kpi.averageDamage')],
     rows: [
       [data.a.name, formatCurrency(data.a.scope.kpi.averageDamage)],
       [data.b.name, formatCurrency(data.b.scope.kpi.averageDamage)],
@@ -69,8 +70,8 @@ export function AverageDamageComparisonChart({ data, period }: Props) {
   return (
     <ChartCard
       table={table}
-      title="Средний ущерб на 1 ДТП"
-      subtitle={withCurrencyUnit('На 1 ДТП с ущербом')}
+      title={t('roadAccidents.kpi.averageDamage')}
+      subtitle={withCurrencyUnit(t('roadAccidents.chart.perDamagedAccident'))}
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={CHART_MARGIN}>
@@ -86,7 +87,7 @@ export function AverageDamageComparisonChart({ data, period }: Props) {
             maxBarSize={BAR_SIZE_SINGLE}
             {...ANIMATION}
             dataKey="averageDamage"
-            name="Средний ущерб"
+            name={t('roadAccidents.kpi.averageDamageShort')}
             radius={BAR_RADIUS}
             style={{ cursor: 'pointer' }}
             onClick={(entry) => handleClick(barPayload<Point>(entry).side)}

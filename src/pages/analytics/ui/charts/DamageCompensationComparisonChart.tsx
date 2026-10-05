@@ -17,6 +17,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COLOR_DAMAGE, COLOR_COMPENSATION } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
 import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN, barPayload } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { AnalyticsData } from '../../model/analyticsData'
 
 interface Props {
@@ -55,11 +56,18 @@ export function DamageCompensationComparisonChart({ data, period }: Props) {
 
   const openSide = (side: 'a' | 'b') => {
     const target = side === 'a' ? data.a : data.b
-    drilldownStore.open(`Все ДТП — ${target.name}, ${periodLabel}`, target.scope.periodRows)
+    drilldownStore.open(
+      t('roadAccidents.list.allFor', { name: target.name, period: periodLabel }),
+      target.scope.periodRows
+    )
   }
 
   const table: ChartDataTable = {
-    columns: ['Автоколонна', 'Ущерб', 'Возмещение'],
+    columns: [
+      t('roadAccidents.common.motorcade'),
+      t('roadAccidents.common.damage'),
+      t('roadAccidents.common.compensation'),
+    ],
     rows: chartData.map((p) => [
       p.name,
       formatCurrency(p.sumDamage),
@@ -70,11 +78,11 @@ export function DamageCompensationComparisonChart({ data, period }: Props) {
   return (
     <ChartCard
       table={table}
-      title="Сумма ущерба и возмещения"
-      subtitle={withCurrencyUnit('Суммы за период')}
+      title={t('roadAccidents.chart.damageComparison')}
+      subtitle={withCurrencyUnit(t('roadAccidents.chart.sumsForPeriod'))}
       legend={[
-        { label: 'Ущерб', color: COLOR_DAMAGE },
-        { label: 'Возмещение', color: COLOR_COMPENSATION },
+        { label: t('roadAccidents.common.damage'), color: COLOR_DAMAGE },
+        { label: t('roadAccidents.common.compensation'), color: COLOR_COMPENSATION },
       ]}
     >
       <ResponsiveContainer width="100%" height="100%">
@@ -91,7 +99,7 @@ export function DamageCompensationComparisonChart({ data, period }: Props) {
             maxBarSize={BAR_SIZE_GROUPED}
             {...ANIMATION}
             dataKey="sumDamage"
-            name="Ущерб"
+            name={t('roadAccidents.common.damage')}
             fill={`url(#${gradientId}-0)`}
             radius={BAR_RADIUS}
             style={{ cursor: 'pointer' }}
@@ -101,7 +109,7 @@ export function DamageCompensationComparisonChart({ data, period }: Props) {
             maxBarSize={BAR_SIZE_GROUPED}
             {...ANIMATION}
             dataKey="sumCompensated"
-            name="Возмещение"
+            name={t('roadAccidents.common.compensation')}
             fill={`url(#${gradientId}-1)`}
             radius={BAR_RADIUS}
             style={{ cursor: 'pointer' }}

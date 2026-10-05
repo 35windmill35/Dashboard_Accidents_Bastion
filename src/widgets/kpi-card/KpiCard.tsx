@@ -6,6 +6,7 @@ import {
   kpiDelta,
   type KpiKind,
 } from '@/shared/lib/formatters'
+import { t } from '@/shared/i18n'
 import styles from './KpiCard.module.css'
 
 // Что за число в карточке: от этого зависят формат и подпись единицы
@@ -137,7 +138,7 @@ export function KpiCard({
   kind,
   compareValue,
   deltaHigherIsBetter = true,
-  deltaLabel = 'к пред. периоду',
+  deltaLabel = t('roadAccidents.period.vsPrevious'),
   tooltip,
   onOpenList,
   navigate,
@@ -178,7 +179,7 @@ export function KpiCard({
   )
 
   const cardTitle =
-    [tooltip, navigate ? `Клик по карточке — ${navigate.label}` : null]
+    [tooltip, navigate ? t('roadAccidents.kpi.clickHint', { action: navigate.label }) : null]
       .filter(Boolean)
       .join('\n') || undefined
 
@@ -209,8 +210,8 @@ export function KpiCard({
         type="button"
         className={styles.listButton}
         onClick={onOpenList}
-        title="Показать таблицу ДТП"
-        aria-label={`${label}: показать таблицу ДТП`}
+        title={t('roadAccidents.kpi.showList')}
+        aria-label={t('roadAccidents.kpi.showListFor', { label: label })}
       >
         <IconList />
       </button>

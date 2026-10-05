@@ -1,3 +1,5 @@
+import { t } from '@/shared/i18n'
+
 // Единые утилиты форматирования — использовать только их в компонентах,
 // чтобы формат чисел/дат не расходился между экранами.
 
@@ -74,8 +76,16 @@ export function formatCompactCurrency(value: number | null | undefined): string 
   if (isEmpty(value)) return '—'
   const num = value as number
   const abs = Math.abs(num)
-  if (abs >= 1_000_000) return withCurrency(`${formatNumber(num / 1_000_000, 1)} млн`)
-  if (abs >= 1_000) return withCurrency(`${formatNumber(num / 1_000, abs >= 10_000 ? 0 : 1)} тыс`)
+  if (abs >= 1_000_000)
+    return withCurrency(
+      t('roadAccidents.unit.millionValue', { value: formatNumber(num / 1_000_000, 1) })
+    )
+  if (abs >= 1_000)
+    return withCurrency(
+      t('roadAccidents.unit.thousandValue', {
+        value: formatNumber(num / 1_000, abs >= 10_000 ? 0 : 1),
+      })
+    )
   return formatCurrency(num)
 }
 
@@ -116,7 +126,7 @@ export function formatPointDelta(delta: number | null | undefined, decimals = 0)
   const points = Math.abs(value) * 100
   const rounded = Number(points.toFixed(decimals))
   const sign = rounded === 0 ? '' : value > 0 ? '+' : '−'
-  return `${sign}${formatNumber(points, decimals)}${NBSP}п.п.`
+  return t('roadAccidents.unit.pointsValue', { value: `${sign}${formatNumber(points, decimals)}` })
 }
 
 export type KpiKind = 'count' | 'currency' | 'percent'

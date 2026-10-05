@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '../model/types'
 
 // Разбор строки ответа DashboardAccidentStat. Всё, что дальше считает
@@ -14,10 +15,10 @@ import type { AccidentRow } from '../model/types'
 export type RejectReason = 'notObject' | 'noId' | 'badDate' | 'futureDate'
 
 export const REJECT_REASON_LABELS: Record<RejectReason, string> = {
-  notObject: 'некорректная запись',
-  noId: 'нет ID ДТП',
-  badDate: 'некорректная дата',
-  futureDate: 'дата в будущем',
+  notObject: t('roadAccidents.reject.notObject'),
+  noId: t('roadAccidents.reject.noId'),
+  badDate: t('roadAccidents.reject.badDate'),
+  futureDate: t('roadAccidents.reject.futureDate'),
 }
 
 export type ParsedRow =

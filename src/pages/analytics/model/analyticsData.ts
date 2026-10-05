@@ -10,6 +10,7 @@ import {
   type DriverAggregate,
   type MonthlyAggregate,
 } from '@/entities/accident/lib/metrics'
+import { t } from '@/shared/i18n'
 import type { CauseCategory } from '@/shared/config/accidentCauses'
 
 export interface AnalyticsSide {
@@ -144,7 +145,12 @@ function buildCauseComparison(a: AnalyticsSide, b: AnalyticsSide): CauseComparis
 }
 
 // Размера парка и пробега в данных нет — абсолютные числа не нормированы.
-const SCALE_DEPENDENT_COMMENT = 'Зависит от размера парка — не сравнивать'
+const SCALE_DEPENDENT_COMMENT = t('roadAccidents.analytics.comment.scaleDependent')
+
+// «Павлодар: 3, Алматы: 5»
+function describeSmallSides(sides: AnalyticsSide[]): string {
+  return sides.map((side) => `${side.name}: ${side.scope.kpi.count}`).join(', ')
+}
 
 // Комментарий для относительных показателей (доли, средние): сопоставимы,
 // если у обеих сторон достаточно ДТП и есть знаменатель.
@@ -154,12 +160,12 @@ function relativeComment(
   valueA: number | null,
   valueB: number | null
 ): string {
-  if (valueA === null || valueB === null) return 'Нет данных для расчёта у одной из сторон'
+  if (valueA === null || valueB === null) return t('roadAccidents.analytics.comment.noData')
   const small = [a, b].filter((side) => side.scope.kpi.count < MIN_COMPARABLE_SAMPLE)
   if (small.length > 0) {
-    return `Мало ДТП (${small.map((side) => `${side.name}: ${side.scope.kpi.count}`).join(', ')}) — неустойчиво`
+    return t('roadAccidents.analytics.comment.smallSample', { sides: describeSmallSides(small) })
   }
-  return 'Сопоставимо (относительный показатель)'
+  return t('roadAccidents.analytics.comment.comparable')
 }
 
 function buildSummaryRows(a: AnalyticsSide, b: AnalyticsSide): SummaryRow[] {
@@ -168,7 +174,7 @@ function buildSummaryRows(a: AnalyticsSide, b: AnalyticsSide): SummaryRow[] {
   return [
     {
       key: 'count',
-      label: 'Количество ДТП',
+      label: t('roadAccidents.kpi.accidentCount'),
       kind: 'count',
       valueA: ka.count,
       valueB: kb.count,
@@ -176,7 +182,7 @@ function buildSummaryRows(a: AnalyticsSide, b: AnalyticsSide): SummaryRow[] {
     },
     {
       key: 'sumDamage',
-      label: 'Сумма ущерба',
+      label: t('roadAccidents.kpi.damageSum'),
       kind: 'currency',
       valueA: ka.sumDamage,
       valueB: kb.sumDamage,
@@ -184,7 +190,7 @@ function buildSummaryRows(a: AnalyticsSide, b: AnalyticsSide): SummaryRow[] {
     },
     {
       key: 'compensationShare',
-      label: 'Доля возмещения',
+      label: t('roadAccidents.kpi.compensationShare'),
       kind: 'percent',
       valueA: ka.compensationShare,
       valueB: kb.compensationShare,
@@ -192,7 +198,7 @@ function buildSummaryRows(a: AnalyticsSide, b: AnalyticsSide): SummaryRow[] {
     },
     {
       key: 'averageDamage',
-      label: 'Средний ущерб на 1 ДТП',
+      label: t('roadAccidents.kpi.averageDamage'),
       kind: 'currency',
       valueA: ka.averageDamage,
       valueB: kb.averageDamage,
@@ -214,9 +220,7 @@ function currencyCodesOf(rows: AccidentRow[]): string[] {
 // строка — всегда: размера парка/пробега в данных нет, поэтому абсолютные
 // числа (ДТП, суммы) не нормированы.
 function buildComparabilityWarnings(a: AnalyticsSide, b: AnalyticsSide): string[] {
-  const warnings = [
-    'Количество ДТП и суммы не нормированы на размер парка и пробег — для сравнения используйте доли и средние.',
-  ]
+  const warnings = [t('roadAccidents.analytics.warning.notNormalized')]
 
   const countA = a.scope.kpi.count
   const countB = b.scope.kpi.count
@@ -224,27 +228,31 @@ function buildComparabilityWarnings(a: AnalyticsSide, b: AnalyticsSide): string[
   const max = Math.max(countA, countB)
   if (min > 0 && max / min >= SCALE_GAP_RATIO) {
     warnings.push(
-      `Число ДТП различается в ${Math.round((max / min) * 10) / 10} раза (${a.name}: ${countA}, ${b.name}: ${countB}) — автоколонны разного масштаба.`
+      t('roadAccidents.analytics.warning.scaleGap', {
+        ratio: Math.round((max / min) * 10) / 10,
+        a: a.name,
+        countA: countA,
+        b: b.name,
+        countB: countB,
+      })
     )
   }
 
   const small = [a, b].filter((side) => side.scope.kpi.count < MIN_COMPARABLE_SAMPLE)
   if (small.length > 0) {
     warnings.push(
-      `Мало ДТП за период (${small.map((side) => `${side.name}: ${side.scope.kpi.count}`).join(', ')}) — доли и средние неустойчивы, выводы делать рано.`
+      t('roadAccidents.analytics.warning.smallSample', { sides: describeSmallSides(small) })
     )
   }
 
   if (a.dbIndex !== b.dbIndex) {
-    warnings.push(
-      'Автоколонны из разных баз — справочники причин и правила заполнения могут отличаться.'
-    )
+    warnings.push(t('roadAccidents.analytics.warning.differentBases'))
   }
 
   const currencies = currencyCodesOf([...a.scope.periodRows, ...b.scope.periodRows])
   if (currencies.length > 1) {
     warnings.push(
-      `Суммы в разных валютах (${currencies.join(', ')}) — денежные показатели не сравнимы.`
+      t('roadAccidents.analytics.warning.currencies', { currencies: currencies.join(', ') })
     )
   }
 

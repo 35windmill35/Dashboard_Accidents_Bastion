@@ -5,6 +5,7 @@ import {
   NO_DAMAGE_CATEGORY_ENABLED,
   type CauseCategory,
 } from '@/shared/config/accidentCauses'
+import { t } from '@/shared/i18n'
 import { getMotorcadeKey, getMotorcadeName } from './motorcade'
 import { accidentDateToYm } from './period'
 
@@ -129,8 +130,8 @@ export function compareByCountThenDamage(a: Rankable, b: Rankable): number {
   )
 }
 
-export const UNKNOWN_DRIVER_NAME = 'Водитель не указан'
-export const UNKNOWN_VEHICLE_NAME = 'ТС не указано'
+export const UNKNOWN_DRIVER_NAME = t('roadAccidents.common.unknownDriver')
+export const UNKNOWN_VEHICLE_NAME = t('roadAccidents.common.unknownVehicle')
 
 export interface MotorcadeAggregate {
   key: string
@@ -200,7 +201,7 @@ export function rankDrivers(rows: AccidentRow[]): DriverAggregate[] {
 
     map.set(key, {
       key,
-      name: isKnown ? row.DRIVER_NAME || 'Без имени' : UNKNOWN_DRIVER_NAME,
+      name: isKnown ? row.DRIVER_NAME || t('roadAccidents.common.noName') : UNKNOWN_DRIVER_NAME,
       count: 1,
       sumDamage: damage,
       rows: [row],
@@ -236,7 +237,7 @@ export function rankVehicles(rows: AccidentRow[]): VehicleAggregate[] {
       ? UNKNOWN_VEHICLE_NAME
       : row.GARAGE_NUM
         ? `№${row.GARAGE_NUM}`
-        : row.CAR_MAKE_MODEL || 'Без номера'
+        : row.CAR_MAKE_MODEL || t('roadAccidents.common.noNumber')
 
     if (existing) {
       existing.count += 1

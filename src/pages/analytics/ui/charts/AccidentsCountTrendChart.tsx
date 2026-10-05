@@ -25,6 +25,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatMonthShortLabel, formatMonthLabel, isInPeriod } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { CHART_MARGIN, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { AnalyticsData } from '../../model/analyticsData'
 
@@ -51,20 +52,20 @@ export function AccidentsCountTrendChart({ data, rowsA, rowsB }: Props) {
       ...rowsA.filter((row) => isInPeriod(row, monthPeriod)),
       ...rowsB.filter((row) => isInPeriod(row, monthPeriod)),
     ]
-    drilldownStore.open(`Все ДТП — ${formatMonthLabel(ym)}`, rows)
+    drilldownStore.open(t('roadAccidents.list.allForMonth', { month: formatMonthLabel(ym) }), rows)
   }
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))
 
   const table: ChartDataTable = {
-    columns: ['Месяц', data.a.name, data.b.name],
+    columns: [t('roadAccidents.common.month'), data.a.name, data.b.name],
     rows: chartData.map((d) => [formatMonthLabel(d.ym), formatNumber(d.a), formatNumber(d.b)]),
   }
 
   return (
     <ChartCard
       table={table}
-      title="Динамика ДТП по месяцам"
+      title={t('roadAccidents.chart.accidentsTrend')}
       subtitle={`${data.a.name}: ${formatNumber(chartData.reduce((sum, d) => sum + d.a, 0))} · ${data.b.name}: ${formatNumber(chartData.reduce((sum, d) => sum + d.b, 0))}`}
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },

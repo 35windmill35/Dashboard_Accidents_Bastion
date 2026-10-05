@@ -3,6 +3,7 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { rowsNotFullyCompensated, rowsWithDamage } from '@/entities/accident/lib/metrics'
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { AnalyticsData, AnalyticsSide } from '../model/analyticsData'
 import styles from './AnalyticsKpiGroups.module.css'
@@ -51,7 +52,9 @@ interface KpiGroupProps {
 function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
   const kpi = side.scope.kpi
   const rows = side.scope.periodRows
-  const deltaLabel = compareTo ? `к ${compareTo.name}` : undefined
+  const deltaLabel = compareTo
+    ? t('roadAccidents.analytics.vsMotorcade', { name: compareTo.name })
+    : undefined
 
   const other = compareTo?.scope.kpi
 
@@ -65,52 +68,56 @@ function KpiGroup({ side, color, compareTo, onOpen }: KpiGroupProps) {
         />
         <span className={styles.groupTitle}>{side.name}</span>
         <span className={styles.groupNote}>
-          {compareTo ? `сравнение с ${compareTo.name}` : 'базовая для сравнения'}
+          {compareTo
+            ? t('roadAccidents.analytics.comparedWith', { name: compareTo.name })
+            : t('roadAccidents.analytics.baseSide')}
         </span>
       </div>
       <div className={styles.groupRow}>
         <KpiCard
           compact
-          label="Количество ДТП"
+          label={t('roadAccidents.kpi.accidentCount')}
           value={kpi.count}
           kind="count"
           compareValue={other?.count}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
-          tooltip="Масштаб аварийности автоколонны"
-          onOpenList={() => onOpen('Все ДТП', rows)}
+          tooltip={t('roadAccidents.kpi.hint.motorcadeAccidents')}
+          onOpenList={() => onOpen(t('roadAccidents.list.all'), rows)}
         />
         <KpiCard
           compact
-          label="Сумма ущерба"
+          label={t('roadAccidents.kpi.damageSum')}
           value={kpi.sumDamage}
           kind="currency"
           compareValue={other?.sumDamage}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
-          tooltip="Финансовый эффект ДТП этой автоколонны"
-          onOpenList={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
+          tooltip={t('roadAccidents.kpi.hint.motorcadeDamage')}
+          onOpenList={() => onOpen(t('roadAccidents.list.withDamage'), rowsWithDamage(rows))}
         />
         <KpiCard
           compact
-          label="Доля возмещения"
+          label={t('roadAccidents.kpi.compensationShare')}
           value={kpi.compensationShare}
           kind="percent"
           compareValue={other?.compensationShare}
           deltaLabel={deltaLabel}
-          tooltip="Качество претензионной работы. Сравнимо между автоколоннами"
-          onOpenList={() => onOpen('ДТП, возмещённые не полностью', rowsNotFullyCompensated(rows))}
+          tooltip={t('roadAccidents.kpi.hint.motorcadeCompensationShare')}
+          onOpenList={() =>
+            onOpen(t('roadAccidents.list.notFullyCompensated'), rowsNotFullyCompensated(rows))
+          }
         />
         <KpiCard
           compact
-          label="Средний ущерб на 1 ДТП"
+          label={t('roadAccidents.kpi.averageDamage')}
           value={kpi.averageDamage}
           kind="currency"
           compareValue={other?.averageDamage}
           deltaHigherIsBetter={false}
           deltaLabel={deltaLabel}
-          tooltip="Типичная тяжесть инцидента в этой автоколонне"
-          onOpenList={() => onOpen('ДТП с ущербом', rowsWithDamage(rows))}
+          tooltip={t('roadAccidents.kpi.hint.motorcadeAverageDamage')}
+          onOpenList={() => onOpen(t('roadAccidents.list.withDamage'), rowsWithDamage(rows))}
         />
       </div>
     </section>

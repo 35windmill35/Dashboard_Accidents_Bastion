@@ -1,4 +1,5 @@
 import type { jsPDF } from 'jspdf'
+import { t } from '@/shared/i18n'
 import { COLOR, CONTENT_WIDTH, PAGE, drawLine, drawText } from './pdfKit'
 
 // Блок — самодостаточный кусок отчёта с заранее известной высотой: KPI-строка,
@@ -98,21 +99,27 @@ export function drawPageFooters(doc: jsPDF, failed = 0): void {
   for (let page = 1; page <= total; page += 1) {
     doc.setPage(page)
     drawLine(doc, PAGE.marginX, y - 10, PAGE.width - PAGE.marginX, y - 10, COLOR.line, 0.5)
-    drawText(doc, 'Дашборд ДТП', PAGE.marginX, y, { size: 6.2, color: COLOR.muted })
+    drawText(doc, t('roadAccidents.appTitle'), PAGE.marginX, y, { size: 6.2, color: COLOR.muted })
     if (failed > 0) {
       drawText(
         doc,
-        `Внимание: не удалось сформировать разделов — ${failed}, отчёт неполный`,
+        t('roadAccidents.pdf.footer.incomplete', { count: failed }),
         PAGE.width / 2,
         y,
         { size: 6.2, color: COLOR.negative, align: 'center' }
       )
     }
-    drawText(doc, `Стр. ${page} из ${total}`, PAGE.width - PAGE.marginX, y, {
-      font: 'mono',
-      size: 6.2,
-      color: COLOR.muted,
-      align: 'right',
-    })
+    drawText(
+      doc,
+      t('roadAccidents.pdf.footer.page', { page: page, total: total }),
+      PAGE.width - PAGE.marginX,
+      y,
+      {
+        font: 'mono',
+        size: 6.2,
+        color: COLOR.muted,
+        align: 'right',
+      }
+    )
   }
 }

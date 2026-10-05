@@ -3,6 +3,7 @@ import { Cell, Pie, PieChart } from 'recharts'
 import type { CauseSlice } from '@/entities/accident/lib/metrics'
 import { CAUSE_CATEGORY_COLORS } from '@/shared/lib/chartColors'
 import { formatNumber, formatPercent } from '@/shared/lib/formatters'
+import { t } from '@/shared/i18n'
 import styles from './CauseDonut.module.css'
 
 interface CauseDonutProps {
@@ -17,11 +18,11 @@ const RING_THICKNESS = 14
 
 // Сокращения категорий для центра кольца (полное название — в списке)
 const SHORT_LABELS: Record<CauseSlice['category'], string> = {
-  driverFault: 'Вина водителя',
-  thirdPartyFault: 'Третья сторона',
-  noDamage: 'Без повреждений',
-  undetermined: 'Не определён',
-  underReview: 'На рассмотрении',
+  driverFault: t('roadAccidents.cause.driverFault'),
+  thirdPartyFault: t('roadAccidents.cause.short.thirdPartyFault'),
+  noDamage: t('roadAccidents.cause.short.noDamage'),
+  undetermined: t('roadAccidents.cause.short.undetermined'),
+  underReview: t('roadAccidents.cause.underReview'),
 }
 
 // Структура причин ДТП по эталону: тонкое кольцо с итогом в центре и
@@ -82,7 +83,7 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
 
         <div className={styles.center} aria-hidden="true">
           <span className={styles.centerCaption}>
-            {active ? SHORT_LABELS[active.category] : 'Всего'}
+            {active ? SHORT_LABELS[active.category] : t('roadAccidents.common.totalShort')}
           </span>
           <span className={styles.centerValue}>
             {active
@@ -90,7 +91,9 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
               : formatNumber(total)}
           </span>
           <span className={styles.centerUnit}>
-            {active ? `${formatNumber(active.count)} ДТП` : 'ДТП'}
+            {active
+              ? t('roadAccidents.chart.donut.accidentsCount', { count: formatNumber(active.count) })
+              : t('roadAccidents.common.accidents')}
           </span>
         </div>
       </div>
@@ -109,7 +112,11 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
                 onFocus={() => setHovered(index)}
                 onBlur={() => setHovered(null)}
                 onClick={() => onSelect(slice)}
-                aria-label={`${slice.label}: ${formatPercent(share, 1)}, ${formatNumber(slice.count)} ДТП. Показать таблицу ДТП`}
+                aria-label={t('roadAccidents.chart.donut.sliceLabel', {
+                  label: slice.label,
+                  share: formatPercent(share, 1),
+                  count: formatNumber(slice.count),
+                })}
               >
                 <span className={styles.itemRow}>
                   <span

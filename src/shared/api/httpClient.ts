@@ -1,5 +1,6 @@
 import { BASE_URL } from '@/shared/config/api'
 import { getSessionId, touchSession } from '@/shared/api/session'
+import { t } from '@/shared/i18n'
 
 // Ошибка API — хранит код статуса ответа и данные, которые сервер мог
 // прислать вместе с ним.
@@ -158,7 +159,7 @@ export async function getAuthorized<T = unknown>(
   const sessionId = getSessionId()
 
   if (!sessionId) {
-    const err = new ApiError(401, 'Нет активной сессии — требуется повторный вход')
+    const err = new ApiError(401, t('roadAccidents.error.noSession'))
     unauthorizedHandler?.()
     throw err
   }

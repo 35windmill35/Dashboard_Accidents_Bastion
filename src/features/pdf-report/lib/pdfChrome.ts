@@ -1,4 +1,5 @@
 import type { jsPDF } from 'jspdf'
+import { t } from '@/shared/i18n'
 import {
   COLOR,
   drawLine,
@@ -32,12 +33,20 @@ function formatDateTime(date: Date): string {
 // Строки шапки об актуальности и полноте данных
 export function dataContextLines(context: ReportDataContext): string[] {
   const lines: string[] = []
-  if (context.loadedAt) lines.push(`Данные на ${formatDateTime(context.loadedAt)}`)
+  if (context.loadedAt)
+    lines.push(t('roadAccidents.pdf.header.dataAt', { date: formatDateTime(context.loadedAt) }))
   if (context.unavailableFirms.length > 0) {
-    lines.push(`Нет данных баз: ${context.unavailableFirms.join(', ')} — показатели неполные`)
+    lines.push(
+      t('roadAccidents.pdf.header.unavailableBases', { bases: context.unavailableFirms.join(', ') })
+    )
   }
   context.staleFirms.forEach((firm) => {
-    lines.push(`${firm.name}: данные на ${formatDateTime(firm.loadedAt)} (не обновились)`)
+    lines.push(
+      t('roadAccidents.pdf.header.staleBase', {
+        name: firm.name,
+        date: formatDateTime(firm.loadedAt),
+      })
+    )
   })
   if (context.partialNote) lines.push(context.partialNote)
   return lines
@@ -59,7 +68,9 @@ const HEADER_RULE_GAP = 8
 export function reportHeader(doc: jsPDF, meta: ReportHeaderMeta): BlockFactory {
   return (x, width) => {
     const rightLines = [
-      `Сформирован ${new Intl.DateTimeFormat('ru-RU').format(meta.generatedAt)}`,
+      t('roadAccidents.pdf.header.generated', {
+        date: new Intl.DateTimeFormat('ru-RU').format(meta.generatedAt),
+      }),
       ...meta.filterLines,
     ]
     const leftHeight = 34

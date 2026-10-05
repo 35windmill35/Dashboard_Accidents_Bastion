@@ -7,6 +7,7 @@ import {
   type KpiKind,
 } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
+import { t } from '@/shared/i18n'
 import type {
   AnalyticsData,
   AnalyticsSide,
@@ -71,15 +72,28 @@ function sideCards(side: AnalyticsSide, compareTo: AnalyticsSide | null): KpiCar
     return {
       label: `${label} · ${side.name}`,
       value,
-      delta: delta === null ? null : `${delta.text} к ${compareTo?.name ?? ''}`,
+      delta:
+        delta === null
+          ? null
+          : t('roadAccidents.pdf.deltaVsMotorcade', {
+              delta: delta.text,
+              name: compareTo?.name ?? '',
+            }),
       deltaTone: positive === null ? 'neutral' : positive ? 'positive' : 'negative',
     }
   }
 
   return [
-    build('ДТП', formatNumber(kpi.count), 'count', kpi.count, other?.count, false),
     build(
-      'Ущерб',
+      t('roadAccidents.common.accidents'),
+      formatNumber(kpi.count),
+      'count',
+      kpi.count,
+      other?.count,
+      false
+    ),
+    build(
+      t('roadAccidents.common.damage'),
       formatPdfCurrency(kpi.sumDamage),
       'currency',
       kpi.sumDamage,
@@ -87,7 +101,7 @@ function sideCards(side: AnalyticsSide, compareTo: AnalyticsSide | null): KpiCar
       false
     ),
     build(
-      'Доля возмещения',
+      t('roadAccidents.kpi.compensationShare'),
       formatPercent(kpi.compensationShare),
       'percent',
       kpi.compensationShare,
@@ -95,7 +109,7 @@ function sideCards(side: AnalyticsSide, compareTo: AnalyticsSide | null): KpiCar
       true
     ),
     build(
-      'Средний ущерб',
+      t('roadAccidents.kpi.averageDamageShort'),
       formatPdfCurrency(kpi.averageDamage),
       'currency',
       kpi.averageDamage,
@@ -148,9 +162,9 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
 
   const causesTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
-      title: 'Сравнение структуры причин ДТП',
+      title: t('roadAccidents.chart.causesComparison'),
       columns: [
-        { header: 'Категория', ratio: 0.46 },
+        { header: t('roadAccidents.common.category'), ratio: 0.46 },
         { header: a.name, ratio: 0.27, align: 'right', mono: true },
         { header: b.name, ratio: 0.27, align: 'right', mono: true },
       ],
@@ -161,7 +175,7 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
 
   const averageCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'Средний ущерб на 1 ДТП',
+      title: t('roadAccidents.kpi.averageDamage'),
       bodyHeight: SMALL_CHART_HEIGHT,
       drawBody: barChartBody(
         doc,
@@ -181,7 +195,7 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
 
   const repeatDriversCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'Водителей с 3 и более ДТП',
+      title: t('roadAccidents.chart.repeatDrivers'),
       bodyHeight: SMALL_CHART_HEIGHT,
       drawBody: barChartBody(
         doc,
@@ -199,10 +213,10 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
 
   const damageCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
-      title: 'Сумма ущерба и возмещения',
+      title: t('roadAccidents.chart.damageComparison'),
       legend: [
-        { label: 'Ущерб', color: COLOR.accent },
-        { label: 'Возмещение', color: COLOR.compensation },
+        { label: t('roadAccidents.common.damage'), color: COLOR.accent },
+        { label: t('roadAccidents.common.compensation'), color: COLOR.compensation },
       ],
       bodyHeight: 2 * DUAL_ROW_HEIGHT,
       drawBody: dualBarsBody(
@@ -219,12 +233,12 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
 
   const summaryTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
-      title: 'Сводное сравнение показателей',
+      title: t('roadAccidents.table.summaryComparison'),
       columns: [
-        { header: 'Показатель', ratio: 0.34 },
+        { header: t('roadAccidents.common.indicator'), ratio: 0.34 },
         { header: a.name, ratio: 0.22, align: 'right', mono: true },
         { header: b.name, ratio: 0.22, align: 'right', mono: true },
-        { header: 'Разница', ratio: 0.22, align: 'right', mono: true },
+        { header: t('roadAccidents.common.difference'), ratio: 0.22, align: 'right', mono: true },
       ],
       rows: data.summaryRows.map((row) => ({
         cells: [
@@ -234,19 +248,19 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
           kpiDelta(row.kind, row.valueB, row.valueA)?.text ?? '—',
         ],
       })),
-      note: 'Разница — отличие второй автоколонны от первой: для долей в п.п., для остальных в %.',
+      note: t('roadAccidents.pdf.note.difference'),
     })
 
   const worstDriversTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
-      title: 'Топ-10 водителей по числу ДТП (обе автоколонны)',
+      title: t('roadAccidents.table.topDriversBoth'),
       columns: [
         { header: '#', ratio: 0.05, mono: true },
-        { header: 'Водитель', ratio: 0.33 },
-        { header: 'Автоколонна', ratio: 0.2 },
-        { header: 'ДТП', ratio: 0.1, align: 'right', mono: true },
-        { header: 'Ущерб', ratio: 0.16, align: 'right', mono: true },
-        { header: 'Вина водителя', ratio: 0.16, align: 'right', mono: true },
+        { header: t('roadAccidents.common.driver'), ratio: 0.33 },
+        { header: t('roadAccidents.common.motorcade'), ratio: 0.2 },
+        { header: t('roadAccidents.common.accidents'), ratio: 0.1, align: 'right', mono: true },
+        { header: t('roadAccidents.common.damage'), ratio: 0.16, align: 'right', mono: true },
+        { header: t('roadAccidents.cause.driverFault'), ratio: 0.16, align: 'right', mono: true },
       ],
       rows: data.worstDrivers.map((row) => ({
         cells: [
@@ -262,14 +276,14 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
 
   return [
     reportHeader(doc, {
-      kicker: 'Дашборд ДТП · Аналитика',
-      title: `Сравнение: «${a.name}» и «${b.name}»`,
+      kicker: t('roadAccidents.pdf.kicker.analytics'),
+      title: t('roadAccidents.pdf.title.analytics', { a: a.name, b: b.name }),
       periodLabel,
       generatedAt: new Date(),
       filterLines: [
-        `Автоколонна 1: ${a.name}`,
-        `Автоколонна 2: ${b.name}`,
-        `Базы: ${input.firmNames.join(', ')}`,
+        t('roadAccidents.pdf.filter.motorcadeA', { name: a.name }),
+        t('roadAccidents.pdf.filter.motorcadeB', { name: b.name }),
+        t('roadAccidents.pdf.filter.bases', { bases: input.firmNames.join(', ') }),
         ...dataContextLines(input.context),
       ],
     }),
@@ -280,17 +294,17 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
     columns([causesTable, damageCard], [0.55, 0.45]),
     columns([averageCard, repeatDriversCard], [0.5, 0.5]),
     monthlyCard(
-      'Динамика ДТП по месяцам',
+      t('roadAccidents.chart.accidentsTrend'),
       (i) => [data.monthlyA[i]?.count ?? 0, data.monthlyB[i]?.count ?? 0],
       formatCountAxis
     ),
     monthlyCard(
-      'Динамика суммы ущерба по месяцам',
+      t('roadAccidents.chart.damageSumTrend'),
       (i) => [data.monthlyA[i]?.sumDamage ?? 0, data.monthlyB[i]?.sumDamage ?? 0],
       formatMoneyAxis
     ),
     monthlyCard(
-      'Динамика суммы возмещения по месяцам',
+      t('roadAccidents.chart.compensationSumTrend'),
       (i) => [data.monthlyA[i]?.sumCompensated ?? 0, data.monthlyB[i]?.sumCompensated ?? 0],
       formatMoneyAxis
     ),

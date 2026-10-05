@@ -12,6 +12,7 @@ import { OverviewKpiRow } from './ui/OverviewKpiRow'
 import { OverviewCharts } from './ui/OverviewCharts'
 import { OverviewTables } from './ui/OverviewTables'
 import { themeStore } from '@/shared/lib/theme/themeStore'
+import { t } from '@/shared/i18n'
 import styles from './OverviewPage.module.css'
 
 // Экран "Обзор" — компания целиком, по всем разрешённым базам и
@@ -52,17 +53,21 @@ export const OverviewPage = observer(function OverviewPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Сводка по автопарку"
-        title="Обзор"
-        meta={[formatPeriodLabel(period), 'Все автоколонны', ...(partialNote ? [partialNote] : [])]}
+        eyebrow={t('roadAccidents.overview.eyebrow')}
+        title={t('roadAccidents.nav.overview')}
+        meta={[
+          formatPeriodLabel(period),
+          t('roadAccidents.overview.allMotorcades'),
+          ...(partialNote ? [partialNote] : []),
+        ]}
       />
       <OverviewKpiRow data={data} period={period} />
-      <SectionDivider title="Динамика и структура" />
+      <SectionDivider title={t('roadAccidents.common.dynamicsAndStructure')} />
       {/* Цвета графиков — JS-константы (Recharts не читает CSS-переменные):
           при смене системной темы перемонтируются только графики, а не весь
           экран с развёрнутыми таблицами */}
       <OverviewCharts key={themeStore.theme} data={data} period={period} />
-      <SectionDivider title="Детализация" />
+      <SectionDivider title={t('roadAccidents.common.details')} />
       <OverviewTables data={data} period={period} />
     </div>
   )

@@ -7,6 +7,7 @@ import { StatusScreen } from '@/shared/ui/StatusScreen/StatusScreen'
 import { NoAccessPage } from '@/pages/no-access/NoAccessPage'
 import { DataErrorPage } from '@/pages/data-error/DataErrorPage'
 import { AppShell } from '@/widgets/app-shell/AppShell'
+import { t } from '@/shared/i18n'
 
 interface RequireAccidentsAccessProps {
   children?: ReactNode
@@ -52,8 +53,8 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
     return (
       <StatusScreen
         tone="loading"
-        title="Проверяем доступ"
-        message="Проверяем права на дашборд ДТП по каждой базе…"
+        title={t('roadAccidents.access.checkingTitle')}
+        message={t('roadAccidents.access.checkingMessage')}
         progress={null}
       />
     )
@@ -62,7 +63,9 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
   if (authStore.rightsCheckFailed) {
     return (
       <DataErrorPage
-        message={`Не удалось проверить доступ к базам (${authStore.rightsCheckErrors.join(', ')}). Проверьте соединение и повторите.`}
+        message={t('roadAccidents.access.checkFailed', {
+          bases: authStore.rightsCheckErrors.join(', '),
+        })}
         onRetry={() => void accidentsStore.retry()}
       />
     )
@@ -77,11 +80,14 @@ export const RequireAccidentsAccess = observer(function RequireAccidentsAccess({
     return (
       <StatusScreen
         tone="loading"
-        title="Загружаем данные"
+        title={t('roadAccidents.access.loadingTitle')}
         message={
           total > 0
-            ? `Загружено баз ${accidentsStore.loadedCount} из ${total}`
-            : 'Загружаем данные…'
+            ? t('roadAccidents.common.loadedBases', {
+                count: accidentsStore.loadedCount,
+                total: total,
+              })
+            : t('roadAccidents.access.loadingMessage')
         }
         progress={total > 0 ? accidentsStore.loadedCount / total : null}
       />

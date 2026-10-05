@@ -1,3 +1,4 @@
+import { t } from '@/shared/i18n'
 import styles from './ErrorState.module.css'
 
 interface ErrorStateProps {
@@ -7,7 +8,10 @@ interface ErrorStateProps {
 
 // Состояние ошибки. Кнопка "Повторить" показывается, только если передан
 // onRetry.
-export function ErrorState({ message = 'Не удалось загрузить данные', onRetry }: ErrorStateProps) {
+export function ErrorState({
+  message = t('roadAccidents.error.loadFailed'),
+  onRetry,
+}: ErrorStateProps) {
   return (
     <div className={styles.wrapper} role="status">
       <span className={styles.icon} aria-hidden="true">
@@ -28,7 +32,7 @@ export function ErrorState({ message = 'Не удалось загрузить �
       <p className={styles.message}>{message}</p>
       {onRetry && (
         <button className={styles.retry} type="button" onClick={onRetry}>
-          Повторить
+          {t('roadAccidents.common.retry')}
         </button>
       )}
     </div>

@@ -7,6 +7,7 @@ import {
   rowsWithCompensation,
   rowsWithDamage,
 } from '@/entities/accident/lib/metrics'
+import { t } from '@/shared/i18n'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { OverviewData, OverviewKpi } from '../model/overviewData'
 import styles from './OverviewKpiRow.module.css'
@@ -30,10 +31,13 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
     drilldownStore.open(`${title} — ${periodLabel}`, rows)
 
   const toMotorcade = {
-    label: 'переход к статистике по автоколонне',
+    label: t('roadAccidents.kpi.goToMotorcade'),
     onClick: () => navigate('/motorcade'),
   }
-  const toAnalytics = { label: 'переход к аналитике', onClick: () => navigate('/analytics') }
+  const toAnalytics = {
+    label: t('roadAccidents.kpi.goToAnalytics'),
+    onClick: () => navigate('/analytics'),
+  }
 
   const deltaLabel = comparisonLabel(data.comparison)
   const prev = <K extends keyof OverviewKpi>(key: K) => (previousKpi ? previousKpi[key] : undefined)
@@ -41,58 +45,60 @@ export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
   return (
     <div className={styles.row}>
       <KpiCard
-        label="Всего ДТП"
+        label={t('roadAccidents.kpi.totalAccidents')}
         value={kpi.count}
         kind="count"
         compareValue={prev('count')}
         deltaHigherIsBetter={false}
         deltaLabel={deltaLabel}
-        tooltip="Общее число ДТП за период"
-        onOpenList={() => open('Все ДТП', periodRows)}
+        tooltip={t('roadAccidents.kpi.hint.totalAccidents')}
+        onOpenList={() => open(t('roadAccidents.list.all'), periodRows)}
         navigate={toMotorcade}
       />
       <KpiCard
-        label="Общая сумма ущерба"
+        label={t('roadAccidents.kpi.totalDamage')}
         value={kpi.sumDamage}
         kind="currency"
         compareValue={prev('sumDamage')}
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
-        tooltip="Совокупный финансовый эффект ДТП — основа ремонтного бюджета"
-        onOpenList={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
+        tooltip={t('roadAccidents.kpi.hint.totalDamage')}
+        onOpenList={() => open(t('roadAccidents.list.withDamage'), rowsWithDamage(periodRows))}
         navigate={toAnalytics}
       />
       <KpiCard
-        label="Сумма возмещения"
+        label={t('roadAccidents.kpi.compensationSum')}
         value={kpi.sumCompensated}
         kind="currency"
         compareValue={prev('sumCompensated')}
         deltaLabel={deltaLabel}
-        tooltip="Сколько из ущерба фактически покрыто виновником/страховой"
-        onOpenList={() => open('ДТП с возмещением', rowsWithCompensation(periodRows))}
-        navigate={toAnalytics}
-      />
-      <KpiCard
-        label="Доля возмещения"
-        value={kpi.compensationShare}
-        kind="percent"
-        compareValue={prev('compensationShare')}
-        deltaLabel={deltaLabel}
-        tooltip="Возмещено ÷ ущерб. Низкое значение — сигнал юридическому отделу"
+        tooltip={t('roadAccidents.kpi.hint.compensationSum')}
         onOpenList={() =>
-          open('ДТП, возмещённые не полностью', rowsNotFullyCompensated(periodRows))
+          open(t('roadAccidents.list.withCompensation'), rowsWithCompensation(periodRows))
         }
         navigate={toAnalytics}
       />
       <KpiCard
-        label="Средний ущерб на 1 ДТП"
+        label={t('roadAccidents.kpi.compensationShare')}
+        value={kpi.compensationShare}
+        kind="percent"
+        compareValue={prev('compensationShare')}
+        deltaLabel={deltaLabel}
+        tooltip={t('roadAccidents.kpi.hint.compensationShare')}
+        onOpenList={() =>
+          open(t('roadAccidents.list.notFullyCompensated'), rowsNotFullyCompensated(periodRows))
+        }
+        navigate={toAnalytics}
+      />
+      <KpiCard
+        label={t('roadAccidents.kpi.averageDamage')}
         value={kpi.averageDamage}
         kind="currency"
         compareValue={prev('averageDamage')}
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
-        tooltip="Тяжесть одного инцидента: ущерб ÷ число ДТП с ущербом"
-        onOpenList={() => open('ДТП с ущербом', rowsWithDamage(periodRows))}
+        tooltip={t('roadAccidents.kpi.hint.averageDamage')}
+        onOpenList={() => open(t('roadAccidents.list.withDamage'), rowsWithDamage(periodRows))}
         navigate={toAnalytics}
       />
     </div>

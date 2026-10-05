@@ -1,12 +1,14 @@
+import { t } from '@/shared/i18n'
+
 export type CauseCategory =
   'underReview' | 'driverFault' | 'thirdPartyFault' | 'noDamage' | 'undetermined'
 
 export const CAUSE_CATEGORY_LABELS: Record<CauseCategory, string> = {
-  underReview: 'На рассмотрении',
-  driverFault: 'Вина водителя',
-  thirdPartyFault: 'Вина третьей стороны',
-  noDamage: 'Без повреждения',
-  undetermined: 'Виновный не определён',
+  underReview: t('roadAccidents.cause.underReview'),
+  driverFault: t('roadAccidents.cause.driverFault'),
+  thirdPartyFault: t('roadAccidents.cause.thirdPartyFault'),
+  noDamage: t('roadAccidents.cause.noDamage'),
+  undetermined: t('roadAccidents.cause.undetermined'),
 }
 
 const DRIVER_FAULT_CAUSE_IDS = new Set<number>([5])

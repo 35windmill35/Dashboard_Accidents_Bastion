@@ -5,6 +5,7 @@ import {
   getCurrencySymbol,
 } from '@/shared/lib/formatters'
 import { formatMonthShortLabel, ymToYear, type Period } from '@/entities/accident/lib/period'
+import { t } from '@/shared/i18n'
 import type { CauseSlice } from '@/entities/accident/lib/metrics'
 
 // Компактные подписи денежной оси: на графике не нужны полные суммы, иначе
@@ -28,11 +29,19 @@ export function formatMoneyAxis(value: number): string {
   if (value === 0) return withPdfCurrency('0')
   if (Math.abs(value) >= 1_000_000) {
     const millions = value / 1_000_000
-    return withPdfCurrency(`${formatNumber(millions, Number.isInteger(millions) ? 0 : 1)} млн`)
+    return withPdfCurrency(
+      t('roadAccidents.unit.millionValue', {
+        value: formatNumber(millions, Number.isInteger(millions) ? 0 : 1),
+      })
+    )
   }
   if (Math.abs(value) >= 1000) {
     const thousands = value / 1000
-    return withPdfCurrency(`${formatNumber(thousands, Number.isInteger(thousands) ? 0 : 1)} тыс`)
+    return withPdfCurrency(
+      t('roadAccidents.unit.thousandValue', {
+        value: formatNumber(thousands, Number.isInteger(thousands) ? 0 : 1),
+      })
+    )
   }
   return withPdfCurrency(formatNumber(value, 0))
 }
@@ -55,14 +64,19 @@ export function formatMonthAxisLabel(ym: number): string {
 // глаз", а пересказ чисел, которые уже показаны на графике. Общий для
 // "Обзора" и "Автоколонны" (см. buildOverviewReport/buildMotorcadeReport).
 export function causesNote(causeSlices: CauseSlice[], total: number): string {
-  if (total === 0) return 'За выбранный период ДТП не зарегистрировано.'
+  if (total === 0) return t('roadAccidents.pdf.insight.noAccidents')
 
   const top = [...causeSlices].sort((a, b) => b.count - a.count)[0]
-  if (!top || top.count === 0) return 'Причины ДТП за период не классифицированы.'
+  if (!top || top.count === 0) return t('roadAccidents.pdf.insight.causesUnclassified')
   if (top.count === total) {
-    return `Все ДТП периода отнесены к категории «${top.label}» — 100% случаев.`
+    return t('roadAccidents.pdf.insight.singleCause', { category: top.label })
   }
-  return `Больше всего ДТП в категории «${top.label}» — ${formatNumber(top.count)} из ${formatNumber(total)} (${formatPercent(top.count / total)}).`
+  return t('roadAccidents.pdf.insight.topCause', {
+    category: top.label,
+    count: formatNumber(top.count),
+    total: formatNumber(total),
+    share: formatPercent(top.count / total),
+  })
 }
 
 // Часть имени файла dtp-<экран>-<период>-<YYYYMMDD-HHmm>.pdf, отвечающая за

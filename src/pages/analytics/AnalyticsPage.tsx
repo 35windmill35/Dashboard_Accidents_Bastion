@@ -16,6 +16,7 @@ import { AnalyticsKpiGroups } from './ui/AnalyticsKpiGroups'
 import { AnalyticsCharts } from './ui/AnalyticsCharts'
 import { AnalyticsTables } from './ui/AnalyticsTables'
 import { themeStore } from '@/shared/lib/theme/themeStore'
+import { t } from '@/shared/i18n'
 import styles from './AnalyticsPage.module.css'
 
 interface AnalyticsSnapshot {
@@ -83,7 +84,7 @@ export const AnalyticsPage = observer(function AnalyticsPage() {
   if (!snapshot) {
     return (
       <div className={styles.page}>
-        <ErrorState message="Для сравнения нужно как минимум две автоколонны с ДТП в загруженных данных" />
+        <ErrorState message={t('roadAccidents.analytics.notEnoughMotorcades')} />
       </div>
     )
   }
@@ -93,12 +94,15 @@ export const AnalyticsPage = observer(function AnalyticsPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        eyebrow="Сравнительная аналитика"
-        title="Аналитика"
-        meta={[formatPeriodLabel(period), `${data.a.name} и ${data.b.name}`]}
+        eyebrow={t('roadAccidents.analytics.eyebrow')}
+        title={t('roadAccidents.nav.analytics')}
+        meta={[
+          formatPeriodLabel(period),
+          t('roadAccidents.analytics.pair', { a: data.a.name, b: data.b.name }),
+        ]}
       />
       <AnalyticsKpiGroups key={themeStore.theme} data={data} period={period} />
-      <SectionDivider title="Динамика и структура" />
+      <SectionDivider title={t('roadAccidents.common.dynamicsAndStructure')} />
       {/* Цвета графиков — JS-константы (Recharts не читает CSS-переменные):
           при смене системной темы перемонтируются только графики, а не весь
           экран с развёрнутыми таблицами */}
@@ -109,7 +113,7 @@ export const AnalyticsPage = observer(function AnalyticsPage() {
         rowsA={rowsA}
         rowsB={rowsB}
       />
-      <SectionDivider title="Детализация" />
+      <SectionDivider title={t('roadAccidents.common.details')} />
       <AnalyticsTables data={data} period={period} />
     </div>
   )

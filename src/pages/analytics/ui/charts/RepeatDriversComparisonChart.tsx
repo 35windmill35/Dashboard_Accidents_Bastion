@@ -24,6 +24,7 @@ import { ChartCard, type ChartDataTable } from '@/widgets/chart-card/ChartCard'
 import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors'
 import { formatNumber } from '@/shared/lib/formatters'
 import { CATEGORY_AXIS_HEIGHT, CHART_MARGIN } from '@/shared/lib/rechartsHelpers'
+import { t } from '@/shared/i18n'
 import type { AnalyticsData } from '../../model/analyticsData'
 
 interface Props {
@@ -47,15 +48,15 @@ export function RepeatDriversComparisonChart({ data }: Props) {
   ]
 
   const table: ChartDataTable = {
-    columns: ['Автоколонна', 'Водителей с ≥3 ДТП'],
+    columns: [t('roadAccidents.common.motorcade'), t('roadAccidents.chart.repeatDriversShort')],
     rows: chartData.map((p) => [p.name, formatNumber(p.count)]),
   }
 
   return (
     <ChartCard
       table={table}
-      title="Водителей с 3 и более ДТП"
-      subtitle={'Число водителей за период'}
+      title={t('roadAccidents.chart.repeatDrivers')}
+      subtitle={t('roadAccidents.chart.repeatDriversSubtitle')}
     >
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chartData} margin={CHART_MARGIN}>
@@ -71,7 +72,7 @@ export function RepeatDriversComparisonChart({ data }: Props) {
             maxBarSize={BAR_SIZE_SINGLE}
             {...ANIMATION}
             dataKey="count"
-            name="Водителей"
+            name={t('roadAccidents.common.drivers')}
             radius={BAR_RADIUS}
           >
             {chartData.map((point) => (

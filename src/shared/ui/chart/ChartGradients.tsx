@@ -1,13 +1,11 @@
-// Градиентные заливки графиков по эталону. Кладутся в <defs> внутри
-// графика Recharts; id — уникальный на экземпляр графика (useId).
+// Градиентные заливки графиков; id уникален на экземпляр графика
 
 interface GradientProps {
   id: string
   color: string
 }
 
-// Заливка под линией: цвет серии сверху → прозрачный к оси. При двух
-// сериях заливка слабее, чтобы области не перекрывали друг друга.
+// При двух сериях заливка слабее
 export function AreaGradient({ id, color, strong = true }: GradientProps & { strong?: boolean }) {
   return (
     <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
@@ -17,7 +15,6 @@ export function AreaGradient({ id, color, strong = true }: GradientProps & { str
   )
 }
 
-// Заливка столбца по эталону: насыщенный верх → почти прозрачное основание
 export function BarGradient({ id, color }: GradientProps) {
   return (
     <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">

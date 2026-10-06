@@ -4,19 +4,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
 import { parsePeriodParam, periodToParam } from '@/entities/accident/lib/period'
 
-// Синхронизация фильтров с query-строкой hash-роутера, чтобы
-// ссылку на конкретный срез можно было переслать:
-//   #/?period=2026-08
-//   #/motorcade?period=2026-Q3&motorcade=0:1
-//   #/analytics?period=2026&a=0:1&b=1:4
-//
-// Направления:
-// - URL → стор: при открытии ссылки и навигации. Отсутствующий параметр
-//   стор не трогает — поэтому период сохраняется при смене экрана, а
-//   автоколонны у каждого экрана свои.
-// - стор → URL: при любой смене фильтра (replace, без новой записи в
-//   истории). Пишутся эффективные значения — то, что реально на экране.
-// Чужие параметры (например DB_GUID) сохраняются.
+// Синхронизация фильтров с query-строкой: #/motorcade?period=2026-Q3&motorcade=0:1.
+// Пишутся эффективные значения, чужие параметры (DB_GUID) сохраняются.
 
 const PARAM_PERIOD = 'period'
 const PARAM_MOTORCADE = 'motorcade'
@@ -63,13 +52,12 @@ export function useFiltersUrlSync(): void {
   const navigate = useNavigate()
   const lastWrittenSearch = useRef<string | null>(null)
 
-  // URL → стор (кроме случая, когда URL только что записали мы сами)
+  // Кроме URL, который только что записали сами
   useEffect(() => {
     if (location.search === lastWrittenSearch.current) return
     applyUrlToStore(location.pathname, new URLSearchParams(location.search))
   }, [location.pathname, location.search])
 
-  // стор → URL
   useEffect(
     () =>
       reaction(

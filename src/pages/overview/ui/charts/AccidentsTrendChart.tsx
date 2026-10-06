@@ -44,7 +44,6 @@ interface DotProps {
   onPointClick: (ym: number) => void
 }
 
-// Точка графика кликабельна — открывает детализацию за этот месяц.
 function TrendDot({ cx, cy, payload, onPointClick }: DotProps) {
   if (cx === undefined || cy === undefined || !payload) return null
   return (
@@ -61,8 +60,6 @@ function TrendDot({ cx, cy, payload, onPointClick }: DotProps) {
   )
 }
 
-// Динамика ДТП по месяцам — всегда 12 месяцев, заканчивая выбранным
-// периодом (см. getTrendMonths).
 export function AccidentsTrendChart({ data }: Props) {
   const gradientId = useGradientId()
   const chartData: TrendPoint[] = data.monthlyCounts.map((m) => ({
@@ -71,7 +68,6 @@ export function AccidentsTrendChart({ data }: Props) {
     count: m.count,
   }))
 
-  // Клик по точке — период дашборда = этот месяц
   const handleClick = (ym: number) => filtersStore.setPeriod({ mode: 'month', value: ym })
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))

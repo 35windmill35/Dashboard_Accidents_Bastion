@@ -7,16 +7,14 @@ import { t } from '@/shared/i18n'
 import styles from './CauseDonut.module.css'
 
 interface CauseDonutProps {
-  // Только категории с ДТП (count > 0)
   slices: CauseSlice[]
-  // Клик по сектору или строке списка — детализация этой категории
   onSelect: (slice: CauseSlice) => void
 }
 
 const RING_SIZE = 200
 const RING_THICKNESS = 14
 
-// Сокращения категорий для центра кольца (полное название — в списке)
+// Сокращения для центра кольца
 const SHORT_LABELS: Record<CauseSlice['category'], string> = {
   driverFault: t('roadAccidents.cause.driverFault'),
   thirdPartyFault: t('roadAccidents.cause.short.thirdPartyFault'),
@@ -25,11 +23,7 @@ const SHORT_LABELS: Record<CauseSlice['category'], string> = {
   underReview: t('roadAccidents.cause.underReview'),
 }
 
-// Структура причин ДТП по эталону: тонкое кольцо с итогом в центре и
-// список категорий справа (доля, число ДТП, полоска доли). Список — и
-// легенда, и подписи значений: цвет не единственный носитель смысла.
-// Наведение на сектор или строку подсвечивает пару и показывает долю
-// категории в центре; клик — таблица ДТП этой категории.
+// Список справа — и легенда, и подписи значений
 export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
   const [hovered, setHovered] = useState<number | null>(null)
   const total = slices.reduce((sum, slice) => sum + slice.count, 0)
@@ -40,7 +34,6 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
       <div className={styles.ring}>
         <span className={styles.orbit} aria-hidden="true" />
         <PieChart width={RING_SIZE} height={RING_SIZE}>
-          {/* Дорожка под сектором — видна в зазорах между категориями */}
           <Pie
             data={[{ value: 1 }]}
             dataKey="value"

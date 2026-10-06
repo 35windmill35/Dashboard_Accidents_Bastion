@@ -1,6 +1,4 @@
-// Promise.allSettled с ограничением числа одновременно летящих промисов —
-// свой воркер-пул фиксированного размера, готовой библиотеки вроде p-limit
-// в проекте нет.
+// Promise.allSettled с ограничением параллельности
 export async function mapWithConcurrencyLimit<T, R>(
   items: readonly T[],
   limit: number,

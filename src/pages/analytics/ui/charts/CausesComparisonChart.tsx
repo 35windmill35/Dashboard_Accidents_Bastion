@@ -25,9 +25,7 @@ interface Props {
   period: Period
 }
 
-// Доли причин ДТП двух автоколонн бок о бок — категории на оси X,
-// проценты (не абсолютные числа), чтобы автоколонны разного размера были
-// сравнимы.
+// Доли, а не абсолютные числа — сравнимо для автоколонн разного размера
 export function CausesComparisonChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)

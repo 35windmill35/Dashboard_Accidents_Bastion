@@ -1,6 +1,5 @@
 .row {
   display: grid;
-  /* 5 карточек в ряд на широком экране, дальше — сколько помещается (как в эталоне) */
   grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
   gap: var(--space-3);
 }

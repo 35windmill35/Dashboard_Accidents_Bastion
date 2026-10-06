@@ -1,16 +1,8 @@
 import { t } from '@/shared/i18n'
 import type { AccidentRow } from '../model/types'
 
-// Разбор строки ответа DashboardAccidentStat. Всё, что дальше считает
-// дашборд, доверяет типам AccidentRow, поэтому приведение делается один раз
-// на входе:
-// - числа, пришедшие строками ("1500", "1 500,50"), становятся числами —
-//   иначе сумма склеивается как строка;
-// - строки обрезаются по краям (в справочниках встречаются хвостовые
-//   пробелы), пустые становятся null;
-// - строка без ACCIDENT_ID или с некорректной датой отбрасывается: такая
-//   запись попала бы в несуществующий период ("5 квартал", "? 19") или
-//   сдвинула период по умолчанию (опечатка 2062 год).
+// Разбор строки ответа: числа-строки → числа, trim строк,
+// строки без ID или с некорректной датой отбрасываются.
 
 export type RejectReason = 'notObject' | 'noId' | 'badDate' | 'futureDate'
 
@@ -64,7 +56,6 @@ const STRING_FIELDS = [
   'ACCIDENT_VICTIM',
 ] as const
 
-// Самая ранняя правдоподобная дата ДТП в учётной системе
 const MIN_YEAR = 1990
 
 export function toNumberOrNull(value: unknown): number | null {
@@ -89,8 +80,7 @@ function toBoolean(value: unknown): boolean | undefined {
   return undefined
 }
 
-// Дата ДТП должна начинаться с настоящей календарной даты YYYY-MM-DD и быть
-// не позже завтрашнего дня (запас на разницу часовых поясов с сервером).
+// Не позже завтра — запас на разницу часовых поясов
 export function validateAccidentDate(
   value: string | null,
   today: Date = new Date()

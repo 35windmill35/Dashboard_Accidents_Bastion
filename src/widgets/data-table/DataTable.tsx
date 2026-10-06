@@ -7,19 +7,12 @@ export interface DataTableColumn<T> {
   label: string
   render: (row: T) => ReactNode
   align?: 'left' | 'center' | 'right'
-  // Колонка, забирающая всю оставшуюся ширину (имя, категория) — как
-  // minmax(0,1fr) в сетке эталона. Длинный текст в ней обрезается
-  // многоточием (или переносится, см. wrap). Остальные колонки — ровно по
-  // ширине своего содержимого, числа не обрезаются никогда.
+  // Колонка забирает оставшуюся ширину, длинный текст — с многоточием
   grow?: boolean
-  // Второстепенная колонка (автоколонна, разница) — приглушённый цвет
   dim?: boolean
-  // Текст переносится по словам вместо многоточия — для коротких списков с
-  // длинными подписями (категории причин, показатели), где обрезанная
-  // подпись теряет смысл
+  // Перенос по словам вместо многоточия
   wrap?: boolean
-  // Полный текст ячейки для всплывающей подсказки, когда он может не
-  // поместиться (обрезается многоточием)
+  // Подсказка с полным текстом ячейки
   title?: (row: T) => string
 }
 
@@ -46,8 +39,6 @@ interface DataTableProps<T> {
   getRowKey: (row: T) => string
   initialLimit?: number
   onRowClick?: (row: T) => void
-  // Колонка «#» с местом в рейтинге («01», «02»…; первые три — акцентом),
-  // как у топов водителей и автобусов в эталоне
   showRank?: boolean
 }
 
@@ -57,10 +48,7 @@ function formatRank(index: number): string {
   return String(index + 1).padStart(2, '0')
 }
 
-// Топ-N по умолчанию, "Показать все" разворачивает в полный список с
-// пагинацией — переиспользуется на всех трёх экранах. Оформление — по
-// эталону: заголовки капсом, числа моноширинными цифрами, строка
-// подсвечивается при наведении, если по ней есть детализация.
+// Топ-N, «Показать все» — полный список с пагинацией
 export function DataTable<T>({
   title,
   columns,
@@ -74,15 +62,13 @@ export function DataTable<T>({
   const [page, setPage] = useState(0)
 
   const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  // После смены периода строк может стать меньше — номер страницы
-  // ограничивается сверху, иначе «Страница 5 из 2» и пустая таблица
+  // После смены данных страниц может стать меньше
   const currentPage = Math.min(page, totalPages - 1)
   const visibleRows = expanded ? rows : rows.slice(0, initialLimit)
   const pageOffset = expanded ? currentPage * PAGE_SIZE : 0
   const pageRows = expanded ? visibleRows.slice(pageOffset, pageOffset + PAGE_SIZE) : visibleRows
   const canExpand = rows.length > initialLimit
 
-  // Строка с детализацией открывается и с клавиатуры (Tab → Enter/Пробел)
   const handleRowKeyDown = (event: KeyboardEvent<HTMLTableRowElement>, row: T) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault()

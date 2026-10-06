@@ -1,15 +1,11 @@
 import styles from './PageHeader.module.css'
 
 interface PageHeaderProps {
-  // Надзаголовок-раздел капсом над заголовком
   eyebrow: string
   title: string
-  // Мелкие пояснения справа (период, охват), разделяются точкой
   meta?: string[]
 }
 
-// Заголовок экрана по эталону: надзаголовок акцентным цветом, крупный
-// заголовок (шрифт --font-display) и справа — период и охват данных.
 export function PageHeader({ eyebrow, title, meta = [] }: PageHeaderProps) {
   return (
     <div className={styles.header}>

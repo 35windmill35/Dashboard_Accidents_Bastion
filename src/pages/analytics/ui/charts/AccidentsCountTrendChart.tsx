@@ -35,8 +35,6 @@ interface Props {
   rowsB: AccidentRow[]
 }
 
-// Динамика количества ДТП по месяцам — две линии (по автоколонне), общая
-// ось X (data.trendMonths, см. analyticsData.ts).
 export function AccidentsCountTrendChart({ data, rowsA, rowsB }: Props) {
   const gradientId = useGradientId()
   const chartData = data.trendMonths.map((ym, index) => ({

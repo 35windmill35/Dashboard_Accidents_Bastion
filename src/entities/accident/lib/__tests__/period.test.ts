@@ -31,7 +31,6 @@ describe('период сравнения', () => {
 
   it('текущий квартал — по дням от начала квартала', () => {
     const comparison = getPeriodComparison({ mode: 'quarter', value: 20263 }, today)
-    // 1 июля — 24 сентября: 86 дней
     expect(comparison.elapsedDays).toBe(86)
     expect(isInComparisonWindow(row({ ACCIDENT_DATE: '2026-06-24' }), comparison)).toBe(true)
     expect(isInComparisonWindow(row({ ACCIDENT_DATE: '2026-06-26' }), comparison)).toBe(false)

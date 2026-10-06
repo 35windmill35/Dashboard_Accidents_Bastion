@@ -20,9 +20,7 @@ from fontTools.ttLib import TTFont
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "src/features/pdf-report/lib/fonts"
 
-# Латиница с Latin-1, кириллица (U+0400–U+045F, Ґґ), казахские буквы
-# (Ә Ғ Қ Ң Ө Ұ Ү Һ І — в ФИО и адресах, напр. «Летайұлы»), тенге, №,
-# типографская пунктуация.
+# Латиница, кириллица, казахские буквы, тенге, №, пунктуация
 KAZAKH = "ӘәҒғҚқҢңӨөҰұҮүҺһІі"
 UNICODES = (
     list(range(0x20, 0x7F))
@@ -68,8 +66,7 @@ def build(source: str, const_name: str, style: str, tabular: bool) -> set[int]:
     if tabular:
         freeze_tnum(font)
     options = subset.Options()
-    # jsPDF не применяет OpenType-фичи (кернинг, лигатуры) — таблицы
-    # GSUB/GPOS/GDEF только раздували бы файл
+    # jsPDF не применяет OpenType-фичи
     options.layout_features = []
     options.drop_tables += ["GSUB", "GPOS", "GDEF", "STAT"]
     options.name_IDs = ["*"]

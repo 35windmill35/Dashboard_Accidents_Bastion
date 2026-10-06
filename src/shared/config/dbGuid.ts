@@ -1,8 +1,4 @@
-// DB_GUID приходит в адресной строке (до хэша или внутри hash-query) и
-// запоминается в localStorage, чтобы не потеряться при переходе на /login
-// без этого параметра. Новый GUID из ссылки всегда перезаписывает старый.
-//
-// Ключ отдельный от дашборда «Точки роста» — см. shared/api/session.ts.
+// DB_GUID из ссылки сохраняется, чтобы не потеряться при переходе на /login
 const DB_GUID_STORAGE_KEY = 'road_accidents_db_guid'
 
 function readFromLocation(): string | null {
@@ -20,13 +16,11 @@ function readFromLocation(): string | null {
 export function getDbGuidFromUrl(): string | null {
   const fromUrl = readFromLocation()
 
-  // Хранилище может быть запрещено (приватный режим, политика браузера) —
-  // тогда GUID живёт только пока он есть в адресной строке.
   if (fromUrl) {
     try {
       localStorage.setItem(DB_GUID_STORAGE_KEY, fromUrl)
     } catch {
-      // не сохранили — не страшно, вход всё равно пойдёт с GUID из ссылки
+      // хранилище недоступно
     }
     return fromUrl
   }

@@ -9,8 +9,7 @@ export type Period =
   | { mode: 'year'; value: number } // YYYY
   | { mode: 'all' }
 
-// Названия месяцев — общие ключи translation.json (month_0…month_11 и
-// short.month_0…), месяц на входе — 1…12
+// month — 1…12
 function monthName(month: number, short = false): string {
   const key = `${short ? 'short.' : ''}month_${month - 1}`
   return hasTranslation(key) ? t(key) : '?'
@@ -18,10 +17,7 @@ function monthName(month: number, short = false): string {
 
 const QUARTER_ROMAN = ['I', 'II', 'III', 'IV']
 
-// ACCIDENT_DATE — ISO-строка, берём год и месяц напрямую из символов,
-// не через Date (часовой пояс браузера не должен сдвигать дату на сутки).
-// Строки с некорректной датой отбрасываются ещё при загрузке (parseRow),
-// здесь 0 — только защита от пустого значения.
+// Год и месяц из символов строки, без Date
 export function accidentDateToYm(dateStr: string | null | undefined): number {
   if (!dateStr || dateStr.length < 7) return 0
   const year = Number(dateStr.slice(0, 4))
@@ -104,8 +100,6 @@ export function getAvailableQuarters(rows: AccidentRow[]): number[] {
   return Array.from(quarters).sort((a, b) => b - a)
 }
 
-// Период для сравнения дельты KPI — предыдущий месяц/квартал/год. Для
-// "весь период" сравнивать не с чем.
 export function getPreviousPeriod(period: Period): Period | null {
   if (period.mode === 'all') return null
   if (period.mode === 'year') return { mode: 'year', value: period.value - 1 }
@@ -119,15 +113,12 @@ export function getPreviousPeriod(period: Period): Period | null {
   return { mode: 'month', value: ymAddMonths(period.value, -1) }
 }
 
-// Графики "по месяцам" всегда показывают 12 месяцев, заканчивая выбранным
-// периодом — год даёт янв-дек этого года, весь период — непрерывную шкалу
-// от первого до последнего месяца с данными (пустые месяцы — нули, а не
-// пропуск точки).
+// 12 месяцев до конца выбранного периода; «весь период» — непрерывная шкала
 export function getTrendMonths(period: Period, rows: AccidentRow[]): number[] {
   if (period.mode === 'all') {
     const months = rows.map((row) => accidentDateToYm(row.ACCIDENT_DATE)).filter(Boolean)
     if (months.length === 0) return []
-    // reduce, а не Math.min(...): на сотнях тысяч строк spread переполняет стек
+    // reduce вместо Math.min(...): spread на больших массивах переполняет стек
     const first = months.reduce((min, ym) => (ym < min ? ym : min))
     const last = months.reduce((max, ym) => (ym > max ? ym : max))
     const result: number[] = []
@@ -149,10 +140,7 @@ export function getTrendMonths(period: Period, rows: AccidentRow[]): number[] {
   return Array.from({ length: 12 }, (_, i) => ymAddMonths(endYm, i - 11))
 }
 
-// Незавершённый период (текущий месяц/квартал/год) нельзя сравнивать с
-// полным предыдущим: 24 сентября "−60% ДТП к августу" — это не улучшение,
-// а просто неполный месяц. Поэтому для текущего периода предыдущий
-// берётся за то же число дней от начала.
+// Текущий период сравнивается с тем же числом дней предыдущего
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -184,11 +172,9 @@ function todayAsPeriodValue(mode: Exclude<PeriodMode, 'all'>, today: Date): numb
 }
 
 export interface PeriodComparison {
-  // Период, с которым сравниваются KPI (null — сравнивать не с чем)
   previous: Period | null
-  // Выбранный период ещё идёт — сравнение по первым elapsedDays дням
   isPartial: boolean
-  // Сколько дней периода прошло, включая сегодня (только для isPartial)
+  // Включая сегодня
   elapsedDays: number | null
 }
 
@@ -204,8 +190,6 @@ export function getPeriodComparison(period: Period, today: Date = new Date()): P
   return { previous, isPartial: true, elapsedDays }
 }
 
-// Строка попадает в сравнение: в предыдущем периоде и (для незавершённого
-// текущего) не дальше того же числа дней от его начала.
 export function isInComparisonWindow(row: AccidentRow, comparison: PeriodComparison): boolean {
   const { previous, isPartial, elapsedDays } = comparison
   if (!previous || !isInPeriod(row, previous)) return false
@@ -215,22 +199,18 @@ export function isInComparisonWindow(row: AccidentRow, comparison: PeriodCompari
   return date - periodStartUtc(previous) < elapsedDays * DAY_MS
 }
 
-// Подпись к дельте KPI — короткая, чтобы влезать в одну строку карточки;
-// за сколько дней идёт сравнение, пишет partialPeriodNote в шапке
 export function comparisonLabel(comparison: PeriodComparison): string {
   return comparison.isPartial
     ? t('roadAccidents.period.vsSameDays')
     : t('roadAccidents.period.vsPrevious')
 }
 
-// Пометка для шапки экрана и PDF
 export function partialPeriodNote(comparison: PeriodComparison): string | null {
   if (!comparison.isPartial || comparison.elapsedDays === null) return null
   return t('roadAccidents.period.partialNote', { days: comparison.elapsedDays })
 }
 
-// Доступные значения периода для режима — по убыванию (первый — самый
-// свежий). Для 'all' значений нет.
+// По убыванию
 export function getAvailablePeriodValues(mode: PeriodMode, rows: AccidentRow[]): number[] {
   if (mode === 'month') return getAvailableMonths(rows)
   if (mode === 'quarter') return getAvailableQuarters(rows)
@@ -238,7 +218,7 @@ export function getAvailablePeriodValues(mode: PeriodMode, rows: AccidentRow[]):
   return []
 }
 
-// Период в query-строке ссылки: "2026-08", "2026-Q3", "2026", "all".
+// "2026-08", "2026-Q3", "2026", "all"
 export function periodToParam(period: Period): string {
   if (period.mode === 'all') return 'all'
   if (period.mode === 'year') return String(period.value)

@@ -30,7 +30,6 @@ function formatDateTime(date: Date): string {
   }).format(date)
 }
 
-// Строки шапки об актуальности и полноте данных
 export function dataContextLines(context: ReportDataContext): string[] {
   const lines: string[] = []
   if (context.loadedAt)
@@ -62,9 +61,7 @@ export interface ReportHeaderMeta {
 
 const HEADER_RULE_GAP = 8
 
-// Шапка отчёта: слева рубрика и название, справа период, дата формирования и
-// применённые фильтры. Идентификации пользователя в шапке нет — решение
-// заказчика.
+// Идентификации пользователя в шапке нет — решение заказчика
 export function reportHeader(doc: jsPDF, meta: ReportHeaderMeta): BlockFactory {
   return (x, width) => {
     const rightLines = [
@@ -81,15 +78,12 @@ export function reportHeader(doc: jsPDF, meta: ReportHeaderMeta): BlockFactory {
     return {
       height,
       draw: (y) => {
-        // Надзаголовок акцентным цветом капсом — как на экранах дашборда
         drawText(doc, meta.kicker.toUpperCase(), x, y + 8, {
           size: 6.2,
           color: COLOR.accent,
           charSpace: 1.3,
         })
-        // fitText — заголовок не всегда короткая константа (напр. на
-        // "Автоколонне" в него подставляется имя автоколонны), поэтому он не
-        // должен наезжать на период/фильтры справа.
+        // Название с именем автоколонны может быть длинным
         const titleStyle: TextStyle = { weight: 'bold', size: 17, color: COLOR.title }
         drawText(doc, fitText(doc, meta.title, width * 0.6, titleStyle), x, y + 29, titleStyle)
 
@@ -109,8 +103,6 @@ export function reportHeader(doc: jsPDF, meta: ReportHeaderMeta): BlockFactory {
           })
         })
 
-        // Разделитель под шапкой: тонкая линия во всю ширину и короткий
-        // акцентный отрезок слева
         const ruleY = y + contentHeight + HEADER_RULE_GAP
         drawLine(doc, x, ruleY, x + width, ruleY, COLOR.line, 0.8)
         drawLine(doc, x, ruleY, x + 56, ruleY, COLOR.accent, 1.6)
@@ -129,8 +121,7 @@ export interface KpiCardData {
 const KPI_HEIGHT = 56
 const KPI_GAP = 7
 
-// Подбирает кегль так, чтобы длинная сумма или подпись не выехала за
-// карточку — резать их многоточием хуже, чем уменьшить на пол-пункта.
+// Уменьшаем кегль вместо обрезки многоточием
 function fitFontSize(
   doc: jsPDF,
   text: string,
@@ -149,8 +140,7 @@ function fitFontSize(
   return size
 }
 
-// slots — на сколько карточек рассчитана ширина ряда: неполный второй ряд
-// выравнивается по сетке первого, а не растягивается
+// slots — ширина по сетке первого ряда
 export function kpiRow(doc: jsPDF, cards: KpiCardData[], slots = cards.length): BlockFactory {
   return (x, width) => {
     const columnsCount = Math.max(slots, cards.length)
@@ -161,8 +151,6 @@ export function kpiRow(doc: jsPDF, cards: KpiCardData[], slots = cards.length): 
       draw: (y) => {
         cards.forEach((data, index) => {
           const cardX = x + index * (cardWidth + KPI_GAP)
-          // Карточка как на экране: светлая подложка, тонкая рамка,
-          // скруглённые углы; подпись обычным регистром, крупное число
           drawRect(doc, cardX, y, cardWidth, KPI_HEIGHT, {
             fill: COLOR.surface,
             stroke: COLOR.line,
@@ -214,8 +202,7 @@ export function kpiRow(doc: jsPDF, cards: KpiCardData[], slots = cards.length): 
 const NOTICE_PAD_X = 10
 const NOTICE_LINE = 9.5
 
-// Плашка-предупреждение во всю ширину: заголовок и пункты с переносом.
-// Используется для баннера о сопоставимости на "Аналитике".
+// Используется для баннера сопоставимости «Аналитики»
 export function noticeBlock(doc: jsPDF, title: string, lines: string[]): BlockFactory {
   return (x, width) => {
     const style: TextStyle = { size: 7, color: COLOR.ink }

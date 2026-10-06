@@ -1,7 +1,5 @@
 import type { SVGProps } from 'react'
 
-// Инлайн-иконки для навигации и шапки — без сторонней иконочной библиотеки,
-// в стиле эталона: тонкий штрих (1.6–1.7), stroke=currentColor.
 interface IconProps {
   size?: number
 }
@@ -73,7 +71,6 @@ export function IconRefresh({ size = 15 }: IconProps) {
   )
 }
 
-// Документ со стрелкой «скачать» — кнопка PDF-отчёта
 export function IconPdf({ size = 15 }: IconProps) {
   return (
     <svg {...base(size)}>

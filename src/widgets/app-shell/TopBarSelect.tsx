@@ -3,14 +3,11 @@ import { IconChevronDown } from './icons'
 import styles from './AppTopBar.module.css'
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-  // Цветная точка слева — цвет серии автоколонны на графиках «Аналитики»
   dotColor?: string
   children: ReactNode
 }
 
-// Нативный <select> (клавиатура, скринридер, мобильный выбор — как было),
-// оформленный по эталону: своя стрелка вместо системной, опционально —
-// цветная точка серии.
+// Нативный <select> со своей стрелкой
 export function TopBarSelect({ dotColor, className, children, ...selectProps }: SelectProps) {
   return (
     <div className={styles.selectWrap}>

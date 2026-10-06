@@ -1,7 +1,4 @@
-/* KPI-карточка по эталону: градиентная поверхность, крупное число,
-   чип дельты. Карточка — контейнер запросов (container-type), чтобы
-   размер числа подстраивался под ширину самой карточки, а не экрана:
-   длинная сумма в тенге в узкой карточке мельчает, а не переносится. */
+/* container-type — размер числа подстраивается под ширину карточки */
 .card {
   position: relative;
   container-type: inline-size;
@@ -19,7 +16,6 @@
   animation: card-in 0.75s var(--ease-out) backwards;
 }
 
-/* Появление карточек «лесенкой», как в эталоне */
 .card:nth-child(2) {
   animation-delay: 45ms;
 }
@@ -49,7 +45,6 @@
   }
 }
 
-/* Карточка подсвечивается и приподнимается, когда по ней есть что нажать */
 .card:has(.mainButton:hover),
 .card:has(.mainButton:focus-visible),
 .card:has(.mainClickable:hover) {
@@ -58,7 +53,6 @@
   box-shadow: var(--shadow-lift);
 }
 
-/* Область карточки: у карточки с переходом — <button>, без него — <div> */
 .main {
   flex: 1;
   display: flex;
@@ -81,7 +75,6 @@
 }
 
 .mainButton:focus-visible {
-  /* кольцо по всей карточке, а не по тексту внутри */
   outline: none;
 }
 
@@ -95,8 +88,7 @@
   line-height: 16px;
   color: var(--color-text-secondary);
   text-wrap: pretty;
-  /* место под кнопку в углу; высота в две строки — числа во всех карточках
-     ряда стоят на одной линии, даже если подпись одной из них переносится */
+  /* Высота в две строки — числа соседних карточек на одной линии */
   padding-right: 36px;
   min-height: 32px;
 }
@@ -147,7 +139,6 @@
   color: var(--color-negative);
 }
 
-/* Кнопка «таблица ДТП» — маленький квадрат в правом верхнем углу */
 .listButton {
   position: absolute;
   top: 16px;
@@ -180,8 +171,6 @@
   outline-offset: 2px;
 }
 
-/* Уменьшенная карточка («Аналитика», 8 в ряд): меньше отступы, подпись
-   до трёх строк, число мельче */
 .compact .main {
   gap: 10px;
   padding: 14px 14px 12px;

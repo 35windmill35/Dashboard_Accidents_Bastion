@@ -1,8 +1,6 @@
 import { t } from '@/shared/i18n'
 import { ApiError } from './httpClient'
 
-// Тексты по умолчанию для случаев, когда у ошибки нет собственного
-// сообщения от сервера.
 const STATUS_MESSAGES: Record<number, string> = {
   400: t('roadAccidents.error.status.400'),
   401: t('roadAccidents.error.status.401'),
@@ -23,7 +21,6 @@ export interface ErrorMessageOptions {
   statusMessages?: Record<number, string>
 }
 
-// Превращает пойманную ошибку в понятный пользователю текст.
 export function getErrorMessage(err: unknown, options: ErrorMessageOptions = {}): string {
   const { fallback = t('error.unknown'), statusMessages = {} } = options
 

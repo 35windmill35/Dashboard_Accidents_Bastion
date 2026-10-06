@@ -25,8 +25,6 @@ interface Props {
   period: Period
 }
 
-// Сумма ущерба/возмещения по категориям причин — одна ось, обе величины в
-// тенге.
 export function CauseDamageChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)

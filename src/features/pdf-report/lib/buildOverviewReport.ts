@@ -40,8 +40,7 @@ import {
   splitMonthLabel,
 } from './pdfFormat'
 
-// Топ-N в отчёте совпадает со свёрнутым состоянием таблиц на экране; полный
-// список пользователь берёт выгрузкой CSV, об этом подпись под таблицей.
+// Как в свёрнутых таблицах на экране
 const DRIVERS_TOP_N = 8
 const VEHICLES_TOP_N = 8
 const MOTORCADES_TOP_N = 10
@@ -52,7 +51,6 @@ const DAMAGE_CHART_HEIGHT = 76
 export interface OverviewReportInput {
   data: OverviewData
   period: Period
-  // Актуальность и полнота данных для шапки
   context: ReportDataContext
   onSection?: (done: number, total: number) => void
 }
@@ -122,9 +120,6 @@ function kpiCards(data: OverviewData): KpiCardData[] {
   ]
 }
 
-// Короткий вывод под карточкой "ДТП по автоколоннам" — той же природы, что
-// и causesNote (см. pdfFormat), но специфичен для "Обзора" (сравнение
-// автоколонн между собой), поэтому здесь, а не в общем pdfFormat.
 function motorcadeNote(data: OverviewData): string | undefined {
   const aggregates = data.motorcadeAgg
   if (aggregates.length === 0) return t('roadAccidents.pdf.insight.noAccidents')
@@ -343,8 +338,6 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
       title: t('roadAccidents.pdf.title.overview'),
       periodLabel,
       generatedAt: new Date(),
-      // Перечисление баз, из которых собраны данные, в шапке не нужно
-      // пользователю — это внутренняя деталь интеграции, не фильтр отчёта.
       filterLines: [
         t('roadAccidents.pdf.filter.allMotorcades'),
         ...dataContextLines(input.context),
@@ -359,9 +352,7 @@ function overviewBlocks(doc: jsPDF, input: OverviewReportInput): BlockFactory[] 
   ]
 }
 
-// Собирает отчёт «Обзор» целиком векторной отрисовкой — без снимков экрана,
-// поэтому текст в PDF остаётся текстом (ищется и выделяется), файл весит
-// сотни килобайт, а вёрстка не зависит от размера окна пользователя.
+// Векторная отрисовка: текст остаётся текстом, вёрстка не зависит от окна
 export function buildOverviewReport(input: OverviewReportInput): {
   doc: jsPDF
   result: FlowResult

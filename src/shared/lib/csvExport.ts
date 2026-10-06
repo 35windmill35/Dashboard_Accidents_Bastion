@@ -1,11 +1,6 @@
-// Экспорт таблиц в CSV — разделитель ";" (под русский Excel), UTF-8 с BOM,
-// иначе кириллица и разделитель по умолчанию расходятся в локальной версии
-// Excel пользователя.
+// CSV: разделитель «;», UTF-8 с BOM — под русский Excel
 
-// Ячейка, начинающаяся с этих символов, Excel/LibreOffice считают формулой
-// (CSV-injection). Такие значения приходят из полей, которые вводят люди
-// (адрес, ФИО, комментарий), поэтому перед ними ставится апостроф — он
-// превращает ячейку в текст и в самой таблице не виден.
+// Защита от CSV-инъекции: ячейки, похожие на формулу, превращаются в текст
 const FORMULA_PREFIX = /^[=+\-@\t\r]/
 
 export function escapeCsvCell(raw: string): string {
@@ -26,8 +21,7 @@ export function downloadCsv(filename: string, headers: string[], rows: string[][
   const blob = new Blob([buildCsv(headers, rows)], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
 
-  // Ссылка должна быть в документе, а URL — жить до начала скачивания:
-  // Firefox и старый Safari иначе молча ничего не скачивают.
+  // Ссылка в DOM и отложенный revoke — иначе Firefox не скачивает файл
   const link = document.createElement('a')
   link.href = url
   link.download = filename

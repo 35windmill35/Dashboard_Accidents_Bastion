@@ -8,11 +8,6 @@ import { BrandLogo } from '@/shared/ui/BrandLogo/BrandLogo'
 import { t } from '@/shared/i18n'
 import styles from './LoginPage.module.css'
 
-// Регистрацию не делаем — у заказчика своя форма, поэтому ссылки на
-// /register здесь нет.
-//
-// Оформление — по эталону: карточка с градиентом и тенью на фоне с синим
-// свечением, логотип, узкий заголовок.
 export const LoginPage = observer(function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -26,18 +21,13 @@ export const LoginPage = observer(function LoginPage() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    // login() сам запускает проверку прав по базам в фоне — переходим
-    // сразу после успешного входа, а состояние загрузки/отказа доступа
-    // покажет RequireAccidentsAccess.
     const success = await authStore.login(phone, password)
-    // replace — «Назад» после входа не возвращает на форму логина;
-    // query (DB_GUID) сохраняется
+    // replace — «Назад» не возвращает на форму входа
     if (success) {
       navigate({ pathname: '/', search: location.search }, { replace: true })
     }
   }
 
-  // Уже вошедшему пользователю форма входа не нужна
   if (authStore.isAuthenticated && !authStore.isLoggingIn) {
     return <Navigate to={{ pathname: '/', search: location.search }} replace />
   }

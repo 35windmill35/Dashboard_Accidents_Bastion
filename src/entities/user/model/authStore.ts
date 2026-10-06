@@ -15,10 +15,7 @@ import { t } from '@/shared/i18n'
 
 const FIRMS_STORAGE_KEY = 'road_accidents_firms'
 
-// Индекс базы для остальных методов API. Берётся из Firm.DBIndex, который
-// приходит в ответе логина, — он не зависит от порядка и состава списка, и
-// ссылка на автоколонну ("motorcade=0:1") у коллеги с другим набором баз
-// ведёт туда же. Позиция в массиве — только запасной вариант, если поля нет.
+// Firm.DBIndex, позиция в массиве — только запасной вариант
 function firmDbIndex(firm: Firm, index: number): number {
   return typeof firm.DBIndex === 'number' && Number.isInteger(firm.DBIndex) ? firm.DBIndex : index
 }
@@ -27,25 +24,19 @@ const RIGHTS_CHECK_CONCURRENCY = 5
 class AuthStore {
   firms: Firm[] = []
 
-  // null — права ещё не проверялись в этой сессии. После проверки —
-  // массив индексов баз с подтверждённым правом, может быть пустым.
+  // null — права ещё не проверялись
   allowedDbIndexes: number[] | null = null
 
-  // Имена баз, где проверка права упала с ошибкой, а не вернула явный
-  // false — на них позже будет собираться баннер о недоступных базах.
+  // Базы, где проверка права упала с ошибкой
   rightsCheckErrors: string[] = []
 
   isLoggingIn = false
   isCheckingRights = false
   loginError: string | null = null
 
-  // Сообщение для экрана входа, почему пользователя разлогинило
-  // (сессия истекла по времени или сервер ответил 401).
   sessionNotice: string | null = null
 
-  // Номер "поколения" сессии: растёт при каждом входе и выходе. Асинхронные
-  // операции запоминают его на старте и не пишут результат, если за время
-  // запроса пользователь вышел или вошёл заново.
+  // Поколение сессии: результат запроса из старой сессии отбрасывается
   sessionEpoch = 0
   private rightsAbort: AbortController | null = null
 
@@ -56,7 +47,6 @@ class AuthStore {
     })
     this.restoreFirms()
 
-    // Сохранённая сессия уже истекла — не притворяемся залогиненными.
     if (this.firms.length > 0 && hasStoredSession() && isSessionExpired()) {
       this.expireSession()
     }
@@ -77,9 +67,6 @@ class AuthStore {
     return (this.allowedDbIndexes?.length ?? 0) > 0
   }
 
-  // Пользователь залогинен, но проверка прав в этой сессии ещё не
-  // запускалась — например, сразу после восстановления firms из
-  // localStorage при перезагрузке страницы.
   get rightsNeedCheck(): boolean {
     return this.isAuthenticated && this.allowedDbIndexes === null && !this.isCheckingRights
   }
@@ -122,8 +109,6 @@ class AuthStore {
 
       this.persistFirms()
 
-      // Не дожидаемся результата — навигация происходит сразу после
-      // логина, а загрузку/отказ доступа покажет RequireAccidentsAccess.
       void this.checkAccidentsAccess()
 
       return true
@@ -140,9 +125,6 @@ class AuthStore {
     }
   }
 
-  // Проверяет право на дашборд ДТП по каждой базе параллельно (лимит 5
-  // одновременных запросов), отказ одной базы не влияет на остальные.
-  // Повторный вызов (кнопка "Повторить") отменяет предыдущую проверку.
   async checkAccidentsAccess(): Promise<void> {
     if (this.firms.length === 0) return
 
@@ -158,8 +140,6 @@ class AuthStore {
       checkAccidentsRight(dbIndex, abort.signal)
     )
 
-    // Пока шли запросы, пользователь вышел/вошёл заново или проверку
-    // перезапустили — этот результат уже не про текущую сессию.
     if (abort.signal.aborted || epoch !== this.sessionEpoch) return
 
     runInAction(() => {
@@ -182,8 +162,7 @@ class AuthStore {
     })
   }
 
-  // Ни одной базы с правом, но часть проверок упала — это не "нет доступа",
-  // а "не удалось проверить" (сеть/бэкенд), показываем экран с повтором.
+  // Ни одной базы с правом и есть ошибки — «не удалось проверить», а не «нет доступа»
   get rightsCheckFailed(): boolean {
     return (
       this.allowedDbIndexes !== null &&
@@ -210,19 +189,16 @@ class AuthStore {
     try {
       localStorage.removeItem(FIRMS_STORAGE_KEY)
     } catch {
-      // хранилище недоступно — чистить нечего
+      // хранилище недоступно
     }
   }
 
-  // Сессия истекла (по таймеру или сервер ответил 401) — выходим и
-  // объясняем причину на экране входа.
   expireSession(): void {
     if (this.firms.length === 0 && !hasStoredSession()) return
     this.logout()
     this.sessionNotice = t('roadAccidents.login.sessionExpired')
   }
 
-  // Периодическая проверка срока сессии (10 ч / 30 мин без запросов).
   checkSessionExpiry(): void {
     if (this.firms.length > 0 && isSessionExpired()) this.expireSession()
   }
@@ -231,7 +207,7 @@ class AuthStore {
     try {
       localStorage.setItem(FIRMS_STORAGE_KEY, JSON.stringify(this.firms))
     } catch {
-      // хранилище недоступно — список баз живёт до перезагрузки вкладки
+      // хранилище недоступно
     }
   }
 

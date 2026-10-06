@@ -48,13 +48,11 @@ export interface AnalyticsReportInput {
   data: AnalyticsData
   period: Period
   firmNames: string[]
-  // Актуальность и полнота данных для шапки
   context: ReportDataContext
   onSection?: (done: number, total: number) => void
 }
 
-// Четыре KPI стороны. У второй автоколонны — относительная разница к первой,
-// как на экране (AnalyticsKpiGroups).
+// У второй автоколонны — разница к первой
 function sideCards(side: AnalyticsSide, compareTo: AnalyticsSide | null): KpiCardData[] {
   const kpi = side.scope.kpi
   const other = compareTo?.scope.kpi
@@ -287,8 +285,7 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
         ...dataContextLines(input.context),
       ],
     }),
-    // Баннер о сопоставимости временно скрыт по решению заказчика,
-    // вернуть: noticeBlock(doc, 'Сопоставимость данных', data.comparabilityWarnings)
+    // Баннер сопоставимости скрыт по решению заказчика
     kpiRow(doc, sideCards(a, null)),
     kpiRow(doc, sideCards(b, a)),
     columns([causesTable, damageCard], [0.55, 0.45]),
@@ -313,8 +310,6 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
   ]
 }
 
-// Отчёт "Аналитика" — тем же векторным движком, что "Обзор" и
-// "Автоколонна" (buildOverviewReport/buildMotorcadeReport).
 export function buildAnalyticsReport(input: AnalyticsReportInput): {
   doc: jsPDF
   result: FlowResult

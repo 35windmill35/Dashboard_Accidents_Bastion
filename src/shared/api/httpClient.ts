@@ -2,8 +2,6 @@ import { BASE_URL } from '@/shared/config/api'
 import { getSessionId, touchSession } from '@/shared/api/session'
 import { t } from '@/shared/i18n'
 
-// Ошибка API — хранит код статуса ответа и данные, которые сервер мог
-// прислать вместе с ним.
 export class ApiError extends Error {
   status: number
   data: unknown
@@ -23,8 +21,7 @@ type QueryParamValue =
 
 export type QueryParams = Record<string, QueryParamValue>
 
-// Вложенные объекты вида Params: { DB_GUID: '...' } превращаются в
-// Params[DB_GUID]=...
+// Params: { DB_GUID } → Params[DB_GUID]=...
 function buildUrl(path: string, params: QueryParams = {}): string {
   const url = new URL(path, BASE_URL)
 
@@ -52,8 +49,7 @@ export interface ApiResult<T = unknown> {
   remaining?: number
 }
 
-// Ответ сервера имеет форму
-// { result: { Status, Message, Response }, SESSIONID, remaining }
+// Ответ: { result: { Status, Message, Response }, SESSIONID, remaining }
 async function parseResponse<T = unknown>(response: Response): Promise<ApiResult<T>> {
   if (!response.ok) {
     throw new ApiError(response.status, `HTTP ${response.status}`)
@@ -73,8 +69,7 @@ async function parseResponse<T = unknown>(response: Response): Promise<ApiResult
   }
 }
 
-// Дедупликация одинаковых запросов, улетающих одновременно — на форме
-// логина иногда уходит два сабмита подряд.
+// Дедупликация одновременных одинаковых запросов (двойной сабмит логина)
 const inFlightRequests = new Map<string, Promise<ApiResult>>()
 
 function dedupedFetch<T>(
@@ -91,8 +86,7 @@ function dedupedFetch<T>(
   return promise
 }
 
-// btoa принимает только Latin-1 и падает на кириллице в пароле, поэтому
-// строка сначала кодируется в UTF-8.
+// btoa не принимает кириллицу — сначала кодируем в UTF-8
 export function encodeBasicCredentials(username: string, password: string): string {
   const bytes = new TextEncoder().encode(`${username}:${password}`)
   let binary = ''
@@ -109,7 +103,6 @@ interface BasicAuthOptions {
   headers?: Record<string, string>
 }
 
-// Basic Auth — только для auth-методов, пока ещё нет SESSIONID.
 export async function getWithBasicAuth<T = unknown>(
   path: string,
   { username, password, params, headers }: BasicAuthOptions
@@ -135,23 +128,20 @@ interface AuthorizedOptions {
   signal?: AbortSignal
 }
 
-// Статусы, означающие "сессии больше нет": HTTP 401 и такой же код в
-// result.Status. Если у API есть другие коды истёкшей сессии — добавить сюда.
+// Коды «сессии больше нет»
 const AUTH_ERROR_STATUSES = new Set<number>([401])
 
 export function isAuthError(err: unknown): boolean {
   return err instanceof ApiError && AUTH_ERROR_STATUSES.has(err.status)
 }
 
-// Обработчик потери сессии регистрирует authStore (shared не импортирует
-// entities — слой FSD ниже).
+// Обработчик регистрирует authStore (shared не импортирует entities)
 let unauthorizedHandler: (() => void) | null = null
 
 export function setUnauthorizedHandler(handler: (() => void) | null): void {
   unauthorizedHandler = handler
 }
 
-// Bearer SESSIONID — для всех запросов после логина.
 export async function getAuthorized<T = unknown>(
   path: string,
   { params, signal }: AuthorizedOptions = {}
@@ -178,7 +168,7 @@ export async function getAuthorized<T = unknown>(
     touchSession()
     return result
   } catch (err) {
-    // Отменённый запрос (выход/повторная загрузка) — не ошибка API.
+    // Отменённый запрос — не ошибка API
     if (signal?.aborted) throw err
 
     console.error(

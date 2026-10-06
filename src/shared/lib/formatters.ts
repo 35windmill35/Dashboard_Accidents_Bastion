@@ -1,15 +1,11 @@
 import { t } from '@/shared/i18n'
 
-// Единые утилиты форматирования — использовать только их в компонентах,
-// чтобы формат чисел/дат не расходился между экранами.
-
 const NBSP = '\u00a0' // неразрывный пробел: сумма и знак валюты не разрываются переносом
 
 function isEmpty(value: number | null | undefined): boolean {
   return value === null || value === undefined || Number.isNaN(value)
 }
 
-// Intl.NumberFormat дорогой в создании, а форматируются тысячи ячеек
 const numberFormats = new Map<number, Intl.NumberFormat>()
 
 function numberFormat(decimals: number): Intl.NumberFormat {
@@ -29,10 +25,7 @@ export function formatNumber(value: number | null | undefined, decimals = 0): st
   return numberFormat(decimals).format(value as number)
 }
 
-// Валюта берётся из CURRENCY_CODE загруженных данных:
-// accidentsStore после загрузки вызывает setCurrencyCode с единственной
-// валютой датасета. Если валют несколько или данных нет — подписи без
-// знака валюты (экран отдельно предупреждает о смешанных валютах).
+// Знак валюты — по единственному CURRENCY_CODE в данных, при нескольких валютах без знака
 const CURRENCY_SYMBOLS: Record<string, string> = {
   KZT: '₸',
   RUB: '₽',
@@ -68,10 +61,7 @@ export function formatCurrency(value: number | null | undefined): string {
   return withCurrency(formatNumber(value, 0))
 }
 
-// Сокращённая подпись для оси Y денежных графиков — полная сумма
-// («60 000 ₸») не помещается в отведённую под подписи ширину и обрезается
-// слева; подсказка при наведении по-прежнему показывает точную сумму
-// через formatCurrency.
+// Короткая подпись оси Y («15 тыс ₸»)
 export function formatCompactCurrency(value: number | null | undefined): string {
   if (isEmpty(value)) return '—'
   const num = value as number
@@ -94,7 +84,6 @@ export function formatPercent(value: number | null | undefined, decimals = 0): s
   return `${formatNumber((value as number) * 100, decimals)}%`
 }
 
-// Относительное изменение: 10 → 15 = +50%. Для количеств и сумм.
 export function calcDelta(
   cur: number | null | undefined,
   prev: number | null | undefined
@@ -110,8 +99,7 @@ export function formatDelta(delta: number | null | undefined, decimals = 0): str
   return `${sign}${formatNumber(Math.abs(value) * 100, decimals)}%`
 }
 
-// Изменение доли — в процентных пунктах: 40% → 50% = «+10 п.п.», а не
-// «+25%». Доли на входе — 0…1.
+// Изменение доли в п.п.: 40% → 50% = «+10 п.п.»
 export function calcPointDelta(
   cur: number | null | undefined,
   prev: number | null | undefined
@@ -131,7 +119,6 @@ export function formatPointDelta(delta: number | null | undefined, decimals = 0)
 
 export type KpiKind = 'count' | 'currency' | 'percent'
 
-// Дельта KPI с учётом вида показателя: доли — в п.п., остальное — в %.
 export interface KpiDelta {
   value: number
   text: string
@@ -159,18 +146,14 @@ export function isDeltaPositive(
   return higherIsBetter ? isIncrease : !isIncrease
 }
 
-// "2026-04-19T..." -> "19.04.2026". Разбор по символам, без Date — иначе в
-// часовых поясах западнее UTC дата сдвигается на сутки.
+// Без Date — иначе дата сдвигается на сутки в часовых поясах западнее UTC
 export function formatDate(value: string | null | undefined): string {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value ?? '')
   if (!match) return '—'
   return `${match[3]}.${match[2]}.${match[1]}`
 }
 
-// ACCIDENT_TIME приходит с фиктивной датой 1900-01-01, значение — только
-// время. 12:00 и 00:00 — заглушки импорта исторических записей (так
-// записано подавляющее большинство старых ДТП), настоящим временем их не
-// показываем.
+// 12:00 и 00:00 — заглушки импорта старых записей, не время ДТП
 const PLACEHOLDER_TIMES = new Set(['12:00:00', '00:00:00'])
 
 export function formatTime(value: string | null | undefined): string {
@@ -181,8 +164,7 @@ export function formatTime(value: string | null | undefined): string {
   return `${match[1]}:${match[2]}`
 }
 
-// Подпись с единицей измерения для пояснений под заголовком графика:
-// «Суммы за период, ₸» (без знака, если валюта неизвестна или смешанная).
+// «Суммы за период, ₸»
 export function withCurrencyUnit(text: string): string {
   return currencySuffix ? `${text}, ${currencySuffix}` : text
 }

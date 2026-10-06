@@ -1,20 +1,14 @@
 import { makeAutoObservable, observableRef, runInAction } from 'mobx'
 import { t } from '@/shared/i18n'
 
-// Экспортёр возвращает, сколько разделов не отрисовалось (void — нечего
-// сообщать, например нет данных для отчёта)
+// Возвращает число неотрисованных разделов
 export type PdfExporter = () => Promise<{ failed: number } | void>
 
-// Кнопка "PDF отчёт" в шапке общая на все экраны, но саму генерацию умеет
-// собрать только тот экран, что сейчас отрисован ("Обзор", "Автоколонна",
-// "Аналитика"). Экран при монтировании регистрирует свой
-// обработчик здесь, стор не знает о конкретных экранах.
+// Экспортёр регистрирует экран, который сейчас отрисован
 class PdfReportStore {
   exporter: PdfExporter | null = null
   isGenerating = false
   progress: { current: number; total: number } = { current: 0, total: 0 }
-  // Сообщение пользователю по итогам формирования: ошибка (файла нет) или
-  // предупреждение (файл сохранён, но часть разделов пропущена)
   lastError: string | null = null
   lastWarning: string | null = null
 
@@ -43,9 +37,7 @@ class PdfReportStore {
     this.lastWarning = null
   }
 
-  // Блокирует повторный клик, пока идёт формирование. Движок раскладки сам
-  // переживает отказ отдельных разделов (результат — failed), здесь ловится
-  // только полный сбой (например, не загрузился модуль отчёта).
+  // Здесь ловится только полный сбой; отказ отдельных разделов — в failed
   async trigger(): Promise<void> {
     const exporter = this.exporter
     if (this.isGenerating || !exporter) return
@@ -56,8 +48,7 @@ class PdfReportStore {
     this.progress = { current: 0, total: 0 }
 
     try {
-      // Сборка PDF синхронная и на пару сотен миллисекунд блокирует поток —
-      // отдаём браузеру кадр, чтобы оверлей успел отрисоваться до этого.
+      // Отдаём кадр, чтобы оверлей успел отрисоваться до синхронной сборки
       await new Promise((resolve) => requestAnimationFrame(resolve))
       const result = await exporter()
       runInAction(() => {

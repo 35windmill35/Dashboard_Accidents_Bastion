@@ -228,7 +228,6 @@
   text-overflow: ellipsis;
 }
 
-/* Сортируемый заголовок — кнопка на всю ячейку */
 .sortButton {
   display: inline-flex;
   align-items: center;
@@ -269,7 +268,6 @@
   color: var(--color-text-faint);
 }
 
-/* Статус дела: открытое — акцентом, закрытое — нейтральным чипом */
 .status {
   display: inline-block;
   padding: 3px 9px;

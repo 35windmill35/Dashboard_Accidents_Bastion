@@ -6,8 +6,7 @@ import { AccidentDrilldownModal } from '@/widgets/accident-drilldown/AccidentDri
 import { PdfGeneratingOverlay } from '@/features/pdf-report/ui/PdfGeneratingOverlay'
 import { Skeleton } from '@/shared/ui/Skeleton/Skeleton'
 
-// Экраны с графиками грузятся отдельными чанками: Recharts не нужен на
-// экране входа.
+// Экраны с графиками — отдельными чанками
 const OverviewPage = lazy(() =>
   import('@/pages/overview/OverviewPage').then((m) => ({ default: m.OverviewPage }))
 )
@@ -26,13 +25,6 @@ function Protected({ children }: { children: ReactNode }) {
   )
 }
 
-// Регистрации в дашборде нет — у заказчика своя форма; старая ссылка
-// /register ведёт на вход.
-//
-// Три защищённых экрана обёрнуты в RequireAccidentsAccess — проверка
-// сессии, прав по базам и общий сайдбар/шапка (см. AppShell внутри guard).
-// Модалка детализации — одна на всё приложение, монтируется здесь и сама
-// решает, показываться ли (drilldownStore.isOpen + активная сессия).
 function App() {
   return (
     <>

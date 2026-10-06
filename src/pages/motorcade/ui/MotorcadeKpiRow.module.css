@@ -1,6 +1,5 @@
 .row {
   display: grid;
-  /* 8 карточек — 4 столбца × 2 ряда, как до редизайна */
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--space-3);
 }

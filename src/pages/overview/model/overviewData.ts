@@ -11,8 +11,6 @@ export type { CauseSlice } from '@/entities/accident/lib/metrics'
 
 export type OverviewKpi = AccidentScopeKpi
 
-// «Обзор» — тот же расчёт среза, что у автоколонны (entities/accident/lib/
-// scope), по всем строкам компании плюс разбивка по автоколоннам.
 export interface OverviewData extends AccidentScopeData {
   motorcadeAgg: ReturnType<typeof groupByMotorcade>
 }

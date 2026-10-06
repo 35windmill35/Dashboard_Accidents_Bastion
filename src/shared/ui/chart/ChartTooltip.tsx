@@ -2,7 +2,6 @@ import type { ReactNode } from 'react'
 import { formatNumber } from '@/shared/lib/formatters'
 import styles from './ChartTooltip.module.css'
 
-// Минимальный срез того, что Recharts передаёт в content у <Tooltip>
 interface TooltipEntry {
   name?: string | number
   value?: unknown
@@ -18,14 +17,11 @@ interface ChartTooltipProps {
   label?: unknown
   // Формат значений (по умолчанию — число с разделителями разрядов)
   valueFormatter?: (value: number) => string
-  // Заголовок подсказки по данным точки (например, полное название месяца
-  // вместо сокращённого с оси); без него — подпись категории
+  // Заголовок по данным точки (по умолчанию — подпись категории)
   titleFormatter?: (payload: Record<string, unknown> | undefined, label: unknown) => ReactNode
 }
 
-// Цвет квадрата в подсказке. Recharts отдаёт цвет серии как её заливку, а у
-// столбцов и областей заливка — градиент url(#id): берём цвет верхней точки
-// этого градиента (это и есть цвет серии).
+// У столбцов и областей заливка — градиент url(#id), берём его верхний цвет
 function resolveSwatchColor(color: string | undefined): string | undefined {
   const match = color?.match(/^url\(#(.+)\)$/)
   if (!match) return color
@@ -33,9 +29,6 @@ function resolveSwatchColor(color: string | undefined): string | undefined {
   return stop?.getAttribute('stop-color') ?? undefined
 }
 
-// Всплывающая подсказка по эталону: заголовок приглушённым цветом, ниже —
-// строки «цветной квадрат · название · значение». Текст — цветами текста,
-// цвет серии несёт только квадрат.
 export function ChartTooltip({
   active,
   payload,

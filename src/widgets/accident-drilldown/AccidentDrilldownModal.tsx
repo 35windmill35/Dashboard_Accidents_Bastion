@@ -14,7 +14,6 @@ import styles from './AccidentDrilldownModal.module.css'
 const PAGE_SIZE = 50
 const VIRTUALIZE_THRESHOLD = 200
 
-// ACCIDENT_ID уникален только в пределах базы
 function rowKey(row: AccidentRow): string {
   return `${row.DB_INDEX}:${row.ACCIDENT_ID}`
 }
@@ -24,9 +23,7 @@ function dateTimeLabel(row: AccidentRow): string {
   return time === '—' ? formatDate(row.ACCIDENT_DATE) : `${formatDate(row.ACCIDENT_DATE)} ${time}`
 }
 
-// Необязательные колонки: если во всём списке поле пустое (в текущих данных
-// так с маршрутом, страховой и пострадавшими), колонка — сплошные «—» и
-// только расширяет таблицу. Такие колонки скрываются и на экране, и в CSV.
+// Пустые во всём списке колонки скрываются (на экране и в CSV)
 const OPTIONAL_COLUMNS = [
   {
     key: 'route',
@@ -76,9 +73,6 @@ function sortValue(row: AccidentRow, key: SortKey): number | string {
   }
 }
 
-// Модалка «Список ДТП» (drill-through) по эталону: крупный заголовок с
-// надзаголовком, поиск с иконкой, выгрузка CSV, таблица с закреплённой
-// шапкой; статус дела — чипом (открытое дело — акцентом, закрытое — серым).
 export const AccidentDrilldownModal = observer(function AccidentDrilldownModal() {
   const dialogRef = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState('')
@@ -86,7 +80,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(0)
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
-  // Куда вернуть фокус после закрытия — на кнопку/карточку, открывшую модалку
+  // Фокус возвращается на элемент, открывший модалку
   const returnFocusRef = useRef<HTMLElement | null>(null)
 
   const showBaseColumn = (authStore.allowedDbIndexes?.length ?? 0) > 1
@@ -129,7 +123,6 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     }
 
     returnFocusRef.current = document.activeElement as HTMLElement | null
-    // Страница под модалкой не прокручивается
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
@@ -176,8 +169,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     return sorted
   }, [rows, search, sortKey, sortDir])
 
-  // Вторая линия защиты: без действующей сессии список с ПДн не рисуем,
-  // даже если стор по какой-то причине не успел закрыться.
+  // Без активной сессии список с ПДн не рисуем
   if (!isOpen || !authStore.isAuthenticated) return null
 
   const totalPages = Math.max(1, Math.ceil(filteredSorted.length / PAGE_SIZE))
@@ -243,9 +235,7 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
     downloadCsv(`dtp-spisok-${fileStamp}.csv`, headers, csvRows)
   }
 
-  // Колонок в таблице: кнопка раскрытия + 10 постоянных (номер ДТП, дата,
-  // автоколонна, ТС, водитель, причина, виновник, ущерб, возмещение, статус)
-  // + необязательные + база. Строка подробностей занимает всё, кроме первой.
+  // Кнопка раскрытия + 10 постоянных + необязательные + база
   const totalColumns = 1 + 10 + visibleOptional.size + (showBaseColumn ? 1 : 0)
 
   return (

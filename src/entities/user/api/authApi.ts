@@ -18,12 +18,7 @@ interface LoginAppUserResult {
   remaining?: number
 }
 
-// Ответ — массив баз, доступных пользователю. DBIndex, который принимают
-// остальные методы, приходит в поле Firm.DBIndex каждой базы (сейчас он
-// совпадает с позицией в массиве), а не PFIRM_ID.
-//
-// DB_GUID отправляется и query-параметром, и заголовком одновременно —
-// бэкенд на практике смотрит то в один, то в другой.
+// DB_GUID передаётся и параметром, и заголовком — бэкенд читает то одно, то другое
 export async function loginAppUser({
   phone,
   password,
@@ -45,9 +40,6 @@ export async function loginAppUser({
   return { firms: data, sessionId, remaining }
 }
 
-// Проверка права на дашборд ДТП по одной базе. Вызывается для каждой
-// базы из ответа loginAppUser — база попадает в рабочий список только при
-// Dashboard_Accidents === true.
 export async function checkAccidentsRight(dbIndex: number, signal?: AbortSignal): Promise<boolean> {
   const { data } = await getAuthorized<Record<string, boolean>>(
     `/api-v2/SpecialRequests/UserRight/${ACCIDENTS_RIGHT_CODE}`,

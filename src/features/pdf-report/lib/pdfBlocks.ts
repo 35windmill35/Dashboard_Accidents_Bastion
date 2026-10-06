@@ -35,8 +35,7 @@ interface CardOptions {
   drawBody: (bodyX: number, bodyY: number, bodyWidth: number) => void
 }
 
-// Общая рамка карточки: заголовок слева, легенда справа, тело фиксированной
-// высоты, необязательная подпись-вывод под телом.
+// Рамка карточки: заголовок, легенда, тело, подпись-вывод
 export function card(doc: jsPDF, x: number, width: number, options: CardOptions): Block {
   const { title, legend, bodyHeight, note, drawBody } = options
   const titleStyle: TextStyle = { weight: 'bold', size: 8.6, color: COLOR.title }
@@ -50,8 +49,7 @@ export function card(doc: jsPDF, x: number, width: number, options: CardOptions)
       ? legendWidths.reduce((sum, w) => sum + w, 0) + (legendWidths.length - 1) * 8
       : 0
 
-  // В узкой карточке легенда не влезает в одну строку с заголовком — тогда
-  // она уезжает на свою строку, а тело карточки сдвигается вниз.
+  // В узкой карточке легенда переносится на свою строку
   const legendInline =
     legendWidth === 0 ||
     !title ||
@@ -109,8 +107,7 @@ export function card(doc: jsPDF, x: number, width: number, options: CardOptions)
   }
 }
 
-// "Красивый" максимум оси: округляет вверх до 1/2/5 × 10^n, чтобы подписи
-// делений были целыми.
+// Округление максимума оси до 1/2/5 × 10^n
 function niceMax(value: number, steps: number): number {
   if (value <= 0) return steps
   const rough = value / steps
@@ -121,8 +118,7 @@ function niceMax(value: number, steps: number): number {
   return nice * magnitude * steps
 }
 
-// Для счётных осей деления должны быть целыми, иначе подписи дублируются
-// ("2, 2, 1, 1, 0" при максимуме 2).
+// Целые деления для счётных осей
 function resolveSteps(top: number, integerTicks: boolean): number {
   if (!integerTicks) return 4
   const candidates = [4, 5, 3, 2, 1]
@@ -152,8 +148,7 @@ function drawAxis(
   maxValue: number,
   options: AxisChartOptions
 ): AxisGeometry {
-  // Пустой период: шкалу рисовать не из чего, показываем только нулевую
-  // линию — деления "4 ₸, 3 ₸, 2 ₸" на пустых данных выглядят как ошибка.
+  // Пустой период — только нулевая линия
   const isEmpty = maxValue <= 0
   const top = isEmpty ? 0 : niceMax(maxValue, 4)
   const ticks = isEmpty ? 0 : resolveSteps(top, options.integerTicks ?? false)
@@ -208,9 +203,7 @@ export interface BarChartItem {
   value: number
 }
 
-// Столбчатая диаграмма одного ряда: сетка, подписи делений, значение над
-// ненулевыми столбцами (цвет один, поэтому подписи обязательны — на печати
-// без них столбцы не прочитать).
+// Подписи значений обязательны: серия одного цвета
 export function barChartBody(
   doc: jsPDF,
   items: BarChartItem[],
@@ -270,8 +263,7 @@ export interface GroupedBarItem {
   secondary: number
 }
 
-// Две серии в одинаковых единицах (ущерб и возмещение) — общая ось, иначе
-// сравнивать высоту столбцов нельзя.
+// Две серии на общей оси
 export function groupedBarChartBody(
   doc: jsPDF,
   items: GroupedBarItem[],
@@ -323,8 +315,6 @@ export interface RankedBarRow {
 
 export const RANKED_ROW_HEIGHT = 17
 
-// Горизонтальные полосы в одну строку: подпись — полоса — значение.
-// Используется для распределения по автоколоннам.
 export function rankedBarsBody(
   doc: jsPDF,
   rows: RankedBarRow[],
@@ -373,8 +363,7 @@ export interface DualBarRow {
 
 export const DUAL_ROW_HEIGHT = 20
 
-// Две полосы на строку (ущерб и возмещение по одной автоколонне) — общий
-// масштаб, чтобы доля возмещения читалась по длине полос.
+// Общий масштаб, чтобы доля возмещения читалась по длине полос
 export function dualBarsBody(
   doc: jsPDF,
   rows: DualBarRow[],
@@ -429,8 +418,7 @@ export interface DistributionRow {
 
 export const DISTRIBUTION_ROW_HEIGHT = 21
 
-// Подпись над полосой во всю ширину — для структуры причин, где названия
-// категорий длинные и в одну строку с полосой не помещаются.
+// Подпись над полосой — длинные названия категорий
 export function distributionBody(doc: jsPDF, rows: DistributionRow[], color: Rgb) {
   return (bodyX: number, bodyY: number, bodyWidth: number) => {
     const maxValue = Math.max(1, ...rows.map((row) => row.value))
@@ -484,8 +472,6 @@ export interface TableRow {
 const TABLE_HEADER_HEIGHT = 15
 const TABLE_ROW_HEIGHT = 15
 
-// Таблица нативным текстом (не растр): шапка капсом, числовые колонки
-// моноширинным по правому краю, итоговая строка выделена.
 export function tableCard(
   doc: jsPDF,
   x: number,

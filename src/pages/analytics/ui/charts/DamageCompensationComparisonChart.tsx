@@ -32,9 +32,6 @@ interface Point {
   sumCompensated: number
 }
 
-// Ущерб/возмещение по каждой автоколонне — ось X здесь автоколонна (в
-// отличие от CauseDamageChart на "Обзоре"/"Автоколонне", где ось X —
-// категория причины), легенда — по метрике, а не по автоколонне.
 export function DamageCompensationComparisonChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)

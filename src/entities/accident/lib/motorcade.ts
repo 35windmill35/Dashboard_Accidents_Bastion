@@ -11,8 +11,7 @@ export interface MotorcadeOption {
   accidentCount: number
 }
 
-// Сквозной ключ автоколонны — DB_INDEX + MOTORCADE_ID, одинаковые
-// MOTORCADE_ID в разных базах не одно и то же.
+// MOTORCADE_ID уникален только в пределах базы
 export function getMotorcadeKey(row: AccidentRow): string {
   const motorcadeId = row.MOTORCADE_ID ?? null
   return `${row.DB_INDEX}:${motorcadeId === null ? 'none' : motorcadeId}`
@@ -54,9 +53,7 @@ export function sortByAccidentCountDesc(options: MotorcadeOption[]): MotorcadeOp
   )
 }
 
-// Одноимённые автоколонны из разных баз («Автоколонна №1» в двух
-// компаниях) в селекторах и на графиках неразличимы — к таким именам
-// добавляется название базы.
+// К одноимённым автоколоннам из разных баз добавляется название базы
 export function disambiguateMotorcadeNames(
   options: MotorcadeOption[],
   firmName: (dbIndex: number) => string

@@ -1,9 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
-// Rubik — из пакета, без Google Fonts: в закрытых сетях внешний CDN
-// недоступен, а запрос к нему передаёт IP пользователя третьей стороне
-// (только латиница и кириллица, включая казахские буквы из cyrillic-ext)
+// Rubik локально, без Google Fonts (латиница и кириллица, включая казахские буквы)
 import '@fontsource/rubik/latin-400.css'
 import '@fontsource/rubik/latin-ext-400.css'
 import '@fontsource/rubik/cyrillic-400.css'
@@ -24,7 +22,11 @@ import './app/styles/theme.css'
 import './index.css'
 // Инициализация темы (data-theme + палитра графиков) до первого рендера
 import './shared/lib/theme/themeStore'
+import { t } from './shared/i18n'
 import App from './App.tsx'
+
+// В index.html — запасной заголовок до загрузки бандла
+document.title = t('roadAccidents.appTitle')
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

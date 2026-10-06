@@ -26,8 +26,6 @@ interface Props {
   period: Period
 }
 
-// Сумма ущерба/возмещения по категориям причин для одной автоколонны —
-// та же логика, что и на "Обзоре" (см. CauseDamageChart), но по её данным.
 export function MotorcadeCauseDamageChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)

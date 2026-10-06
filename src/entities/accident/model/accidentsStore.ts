@@ -20,11 +20,9 @@ export interface IncompleteFirm {
 export interface RejectedFirm {
   name: string
   count: number
-  // "некорректная дата — 3, нет ID ДТП — 1"
   details: string
 }
 
-// Строки одной базы из последней удачной загрузки
 interface FirmSnapshot {
   rows: AccidentRow[]
   loadedAt: Date
@@ -40,39 +38,28 @@ class AccidentsStore {
   rows: AccidentRow[] = []
   status: LoadStatus = 'idle'
 
-  // Идёт повторная загрузка поверх уже показанных данных ("Обновить
-  // данные"/"Повторить") — экран не размонтируется, старые цифры видны
-  // до прихода новых.
+  // Перезагрузка поверх показанных данных
   isRefreshing = false
 
-  // для индикатора "Загружено баз N из M"
   loadedCount = 0
   totalCount = 0
 
-  // базы, где шаг 3 не отдал данные — источник баннера о неполных данных
   failedFirms: string[] = []
 
-  // базы, где сервер отдал меньше строк, чем заявил в totalRecords
+  // Меньше строк, чем в totalRecords
   incompleteFirms: IncompleteFirm[] = []
 
-  // базы, где часть строк отброшена при разборе (нет ID, кривая дата)
   rejectedFirms: RejectedFirm[] = []
 
-  // Базы, не ответившие при обновлении, по которым на экране остались
-  // данные прошлой загрузки: имя → момент той загрузки.
+  // Не ответили при обновлении — показаны данные прошлой загрузки
   staleFirms: { name: string; loadedAt: Date }[] = []
 
-  // Последние удачные данные по каждой базе. Отказ базы при обновлении не
-  // выбрасывает её строки, а оставляет прежние с пометкой в баннере.
+  // Последние удачные данные по каждой базе
   private snapshots = new Map<number, FirmSnapshot>()
 
-  // Момент последней успешной загрузки — "данные на ..." в шапке/PDF.
   loadedAt: Date | null = null
 
-  // Защита от гонок: каждая загрузка получает свой номер и свой
-  // AbortController. Выход, новый вход или новая загрузка увеличивают
-  // номер — результат устаревшей загрузки молча отбрасывается и не
-  // попадает к следующему пользователю.
+  // Защита от гонок: результат устаревшей загрузки отбрасывается
   private loadEpoch = 0
   private abortController: AbortController | null = null
 
@@ -82,9 +69,7 @@ class AccidentsStore {
       snapshots: false,
     })
 
-    // Загрузка запускается сама, как только шаг 2 подтвердил хотя бы одну
-    // базу с доступом (в том числе после каждого нового входа). Дальше —
-    // только по кнопке "Обновить данные".
+    // Первая загрузка — как только подтверждена хотя бы одна база
     reaction(
       () => authStore.hasAccidentsAccess,
       (hasAccess) => {
@@ -93,8 +78,6 @@ class AccidentsStore {
       { fireImmediately: true }
     )
 
-    // Любая смена сессии (выход, вход под другим пользователем) — старые
-    // данные и незавершённые запросы выбрасываются.
     reaction(
       () => authStore.sessionEpoch,
       () => this.reset()
@@ -113,8 +96,6 @@ class AccidentsStore {
     return this.status === 'ready' && this.failedFirms.length > 0
   }
 
-  // Валюты, встречающиеся в данных. Больше одной — суммы по компании
-  // складывать нельзя, экран показывает предупреждение.
   get currencyCodes(): string[] {
     const codes = new Set<string>()
     this.rows.forEach((row) => {
@@ -128,8 +109,6 @@ class AccidentsStore {
     return this.currencyCodes.length > 1
   }
 
-  // Записи с ACCIDENT_CAUSE_ID, которого нет в справочнике категорий, — они
-  // попадают в «Виновный не определён», и об этом надо сказать явно.
   get unknownCauseCount(): number {
     return this.rows.filter(
       (row) => row.ACCIDENT_CAUSE_ID != null && !isKnownCauseId(row.ACCIDENT_CAUSE_ID)
@@ -140,8 +119,6 @@ class AccidentsStore {
     const dbIndexes = authStore.allowedDbIndexes ?? []
     if (dbIndexes.length === 0) return
 
-    // Новая загрузка отменяет предыдущую, а не игнорируется: иначе "Повторить"
-    // во время зависшего запроса ничего бы не делало.
     this.abortController?.abort()
     const abort = new AbortController()
     this.abortController = abort
@@ -224,8 +201,6 @@ class AccidentsStore {
         return
       }
 
-      // Базы, у которых вообще нет данных (ни свежих, ни прошлых), просто
-      // не попадают в набор — о них говорит баннер failedFirms.
       const merged: AccidentRow[] = []
       dbIndexes.forEach((dbIndex) => {
         const snapshot = this.snapshots.get(dbIndex)
@@ -245,13 +220,12 @@ class AccidentsStore {
     void this.load()
   }
 
-  // "Повторить" в баннере о неполных данных: если часть баз не прошла даже
-  // проверку права (шаг 2) — сначала перепроверяем права, затем данные.
+  // Если часть баз не прошла проверку права — сначала права, затем данные
   async retry(): Promise<void> {
     if (authStore.rightsCheckErrors.length > 0) {
       await authStore.checkAccidentsAccess()
       if (!authStore.hasAccidentsAccess) return
-      // право появилось впервые — загрузку уже запустила реакция выше
+      // Загрузку уже запустила реакция
       if (this.status === 'loading') return
     }
     await this.load()

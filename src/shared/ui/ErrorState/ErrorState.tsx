@@ -6,8 +6,6 @@ interface ErrorStateProps {
   onRetry?: () => void
 }
 
-// Состояние ошибки. Кнопка "Повторить" показывается, только если передан
-// onRetry.
 export function ErrorState({
   message = t('roadAccidents.error.loadFailed'),
   onRetry,

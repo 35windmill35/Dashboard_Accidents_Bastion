@@ -29,8 +29,7 @@ export interface SummaryRow {
   kind: SummaryMetricKind
   valueA: number | null
   valueB: number | null
-  // "Комментарий о сопоставимости" — колонка временно скрыта
-  // по решению заказчика (экран и PDF), значение по-прежнему считается
+  // Колонка скрыта по решению заказчика
   comment: string
 }
 
@@ -57,25 +56,18 @@ export interface WorstDriverRow {
 export interface AnalyticsData {
   a: AnalyticsSide
   b: AnalyticsSide
-  // Общая ось X для трёх линейных графиков динамики — считается по
-  // объединению строк обеих автоколонн, а не по scope.monthlyCounts каждой
-  // стороны отдельно: при периоде "весь период" у автоколонн может быть
-  // разный диапазон дат, а графики сравнения требуют одну и ту же ось.
+  // Общая ось X по строкам обеих автоколонн
   trendMonths: number[]
   monthlyA: MonthlyAggregate[]
   monthlyB: MonthlyAggregate[]
   causeComparison: CauseComparisonRow[]
   summaryRows: SummaryRow[]
   worstDrivers: WorstDriverRow[]
-  // Предупреждения о сопоставимости — баннер на экране и в PDF
   comparabilityWarnings: string[]
 }
 
-// Меньше этого числа ДТП за период доли и средние слишком шумные, чтобы
-// делать по ним выводы.
+// Ниже — доли и средние слишком шумные
 export const MIN_COMPARABLE_SAMPLE = 10
-// Во сколько раз должно различаться число ДТП, чтобы суммы уже нельзя было
-// сравнивать "в лоб".
 const SCALE_GAP_RATIO = 3
 
 function buildSide(
@@ -95,16 +87,12 @@ function buildSide(
   }
 }
 
-// Доля "вина водителя" для конкретного водителя — та же формула, что и
-// KPI-доли по автоколонне (causeCategoryShare), но по строкам одного
-// водителя.
 function driverFaultShareOf(driver: DriverAggregate): number | null {
   const slices = buildCauseSlices(driver.rows)
   return causeCategoryShare(slices, driver.count, 'driverFault')
 }
 
-// Топ-10 водителей с наибольшим числом ДТП сразу по обеим автоколоннам —
-// объединяем оба рейтинга (без строки «Водитель не указан») и берём топ.
+// Без строки «Водитель не указан»
 function buildWorstDrivers(a: AnalyticsSide, b: AnalyticsSide): WorstDriverRow[] {
   const combined = [a, b].flatMap((side) =>
     side.scope.driversRanking
@@ -127,9 +115,7 @@ function buildWorstDrivers(a: AnalyticsSide, b: AnalyticsSide): WorstDriverRow[]
     }))
 }
 
-// Доли причин ДТП для обеих автоколонн бок о бок — причины у обеих сторон
-// всегда в одном порядке (см. CAUSE_ORDER в buildCauseSlices), поэтому
-// массивы можно сопоставлять по индексу.
+// Порядок категорий у обеих сторон одинаковый — сопоставляем по индексу
 function buildCauseComparison(a: AnalyticsSide, b: AnalyticsSide): CauseComparisonRow[] {
   return a.scope.causeSlices.map((sliceA, index) => {
     const sliceB = b.scope.causeSlices[index]
@@ -144,16 +130,13 @@ function buildCauseComparison(a: AnalyticsSide, b: AnalyticsSide): CauseComparis
   })
 }
 
-// Размера парка и пробега в данных нет — абсолютные числа не нормированы.
+// Размера парка и пробега в данных нет
 const SCALE_DEPENDENT_COMMENT = t('roadAccidents.analytics.comment.scaleDependent')
 
-// «Павлодар: 3, Алматы: 5»
 function describeSmallSides(sides: AnalyticsSide[]): string {
   return sides.map((side) => `${side.name}: ${side.scope.kpi.count}`).join(', ')
 }
 
-// Комментарий для относительных показателей (доли, средние): сопоставимы,
-// если у обеих сторон достаточно ДТП и есть знаменатель.
 function relativeComment(
   a: AnalyticsSide,
   b: AnalyticsSide,
@@ -216,9 +199,6 @@ function currencyCodesOf(rows: AccidentRow[]): string[] {
   return Array.from(codes).sort()
 }
 
-// Почему сравнение двух автоколонн может вводить в заблуждение. Первая
-// строка — всегда: размера парка/пробега в данных нет, поэтому абсолютные
-// числа (ДТП, суммы) не нормированы.
 function buildComparabilityWarnings(a: AnalyticsSide, b: AnalyticsSide): string[] {
   const warnings = [t('roadAccidents.analytics.warning.notNormalized')]
 
@@ -259,9 +239,7 @@ function buildComparabilityWarnings(a: AnalyticsSide, b: AnalyticsSide): string[
   return warnings
 }
 
-// rowsA/rowsB — уже отфильтрованы по своей автоколонне (см. AnalyticsPage,
-// getMotorcadeKey), но не по периоду — период применяется здесь же, как на
-// "Автоколонне" (computeAccidentScope).
+// Строки отфильтрованы по автоколонне, но не по периоду
 export interface AnalyticsSideInput {
   key: string
   name: string

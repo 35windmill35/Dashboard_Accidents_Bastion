@@ -13,11 +13,7 @@ interface AnalyticsKpiGroupsProps {
   period: Period
 }
 
-// Две группы KPI (по эталону — заголовок группы с цветной точкой серии,
-// тем же цветом, что автоколонна на графиках): слева — Автоколонна 1
-// без дельты, справа — Автоколонна 2 с разницей к первой (доли — в п.п.)
-// (см. KpiCard.deltaLabel). Дельта показывает разницу между автоколоннами,
-// а не с прошлым периодом — поэтому previousKpi здесь не участвует.
+// У второй группы дельта — разница к первой автоколонне
 export function AnalyticsKpiGroups({ data, period }: AnalyticsKpiGroupsProps) {
   const periodLabel = formatPeriodLabel(period)
 

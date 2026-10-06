@@ -4,9 +4,7 @@ import type { PeriodComparison } from '@/entities/accident/lib/period'
 import { partialPeriodNote } from '@/entities/accident/lib/period'
 import type { ReportDataContext } from '../lib/pdfChrome'
 
-// Состояние данных на момент формирования отчёта — для шапки PDF: когда
-// загружены данные и каких баз в них нет. Отчёт без этого выглядел бы
-// полным, даже если часть баз не ответила.
+// Актуальность и полнота данных для шапки PDF
 export function getReportDataContext(comparison: PeriodComparison | null): ReportDataContext {
   const staleNames = new Set(accidentsStore.staleFirms.map((firm) => firm.name))
   const unavailable = Array.from(

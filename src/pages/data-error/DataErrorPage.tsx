@@ -9,9 +9,7 @@ interface DataErrorPageProps {
   onRetry?: () => void
 }
 
-// Показывается через RequireAccidentsAccess, когда шаг 3 не отдал данные
-// ни по одной базе — или когда шаг 2 не смог проверить право ни по одной
-// базе (сеть/бэкенд), что не то же самое, что "нет доступа".
+// Данные не загрузились ни по одной базе или не удалось проверить права
 export function DataErrorPage({
   message = t('roadAccidents.access.dataErrorMessage'),
   onRetry = () => accidentsStore.reload(),

@@ -8,8 +8,6 @@ export const row = (patch: Partial<AccidentRow> = {}): AccidentRow => ({
   ...patch,
 })
 
-// Подмена fetch: handler получает URL запроса и возвращает Response
-// или тело Response поля result (Status 0).
 export function mockApi(handler: (url: URL) => unknown): void {
   vi.stubGlobal(
     'fetch',

@@ -7,8 +7,6 @@ interface SkeletonProps {
   count?: number
 }
 
-// Плейсхолдер на время загрузки. width/height подбираются под форму
-// реального контента, count — для набора одинаковых плейсхолдеров.
 export function Skeleton({ width = '100%', height = 20, radius, count = 1 }: SkeletonProps) {
   return (
     <>

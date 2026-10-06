@@ -3,12 +3,7 @@ import { t } from '@/shared/i18n'
 import { pdfReportStore } from '../model/pdfReportStore'
 import styles from './PdfGeneratingOverlay.module.css'
 
-// Полноэкранная блокирующая подложка на время формирования PDF — это же и
-// есть блокировка повторного клика (кнопка в шапке тоже дизейблится, но
-// оверлей не даёт взаимодействовать вообще ни с чем на экране).
-//
-// После формирования здесь же показывается итог, если что-то пошло не так:
-// ошибка (файла нет) или предупреждение (файл сохранён без части разделов).
+// Блокирующий оверлей на время формирования PDF и итоговое сообщение
 export const PdfGeneratingOverlay = observer(function PdfGeneratingOverlay() {
   const { isGenerating, lastError, lastWarning } = pdfReportStore
 

@@ -2,10 +2,7 @@ import { makeAutoObservable, observableRef, reaction } from 'mobx'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import { authStore } from '@/entities/user/model/authStore'
 
-// Общее модальное окно детализации — вызывается кликами по KPI/графикам/
-// таблицам на всех трёх экранах. Открывающий код просто передаёт заголовок
-// и уже отфильтрованный список строк, сама модалка данные не запрашивает и
-// не фильтрует по периоду/автоколонне повторно.
+// Модалка получает уже отфильтрованные строки и сама данные не запрашивает
 class DrilldownStore {
   isOpen = false
   title = ''
@@ -14,8 +11,7 @@ class DrilldownStore {
   constructor() {
     makeAutoObservable(this, { rows: observableRef })
 
-    // Выход, истечение сессии, 401 или вход под другим пользователем —
-    // модалка закрывается, строки с ФИО и суммами выбрасываются из памяти.
+    // Смена сессии закрывает модалку и очищает ПДн
     reaction(
       () => authStore.sessionEpoch,
       () => this.reset()
@@ -28,7 +24,6 @@ class DrilldownStore {
     this.isOpen = true
   }
 
-  // Строки не держим после закрытия — незачем хранить ПДн в памяти.
   close(): void {
     this.reset()
   }

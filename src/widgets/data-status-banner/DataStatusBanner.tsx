@@ -8,8 +8,6 @@ import styles from './DataStatusBanner.module.css'
 import { CAUSE_CATEGORY_LABELS } from '@/shared/config/accidentCauses'
 import { t } from '@/shared/i18n'
 
-// Значок предупреждения (JSX-константа, а не компонент — файл экспортирует
-// только DataStatusBanner)
 const warningIcon = (
   <svg
     className={styles.icon}
@@ -38,16 +36,7 @@ function formatTime(date: Date): string {
   }).format(date)
 }
 
-// Несбрасываемые предупреждения о полноте и качестве данных — над контентом
-// всех трёх экранов:
-// - часть баз не прошла проверку права (шаг 2) или не отдала данные (шаг 3)
-//   → «Данные баз: … недоступны, показатели неполные» + «Повторить»; если
-//   по базе остались данные прошлой загрузки — «показаны данные на …»;
-// - сервер отдал по базе меньше строк, чем заявил в totalRecords;
-// - часть строк отброшена при разборе (нет ID, некорректная дата);
-// - записи с причиной, которой нет в справочнике категорий;
-// - в данных несколько валют → суммы по компании складывать нельзя;
-// - автоколонна из ссылки недоступна этому пользователю.
+// Несбрасываемые предупреждения о полноте и качестве данных
 export const DataStatusBanner = observer(function DataStatusBanner() {
   const location = useLocation()
   const stale = accidentsStore.staleFirms

@@ -26,7 +26,6 @@
   cursor: pointer;
 }
 
-/* Переключатель «Месяц / Квартал / Год / Весь период» */
 .segmented {
   display: flex;
   gap: 2px;
@@ -60,7 +59,6 @@
   color: var(--color-on-accent);
 }
 
-/* Селекты: нативные, но со своей стрелкой и точкой серии */
 .selectWrap {
   position: relative;
   display: flex;
@@ -165,7 +163,6 @@
   opacity: 0.55;
 }
 
-/* Идёт обновление — кнопка подсвечена акцентом, а не «погашена» */
 .actionButtonBusy,
 .actionButtonBusy:disabled {
   opacity: 1;

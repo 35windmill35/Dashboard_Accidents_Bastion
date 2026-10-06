@@ -43,18 +43,13 @@ interface AppTopBarProps {
   onToggleSidebar: () => void
 }
 
-// Полоса над контентом (липкая, полупрозрачная с размытием — как в
-// эталоне): бургер сайдбара, переключатель гранулярности периода и сам
-// период (общие для всех трёх экранов), селекторы автоколонн своего
-// экрана, кнопки «Обновить данные» / «PDF отчёт». «Выйти» — в сайдбаре.
 export const AppTopBar = observer(function AppTopBar({ onToggleSidebar }: AppTopBarProps) {
   const location = useLocation()
   const period = filtersStore.period
   const isMotorcadeScreen = location.pathname === '/motorcade'
   const isAnalyticsScreen = location.pathname === '/analytics'
   const isRefreshing = accidentsStore.isRefreshing
-  // Цвета точек серий зависят от темы: чтение theme подписывает шапку на её
-  // смену, сами цвета к этому моменту уже переключены (applyChartScheme)
+  // Подписка на смену темы — цвета серий зависят от неё
   const comparisonColors = themeStore.theme ? [COMPARISON_COLOR_A, COMPARISON_COLOR_B] : []
 
   return (

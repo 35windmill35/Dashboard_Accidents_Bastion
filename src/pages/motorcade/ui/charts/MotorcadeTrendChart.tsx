@@ -44,8 +44,6 @@ interface DotProps {
   onPointClick: (ym: number) => void
 }
 
-// Точка графика кликабельна — открывает детализацию за этот месяц (в
-// пределах уже выбранной автоколонны).
 function TrendDot({ cx, cy, payload, onPointClick }: DotProps) {
   if (cx === undefined || cy === undefined || !payload) return null
   return (
@@ -62,8 +60,6 @@ function TrendDot({ cx, cy, payload, onPointClick }: DotProps) {
   )
 }
 
-// Динамика ДТП по месяцам для выбранной автоколонны — те же 12 месяцев, что
-// и на "Обзоре" (см. getTrendMonths), но по её собственной истории.
 export function MotorcadeTrendChart({ data }: Props) {
   const gradientId = useGradientId()
   const chartData: TrendPoint[] = data.monthlyCounts.map((m) => ({
@@ -72,7 +68,6 @@ export function MotorcadeTrendChart({ data }: Props) {
     count: m.count,
   }))
 
-  // Клик по точке — период дашборда = этот месяц
   const handleClick = (ym: number) => filtersStore.setPeriod({ mode: 'month', value: ym })
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))

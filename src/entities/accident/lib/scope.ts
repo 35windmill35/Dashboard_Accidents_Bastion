@@ -21,10 +21,7 @@ import {
   type CauseSlice,
 } from './metrics'
 
-// Единый расчёт показателей среза ДТП за период — для «Обзора» (вся
-// компания), «Статистики по автоколонне» (одна автоколонна) и «Аналитики»
-// (две автоколонны рядом). Один расчёт на все экраны — цифры не могут
-// разойтись между ними.
+// Единый расчёт показателей для всех трёх экранов
 export interface AccidentScopeKpi {
   count: number
   sumDamage: number
@@ -39,8 +36,7 @@ export interface AccidentScopeKpi {
 export interface AccidentScopeData {
   periodRows: AccidentRow[]
   kpi: AccidentScopeKpi
-  // KPI периода сравнения; для незавершённого периода — за то же число
-  // дней от начала (см. comparison)
+  // Для незавершённого периода — за то же число дней
   previousKpi: AccidentScopeKpi | null
   comparison: PeriodComparison
   causeSlices: CauseSlice[]
@@ -64,8 +60,7 @@ function buildScopeKpi(rows: AccidentRow[], slices: CauseSlice[]): AccidentScope
   }
 }
 
-// scopeRows на входе — уже отфильтрованы по нужному подмножеству (одна
-// автоколонна и т.п.), но не по периоду — период фильтруется здесь.
+// scopeRows уже отфильтрованы по подмножеству, но не по периоду
 export function computeAccidentScope(
   scopeRows: AccidentRow[],
   period: Period,

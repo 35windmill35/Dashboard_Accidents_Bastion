@@ -40,8 +40,6 @@ interface Point {
   averageDamage: number
 }
 
-// Средний ущерб на 1 ДТП — по одному столбцу на автоколонну, разница видна
-// сразу по высоте (в отличие от KPI-карточек, где нужно сравнивать числа).
 export function AverageDamageComparisonChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)

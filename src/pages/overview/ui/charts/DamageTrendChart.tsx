@@ -32,8 +32,6 @@ interface Props {
   data: OverviewData
 }
 
-// Динамика суммы ущерба/возмещения по месяцам — та же ось, что и на графике
-// количества ДТП по месяцам (см. AccidentsTrendChart), но в тенге.
 export function DamageTrendChart({ data }: Props) {
   const gradientId = useGradientId()
   const chartData = data.monthlyCounts.map((m) => ({
@@ -43,7 +41,6 @@ export function DamageTrendChart({ data }: Props) {
     sumCompensated: m.sumCompensated,
   }))
 
-  // Клик по точке — период дашборда = этот месяц
   const handleClick = (ym: number) => filtersStore.setPeriod({ mode: 'month', value: ym })
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))

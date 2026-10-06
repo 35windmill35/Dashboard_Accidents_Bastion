@@ -1,13 +1,5 @@
-// Хранилище текущей сессии — модульная переменная плюс копия в
-// localStorage, чтобы сессия переживала перезагрузку страницы.
-//
-// Ключ отдельный от дашборда «Точки роста» — дашборды разворачиваются
-// как независимые деплои, без общего входа между ними.
-//
-// Сроки жизни: сессия живёт максимум 10 часов с момента входа и
-// истекает после 30 минут без запросов к API. Сервер считает неактивность
-// по запросам, поэтому "активность" здесь — это успешный запрос с
-// SESSIONID (см. touchSession в httpClient), а не движение мыши.
+// Сессия: модульная переменная + копия в localStorage.
+// Живёт до 10 ч с входа, истекает после 30 мин без запросов к API.
 
 const STORAGE_KEY = 'road_accidents_session'
 
@@ -33,7 +25,7 @@ function persist(): void {
     if (current) localStorage.setItem(STORAGE_KEY, JSON.stringify(current))
     else localStorage.removeItem(STORAGE_KEY)
   } catch {
-    // приватный режим/запрет хранилища — сессия живёт только в памяти вкладки
+    // хранилище недоступно
   }
 }
 
@@ -57,7 +49,7 @@ function restoreFromStorage(): void {
       sessionId: parsed.sessionId,
       remaining: typeof parsed.remaining === 'number' ? parsed.remaining : null,
       savedAt,
-      // старый формат без lastActivityAt — считаем активностью момент входа
+      // Старый формат без lastActivityAt
       lastActivityAt: typeof parsed.lastActivityAt === 'number' ? parsed.lastActivityAt : savedAt,
     }
   } catch {
@@ -71,8 +63,7 @@ export function setSession({ sessionId, remaining }: SetSessionArgs): void {
   persist()
 }
 
-// Истёкшая по времени сессия не отдаётся вовсе — запрос с ней всё равно
-// получит отказ, а пользователь увидел бы "нет доступа" вместо входа.
+// Истёкшая сессия не отдаётся
 export function getSessionId(): string | null {
   if (!current) restoreFromStorage()
   if (!current) return null
@@ -84,7 +75,6 @@ export function getRemaining(): number | null {
   return current?.remaining ?? null
 }
 
-// Вызывается после каждого успешного авторизованного запроса.
 export function touchSession(): void {
   if (!current) return
   current.lastActivityAt = Date.now()
@@ -100,8 +90,7 @@ export function isSessionExpired(now: number = Date.now()): boolean {
   )
 }
 
-// Есть ли сохранённая (пусть и истёкшая) сессия — нужно, чтобы отличить
-// "сессия истекла" от "пользователь ещё не входил".
+// Отличает «сессия истекла» от «ещё не входил»
 export function hasStoredSession(): boolean {
   if (!current) restoreFromStorage()
   return Boolean(current?.sessionId)

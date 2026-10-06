@@ -22,14 +22,12 @@ import styles from './AnalyticsPage.module.css'
 interface AnalyticsSnapshot {
   data: AnalyticsData
   period: Period
-  // все строки автоколонн, без фильтра периода — для кликов по месяцам
-  // графиков динамики, которые шире выбранного периода
+  // Без фильтра периода — для кликов по месяцам на графиках динамики
   rowsA: AccidentRow[]
   rowsB: AccidentRow[]
 }
 
-// Срез "Аналитики" по текущему состоянию сторов — общий для экрана и
-// PDF-отчёта, чтобы отчёт не мог разойтись с тем, что на экране.
+// Общий для экрана и PDF
 function computeCurrentAnalytics(): AnalyticsSnapshot | null {
   const period = filtersStore.period
   const keyA = filtersStore.selectedAnalyticsKeyA
@@ -48,16 +46,7 @@ function computeCurrentAnalytics(): AnalyticsSnapshot | null {
   return { data, period, rowsA, rowsB }
 }
 
-// Экран "Аналитика" — сравнение двух автоколонн. Оба селектора — в общей
-// шапке (AppTopBar, видны только на этом маршруте), взаимоисключающий выбор
-// уже реализован в filtersStore (setAnalyticsMotorcadeA/B). Период общий с
-// остальными экранами.
-//
-// Баннер о сопоставимости (ui/ComparabilityBanner) временно
-// скрыт по решению заказчика — и на экране, и в PDF. Тексты по-прежнему
-// считаются в analyticsData.comparabilityWarnings: чтобы вернуть, достаточно
-// снова отрисовать <ComparabilityBanner> здесь и noticeBlock в
-// buildAnalyticsReport.
+// Баннер сопоставимости скрыт по решению заказчика (тексты считаются в comparabilityWarnings)
 export const AnalyticsPage = observer(function AnalyticsPage() {
   const exportPdf = useCallback(async () => {
     const snapshot = computeCurrentAnalytics()
@@ -103,9 +92,7 @@ export const AnalyticsPage = observer(function AnalyticsPage() {
       />
       <AnalyticsKpiGroups key={themeStore.theme} data={data} period={period} />
       <SectionDivider title={t('roadAccidents.common.dynamicsAndStructure')} />
-      {/* Цвета графиков — JS-константы (Recharts не читает CSS-переменные):
-          при смене системной темы перемонтируются только графики, а не весь
-          экран с развёрнутыми таблицами */}
+      {/* Перемонтирование графиков при смене темы */}
       <AnalyticsCharts
         key={themeStore.theme}
         data={data}

@@ -32,8 +32,6 @@ interface Props {
   period: Period
 }
 
-// Ущерб/возмещение по автоколоннам — одна ось (обе величины в тенге), два
-// ряда рядом, не наложение.
 export function MotorcadeDamageChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)

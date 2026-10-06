@@ -7,7 +7,6 @@ interface PasswordInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>,
   className?: string
 }
 
-// Поле пароля с кнопкой показать/скрыть.
 export function PasswordInput({ className, ...inputProps }: PasswordInputProps) {
   const [visible, setVisible] = useState(false)
 

@@ -2,22 +2,17 @@ import type { jsPDF } from 'jspdf'
 import { t } from '@/shared/i18n'
 import { COLOR, CONTENT_WIDTH, PAGE, drawLine, drawText } from './pdfKit'
 
-// Блок — самодостаточный кусок отчёта с заранее известной высотой: KPI-строка,
-// карточка графика, таблица. Высота считается до отрисовки, поэтому движок
-// может решить, влезает ли блок на текущую страницу, и никогда не режет его
-// пополам.
+// Блок отчёта с заранее известной высотой — никогда не режется между страницами
 export interface Block {
   height: number
   draw: (y: number) => void
 }
 
-// Фабрика блока с привязкой к колонке: получает свои x и ширину.
 export type BlockFactory = (x: number, width: number) => Block
 
 export const BLOCK_GAP = 9
 
-// Ряд из нескольких колонок: высота — по самой высокой карточке, верхние
-// края выровнены.
+// Ряд колонок, высота — по самой высокой
 export function columns(
   factories: BlockFactory[],
   ratios: number[],
@@ -51,10 +46,7 @@ export interface FlowOptions {
   onSection?: (done: number, total: number) => void
 }
 
-// Раскладывает блоки сверху вниз, начиная новую страницу, когда очередной
-// блок целиком не помещается в остаток текущей. Падение одного блока не
-// ломает весь отчёт — пишем в консоль и продолжаем с остальными (тот же
-// принцип частичного отказа, что и при загрузке данных по базам).
+// Падение одного блока не ломает отчёт
 export function flowBlocks(
   doc: jsPDF,
   factories: BlockFactory[],
@@ -89,9 +81,7 @@ export function flowBlocks(
   return { pages, failed }
 }
 
-// Колонтитул рисуется в самом конце, когда известно общее число страниц.
-// failed > 0 — часть разделов не отрисовалась; об этом пишется в каждом
-// колонтитуле, чтобы неполный отчёт не выглядел полным.
+// Колонтитул рисуется в конце, когда известно число страниц
 export function drawPageFooters(doc: jsPDF, failed = 0): void {
   const total = doc.getNumberOfPages()
   const y = PAGE.height - PAGE.marginBottom + 22

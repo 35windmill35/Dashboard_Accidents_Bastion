@@ -6,7 +6,6 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
-// Та же конфигурация, что в первом дашборде.
 export default defineConfig([
   globalIgnores(['dist']),
   {

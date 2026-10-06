@@ -36,8 +36,7 @@ interface Props {
   period: Period
 }
 
-// Кол-во ДТП по автоколоннам за период, включая псевдо-автоколонну "Не
-// указана" — это единственный экран, где она участвует в графиках.
+// Включая «Не указана» — только на этом экране
 export function MotorcadeCountChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)

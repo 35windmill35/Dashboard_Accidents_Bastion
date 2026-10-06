@@ -1,7 +1,4 @@
-// Поля элемента массива DashboardAccidentStat.data. Ответ отдаётся целиком,
-// без фильтров и сортировки — весь отбор делается на клиенте (см.
-// accidentsStore/filtersStore). DB_INDEX в API нет, он добавляется при
-// склейке баз на шаге 3 инициализации.
+// Элемент DashboardAccidentStat.data; DB_INDEX добавляет клиент
 export interface AccidentRow {
   ACCIDENT_ID: number
   ACCIDENT_DATE: string
@@ -50,6 +47,5 @@ export interface AccidentRow {
   ACCIDENT_COMMENT?: string | null
   ACCIDENT_VICTIM?: string | null
 
-  // добавляется клиентом при склейке результатов по базам
   DB_INDEX: number
 }

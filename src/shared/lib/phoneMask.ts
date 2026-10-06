@@ -1,5 +1,4 @@
-// Маска телефона для инпута: пользователь видит "+7 (999) 123-45-67",
-// на сервер (см. AuthStore.normalizePhone) уходят только цифры.
+// Маска «+7 (999) 123-45-67», на сервер уходят только цифры
 export function formatPhoneInput(rawValue: string): string {
   let digits = rawValue.replace(/\D/g, '')
 

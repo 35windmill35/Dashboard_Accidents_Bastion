@@ -35,7 +35,6 @@ interface Props {
   rowsB: AccidentRow[]
 }
 
-// Динамика суммы возмещения по месяцам — две линии (по автоколонне).
 export function CompensatedSumTrendChart({ data, rowsA, rowsB }: Props) {
   const gradientId = useGradientId()
   const chartData = data.trendMonths.map((ym, index) => ({

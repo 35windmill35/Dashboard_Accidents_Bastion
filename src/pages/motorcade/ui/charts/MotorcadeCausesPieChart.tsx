@@ -11,10 +11,6 @@ interface Props {
   period: Period
 }
 
-// Структура причин ДТП автоколонны за период, те же категории, что и на
-// "Обзоре" (см. shared/config/accidentCauses).
-// Кольцо с итогом в центре и список категорий с долями — по эталону (см.
-// widgets/cause-donut); клик по сектору или строке — таблица ДТП категории.
 export function MotorcadeCausesPieChart({ data, period }: Props) {
   const slices = data.causeSlices.filter((s) => s.count > 0)
   const periodLabel = formatPeriodLabel(period)

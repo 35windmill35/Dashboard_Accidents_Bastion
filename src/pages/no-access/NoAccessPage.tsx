@@ -3,8 +3,6 @@ import { authStore } from '@/entities/user/model/authStore'
 import { StatusScreen } from '@/shared/ui/StatusScreen/StatusScreen'
 import { t } from '@/shared/i18n'
 
-// Показывается через RequireAccidentsAccess, когда ни одна база не дала
-// право на дашборд ДТП.
 export function NoAccessPage() {
   const navigate = useNavigate()
 

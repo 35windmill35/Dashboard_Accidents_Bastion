@@ -10,7 +10,7 @@ interface StatusScreenProps {
   message?: ReactNode
   // Прогресс загрузки 0…1; null — неопределённый (бегущая полоса)
   progress?: number | null
-  // Кнопки действий: обычные <button>, первая оформляется как основная
+  // Первая кнопка оформляется как основная
   children?: ReactNode
 }
 
@@ -43,10 +43,7 @@ function ToneIcon({ tone }: { tone: StatusTone }) {
   )
 }
 
-// Полноэкранное состояние вне каркаса приложения — загрузка данных, «нет
-// доступа», ошибка загрузки. Оформление — как у экрана входа (эталон):
-// карточка с логотипом на фоне с синим свечением. У загрузки вместо значка —
-// полоса прогресса.
+// Полноэкранное состояние: загрузка, нет доступа, ошибка
 export function StatusScreen({ tone, title, message, progress, children }: StatusScreenProps) {
   const isLoading = tone === 'loading'
 

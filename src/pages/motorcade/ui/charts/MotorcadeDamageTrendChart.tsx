@@ -32,8 +32,6 @@ interface Props {
   data: MotorcadeData
 }
 
-// Динамика суммы ущерба/возмещения по месяцам для выбранной автоколонны —
-// та же ось, что и у графика количества ДТП (см. MotorcadeTrendChart).
 export function MotorcadeDamageTrendChart({ data }: Props) {
   const gradientId = useGradientId()
   const chartData = data.monthlyCounts.map((m) => ({
@@ -43,7 +41,6 @@ export function MotorcadeDamageTrendChart({ data }: Props) {
     sumCompensated: m.sumCompensated,
   }))
 
-  // Клик по точке — период дашборда = этот месяц
   const handleClick = (ym: number) => filtersStore.setPeriod({ mode: 'month', value: ym })
 
   const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((d) => d.label))

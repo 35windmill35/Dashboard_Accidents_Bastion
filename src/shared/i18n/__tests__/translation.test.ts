@@ -11,7 +11,7 @@ import { t } from '..'
 const ROOT = fileURLToPath(new URL('../../../..', import.meta.url))
 const SRC = join(ROOT, 'src')
 const CYRILLIC = /[А-Яа-яЁё]/
-// Обозначения валют — не перевод, а символы (см. shared/lib/formatters)
+// Обозначения валют — не перевод
 const ALLOWED = new Set(['сом', 'сўм'])
 
 function sourceFiles(dir: string): string[] {
@@ -24,7 +24,6 @@ function sourceFiles(dir: string): string[] {
   })
 }
 
-// Строковые литералы, шаблоны и JSX-текст с кириллицей (кроме console.*)
 function russianLiterals(path: string): string[] {
   const text = readFileSync(path, 'utf8')
   const file = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true)

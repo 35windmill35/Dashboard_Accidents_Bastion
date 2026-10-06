@@ -105,8 +105,6 @@ export function OverviewTables({ data, period }: OverviewTablesProps) {
         showRank
         onRowClick={(r) => drilldownStore.open(`${r.name} — ${periodLabel}`, r.rows)}
       />
-      {/* Три суммы в строке не помещаются в треть ширины без обрезки —
-          таблица причин занимает отдельный ряд на всю ширину */}
       <div className={styles.fullRow}>
         <DataTable
           title={t('roadAccidents.chart.damageByCause')}

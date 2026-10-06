@@ -21,21 +21,20 @@ export function sumCompensated(rows: AccidentRow[]): number {
   return rows.reduce((sum, row) => sum + (row.ACCIDENT_COMPENSATED_DAMAGE ?? 0), 0)
 }
 
-// null при нулевом ущербе — делить не на что, это не 0%.
+// null при нулевом ущербе — не 0%
 export function compensationShare(rows: AccidentRow[]): number | null {
   const damage = sumDamage(rows)
   if (damage === 0) return null
   return sumCompensated(rows) / damage
 }
 
-// Знаменатель — только ДТП с ненулевым ущербом (тяжесть инцидента).
+// Знаменатель — только ДТП с ущербом
 export function averageDamagePerAccident(rows: AccidentRow[]): number | null {
   const withDamage = rows.filter((row) => (row.ACCIDENT_DAMAGE ?? 0) > 0)
   if (withDamage.length === 0) return null
   return sumDamage(withDamage) / withDamage.length
 }
 
-// Водитель считается тем же самым только в пределах одной базы.
 export function driversWithThreeOrMoreAccidents(rows: AccidentRow[]): number {
   const counts = new Map<string, number>()
 
@@ -81,8 +80,6 @@ const CAUSE_ORDER: CauseCategory[] = (
   ['driverFault', 'thirdPartyFault', 'noDamage', 'undetermined', 'underReview'] as const
 ).filter((category) => category !== 'noDamage' || NO_DAMAGE_CATEGORY_ENABLED)
 
-// Разбивка по категориям причин с суммами — общая для "Обзора" и
-// "Автоколонны" (порядок категорий фиксирован, см. CAUSE_ORDER).
 export function buildCauseSlices(rows: AccidentRow[]): CauseSlice[] {
   const grouped = groupByCauseCategory(rows)
 
@@ -99,8 +96,6 @@ export function buildCauseSlices(rows: AccidentRow[]): CauseSlice[] {
   })
 }
 
-// Доля ДТП конкретной категории причин от общего числа в срезе. null при
-// пустом срезе — как и остальные доли, не 0%.
 export function causeCategoryShare(
   slices: CauseSlice[],
   totalCount: number,
@@ -111,9 +106,7 @@ export function causeCategoryShare(
   return (slice?.count ?? 0) / totalCount
 }
 
-// Стабильный порядок рейтингов: больше ДТП → больше ущерб → по имени →
-// по ключу. Без вторичных ключей порядок при равенстве зависел бы от
-// порядка строк в ответе API, и «топ-8» обрезался бы произвольно.
+// Порядок при равенстве: ущерб, имя, ключ
 interface Rankable {
   key: string
   name: string
@@ -141,8 +134,6 @@ export interface MotorcadeAggregate {
   sumCompensated: number
 }
 
-// Компания целиком, по автоколоннам (включая "Не указана" — обзор
-// показывает и её).
 export function groupByMotorcade(rows: AccidentRow[]): MotorcadeAggregate[] {
   const map = new Map<string, MotorcadeAggregate>()
 
@@ -179,10 +170,7 @@ export interface DriverAggregate {
   rows: AccidentRow[]
 }
 
-// Водитель уникален в пределах одной базы (DB_INDEX+DRIVER_ID). Записи без
-// DRIVER_ID собираются в одну строку «Водитель не указан» — иначе сумма
-// таблицы не сходится с итогом. Возвращает полный список — экраны сами
-// берут top-N и разворачивают остальное по "Показать все".
+// Записи без DRIVER_ID — одной строкой «Водитель не указан»
 export function rankDrivers(rows: AccidentRow[]): DriverAggregate[] {
   const map = new Map<string, DriverAggregate>()
 
@@ -219,11 +207,7 @@ export interface VehicleAggregate {
   rows: AccidentRow[]
 }
 
-// Машина уникальна в пределах одной базы (DB_INDEX+CAR_ID), запасной ключ —
-// гаражный номер, если CAR_ID не пришёл (префиксы разводят два
-// пространства значений: CAR_ID 123 и гаражный "123" — разные машины).
-// Записи без обоих — одна строка «ТС не указано». Полный список, top-N
-// берут экраны.
+// Ключ — CAR_ID или гаражный номер (с префиксами, чтобы не смешивать)
 export function rankVehicles(rows: AccidentRow[]): VehicleAggregate[] {
   const map = new Map<string, VehicleAggregate>()
 
@@ -259,8 +243,7 @@ export interface MonthlyAggregate {
   sumCompensated: number
 }
 
-// Строки для графиков динамики — по каждому месяцу из getTrendMonths, даже
-// если данных за него нет (тогда нули, а не пропуск точки).
+// Пустые месяцы — нули, а не пропуск точки
 export function monthlyTrend(rows: AccidentRow[], months: number[]): MonthlyAggregate[] {
   const byMonth = new Map<number, AccidentRow[]>()
   months.forEach((ym) => byMonth.set(ym, []))
@@ -282,8 +265,6 @@ export function monthlyTrend(rows: AccidentRow[], months: number[]): MonthlyAggr
   })
 }
 
-// Срезы для drill-through из KPI: "список ДТП с ущербом",
-// "с возмещением", "непокрытые".
 export function rowsWithDamage(rows: AccidentRow[]): AccidentRow[] {
   return rows.filter((row) => (row.ACCIDENT_DAMAGE ?? 0) > 0)
 }
@@ -292,7 +273,6 @@ export function rowsWithCompensation(rows: AccidentRow[]): AccidentRow[] {
   return rows.filter((row) => (row.ACCIDENT_COMPENSATED_DAMAGE ?? 0) > 0)
 }
 
-// Ущерб есть, а возмещено меньше ущерба (в т.ч. ничего).
 export function rowsNotFullyCompensated(rows: AccidentRow[]): AccidentRow[] {
   return rows.filter(
     (row) =>

@@ -12,8 +12,6 @@ interface SortHeaderProps {
   align?: 'right'
 }
 
-// Заголовок сортируемой колонки — настоящая кнопка (Tab + Enter), со
-// стрелкой направления у активной колонки и aria-sort для скринридера.
 export function SortHeader({ label, column, sortKey, sortDir, onSort, align }: SortHeaderProps) {
   const isActive = column === sortKey
   return (

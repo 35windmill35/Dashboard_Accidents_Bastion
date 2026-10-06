@@ -37,9 +37,7 @@ import {
   splitMonthLabel,
 } from './pdfFormat'
 
-// Топ-N совпадает со свёрнутым состоянием таблиц на экране, как и на
-// "Обзоре" (см. buildOverviewReport) — полный список пользователь берёт
-// выгрузкой CSV.
+// Как в свёрнутых таблицах на экране
 const DRIVERS_TOP_N = 8
 const VEHICLES_TOP_N = 8
 
@@ -50,15 +48,10 @@ export interface MotorcadeReportInput {
   data: MotorcadeData
   period: Period
   motorcadeName: string
-  // Актуальность и полнота данных для шапки
   context: ReportDataContext
   onSection?: (done: number, total: number) => void
 }
 
-// 8 KPI, не 5, как на "Обзоре" (три доли по вине — только у одной
-// автоколонны они информативны, у компании целиком это уже структура
-// причин). deltaHigherIsBetter расставлены так же, как в MotorcadeKpiRow на
-// экране.
 function kpiCards(data: MotorcadeData): KpiCardData[] {
   const { kpi, previousKpi } = data
 
@@ -139,7 +132,7 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
     ),
   ]
 
-  // Правило «Без повреждения» не подтверждено — карточку не печатаем
+  // Правило «Без повреждения» не подтверждено
   if (NO_DAMAGE_CATEGORY_ENABLED) {
     cards.push(
       build(
@@ -320,7 +313,6 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
       title: t('roadAccidents.pdf.title.motorcade', { name: input.motorcadeName }),
       periodLabel,
       generatedAt: new Date(),
-      // Перечень баз в шапке не нужен — это деталь интеграции, не фильтр
       filterLines: dataContextLines(input.context),
     }),
     kpiRow(doc, cards.slice(0, 4)),
@@ -332,10 +324,6 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
   ]
 }
 
-// Собирает отчёт "Автоколонна" тем же способом, что и "Обзор"
-// (buildOverviewReport) — векторной отрисовкой, без снимков экрана. Блоков
-// меньше: у одной автоколонны нет смысла в сравнении "ДТП/ущерб по
-// автоколоннам" — это графики только "Обзора".
 export function buildMotorcadeReport(input: MotorcadeReportInput): {
   doc: jsPDF
   result: FlowResult

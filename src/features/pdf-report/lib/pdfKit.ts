@@ -7,7 +7,7 @@ import { PDF_FONT_RANGES } from './fonts/pdfCharset'
 
 export type Rgb = readonly [number, number, number]
 
-// A4 книжная, единицы — типографские пункты.
+// A4 книжная, единицы — пункты
 export const PAGE = {
   width: 595.28,
   height: 841.89,
@@ -18,9 +18,7 @@ export const PAGE = {
 
 export const CONTENT_WIDTH = PAGE.width - PAGE.marginX * 2
 
-// Палитра отчёта — светлая тема интерфейса (PDF всегда светлый, на белой
-// бумаге), те же цвета, что на экране: см. app/styles/theme.css
-// ([data-theme='light']) и shared/lib/chartColors.ts (LIGHT). Держать в паре.
+// Светлая палитра интерфейса, держать в паре с theme.css и chartColors.ts
 export const COLOR = {
   ink: [23, 32, 51], // --color-text
   title: [11, 18, 32], // --color-title
@@ -39,16 +37,11 @@ export const COLOR = {
   white: [255, 255, 255],
 } as const satisfies Record<string, Rgb>
 
-// Rubik — тот же шрифт, что в интерфейсе. Два начертания: обычное и Medium
-// (в jsPDF оно регистрируется как 'bold'). «mono» — Rubik с моноширинными
-// цифрами (вшита OpenType-функция tnum): суммы в колонках таблиц и на осях
-// выравниваются по разрядам, как tabular-nums на экране.
+// «mono» — Rubik с моноширинными цифрами (tnum)
 export const FONT_SANS = 'Rubik'
 export const FONT_MONO = 'RubikTabular'
 
-// Встроенные шрифты jsPDF (helvetica и прочие) физически не содержат
-// кириллицы — вместо текста получается мусор вида "0H1>@4". Поэтому в
-// документ подкладываются подмножества Rubik (см. fonts/).
+// Встроенные шрифты jsPDF не содержат кириллицы
 export function registerPdfFonts(doc: jsPDF): void {
   doc.addFileToVFS('Rubik-Regular.ttf', rubikRegular)
   doc.addFont('Rubik-Regular.ttf', FONT_SANS, 'normal')
@@ -69,10 +62,7 @@ export interface TextStyle {
   charSpace?: number
 }
 
-// Символы вне встроенных шрифтов jsPDF рисует пустыми квадратами. Узкие
-// пробелы, неразрывные дефисы и т. п. (их подставляет Intl и копируют из
-// Word) заменяются на ближайшие имеющиеся, остальное — на «?» с одним
-// предупреждением в консоли на символ.
+// Символы вне шрифта: близкая замена или «?»
 const PDF_CHAR_FALLBACKS: Record<string, string> = {
   '\u2007': '\u00a0',
   '\u2008': ' ',
@@ -147,8 +137,6 @@ export function measureText(doc: jsPDF, rawText: string, style: TextStyle = {}):
   return width
 }
 
-// Обрезает строку по ширине колонки с многоточием — длинные ФИО и адреса в
-// таблицах не должны наезжать на соседние колонки.
 export function fitText(doc: jsPDF, text: string, maxWidth: number, style: TextStyle = {}): string {
   if (measureText(doc, text, style) <= maxWidth) return text
 
@@ -159,7 +147,6 @@ export function fitText(doc: jsPDF, text: string, maxWidth: number, style: TextS
   return `${cut.trimEnd()}…`
 }
 
-// Перенос по словам с ограничением по числу строк (последняя обрезается).
 export function wrapText(
   doc: jsPDF,
   text: string,
@@ -232,7 +219,6 @@ export function drawRect(
   else doc.rect(x, y, w, h, mode)
 }
 
-// Плашка легенды: цветной квадрат + подпись, возвращает занятую ширину.
 export function drawLegendChip(
   doc: jsPDF,
   label: string,

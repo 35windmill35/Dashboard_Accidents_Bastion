@@ -17,11 +17,7 @@ interface OverviewKpiRowProps {
   period: Period
 }
 
-// Пять KPI "Обзора". У каждой карточки два действия:
-// - клик по карточке (drill-down) — связанный экран, период сохраняется
-//   (он общий для всех экранов);
-// - иконка в правом верхнем углу (drill-through) — таблица именно тех ДТП,
-//   из которых сложилось число (все / с ущербом / с возмещением / непокрытые).
+// Клик по карточке — переход на экран, иконка — таблица ДТП
 export function OverviewKpiRow({ data, period }: OverviewKpiRowProps) {
   const navigate = useNavigate()
   const { kpi, previousKpi, periodRows } = data

@@ -8,10 +8,7 @@ import { formatMonthShortLabel, ymToYear, type Period } from '@/entities/acciden
 import { t } from '@/shared/i18n'
 import type { CauseSlice } from '@/entities/accident/lib/metrics'
 
-// Компактные подписи денежной оси: на графике не нужны полные суммы, иначе
-// подписи делений шире самого графика.
-// Во встроенных шрифтах PDF есть только ₸ и $ — для остальных валют
-// пишем код (RUB, EUR), иначе вместо знака будет пустой квадрат.
+// Во встроенных шрифтах PDF есть только ₸ и $, для остальных валют — код
 const PDF_SAFE_SYMBOLS = new Set(['₸', '$'])
 
 export function pdfCurrencySuffix(): string {
@@ -50,7 +47,6 @@ export function formatCountAxis(value: number): string {
   return formatNumber(Math.round(value))
 }
 
-// "Окт" + "25" двумя строками — в узкой карточке год не влезает в одну.
 export function splitMonthLabel(ym: number): { label: string; sublabel: string } {
   const [month] = formatMonthShortLabel(ym).split(' ')
   return { label: month, sublabel: String(ymToYear(ym) % 100) }
@@ -60,9 +56,7 @@ export function formatMonthAxisLabel(ym: number): string {
   return formatMonthShortLabel(ym)
 }
 
-// Короткий вывод под карточкой "Структура причин ДТП" — не аналитика "на
-// глаз", а пересказ чисел, которые уже показаны на графике. Общий для
-// "Обзора" и "Автоколонны" (см. buildOverviewReport/buildMotorcadeReport).
+// Пересказ чисел с графика, без интерпретации
 export function causesNote(causeSlices: CauseSlice[], total: number): string {
   if (total === 0) return t('roadAccidents.pdf.insight.noAccidents')
 
@@ -79,8 +73,7 @@ export function causesNote(causeSlices: CauseSlice[], total: number): string {
   })
 }
 
-// Часть имени файла dtp-<экран>-<период>-<YYYYMMDD-HHmm>.pdf, отвечающая за
-// период — короткая и без символов, проблемных для имени файла в Windows.
+// Без символов, проблемных для имён файлов в Windows
 export function periodSlug(period: Period): string {
   if (period.mode === 'all') return 'ves-period'
   if (period.mode === 'year') return String(period.value)
@@ -102,8 +95,6 @@ export function buildReportFilename(screenSlug: string, period: Period, now: Dat
   return `dtp-${screenSlug}-${periodSlug(period)}-${stamp}.pdf`
 }
 
-// Полная сумма для PDF — как formatCurrency, но только со знаками,
-// которые есть во встроенных шрифтах.
 export function formatPdfCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined || Number.isNaN(value)) return '—'
   return withPdfCurrency(formatNumber(value, 0))

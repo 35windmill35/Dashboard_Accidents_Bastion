@@ -1,5 +1,7 @@
 import { useId } from 'react'
 import { Y_AXIS_WIDTH } from '@/shared/lib/rechartsHelpers'
+import type { YAxisTickContentProps } from 'recharts'
+import { renderYAxisTick } from './AxisTick'
 
 // Общее оформление графиков Recharts.
 // Цвета — CSS-переменные темы: var() работает в атрибутах SVG.
@@ -21,7 +23,7 @@ export const X_AXIS_PROPS = {
 export const Y_AXIS_PROPS = {
   axisLine: false,
   tickLine: false,
-  tick: AXIS_TICK,
+  tick: (props: YAxisTickContentProps) => renderYAxisTick(props, AXIS_TICK),
   tickMargin: 8,
   width: Y_AXIS_WIDTH,
 } as const

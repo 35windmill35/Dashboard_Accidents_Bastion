@@ -1,6 +1,10 @@
 import type { AccidentRow } from '@/entities/accident/model/types'
 import type { Period } from '@/entities/accident/lib/period'
-import { groupByMotorcade, compareByCountThenDamage } from '@/entities/accident/lib/metrics'
+import {
+  groupByMotorcade,
+  compareByCountThenDamage,
+  rankRoutes,
+} from '@/entities/accident/lib/metrics'
 import {
   computeAccidentScope,
   type AccidentScopeData,
@@ -23,5 +27,7 @@ export function computeOverview(
   const motorcadeAgg = groupByMotorcade(scope.periodRows)
     .map((item) => ({ ...item, name: motorcadeLabels?.get(item.key) ?? item.name }))
     .sort(compareByCountThenDamage)
-  return { ...scope, motorcadeAgg }
+  // Подписи автоколонн у маршрутов — те же, что в остальных блоках обзора
+  const routesRanking = rankRoutes(scope.periodRows, motorcadeLabels)
+  return { ...scope, motorcadeAgg, routesRanking }
 }

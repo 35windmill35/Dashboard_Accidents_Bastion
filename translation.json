@@ -589,6 +589,7 @@
   "roadAccidents.pdf.title.overview": "Отчёт по общим показателям",
   "roadAccidents.pdf.warningIncomplete": "PDF сохранён, но {{count}} разд. не удалось сформировать — отчёт неполный. Попробуйте ещё раз или сообщите в поддержку.",
 
+  "roadAccidents.unit.billionValue": "{{value}} млрд",
   "roadAccidents.unit.millionValue": "{{value}} млн",
   "roadAccidents.unit.pointsValue": "{{value}} п.п.",
   "roadAccidents.unit.thousandValue": "{{value}} тыс"

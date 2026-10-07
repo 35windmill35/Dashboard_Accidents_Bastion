@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatTime, kpiDelta } from '../formatters'
+import { formatCompactCurrency, formatDate, formatTime, kpiDelta } from '../formatters'
 import { buildCsv, escapeCsvCell } from '../csvExport'
 import { encodeBasicCredentials } from '@/shared/api/httpClient'
 
@@ -10,6 +10,18 @@ describe('дельты KPI', () => {
   it('количества и суммы — в процентах', () => {
     expect(kpiDelta('count', 15, 10)?.text).toBe('+50%')
     expect(kpiDelta('currency', 10, 0)).toBeNull()
+  })
+})
+
+describe('короткие суммы оси', () => {
+  const plain = (value: number) =>
+    formatCompactCurrency(value).replace(/\s/g, ' ').replace(/ ?₸$/, '')
+  it('без лишнего «,0»', () => {
+    expect(plain(340_000_000)).toBe('340 млн')
+    expect(plain(85_000_000)).toBe('85 млн')
+    expect(plain(42_500_000)).toBe('42,5 млн')
+    expect(plain(1_500_000_000)).toBe('1,5 млрд')
+    expect(plain(7_500)).toBe('7,5 тыс')
   })
 })
 

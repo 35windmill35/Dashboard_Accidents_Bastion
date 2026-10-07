@@ -61,20 +61,29 @@ export function formatCurrency(value: number | null | undefined): string {
   return withCurrency(formatNumber(value, 0))
 }
 
+// Дробная часть только когда она есть: «85 млн», «42,5 млн»
+function compactNumber(value: number): string {
+  const rounded = Math.round(value * 10) / 10
+  const decimals = Math.abs(rounded) >= 100 || Number.isInteger(rounded) ? 0 : 1
+  return formatNumber(rounded, decimals)
+}
+
 // Короткая подпись оси Y («15 тыс ₸»)
 export function formatCompactCurrency(value: number | null | undefined): string {
   if (isEmpty(value)) return '—'
   const num = value as number
   const abs = Math.abs(num)
+  if (abs >= 1_000_000_000)
+    return withCurrency(
+      t('roadAccidents.unit.billionValue', { value: compactNumber(num / 1_000_000_000) })
+    )
   if (abs >= 1_000_000)
     return withCurrency(
-      t('roadAccidents.unit.millionValue', { value: formatNumber(num / 1_000_000, 1) })
+      t('roadAccidents.unit.millionValue', { value: compactNumber(num / 1_000_000) })
     )
   if (abs >= 1_000)
     return withCurrency(
-      t('roadAccidents.unit.thousandValue', {
-        value: formatNumber(num / 1_000, abs >= 10_000 ? 0 : 1),
-      })
+      t('roadAccidents.unit.thousandValue', { value: compactNumber(num / 1_000) })
     )
   return formatCurrency(num)
 }

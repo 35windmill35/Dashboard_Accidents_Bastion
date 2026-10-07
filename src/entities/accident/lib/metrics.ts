@@ -281,9 +281,12 @@ export interface RouteAggregate {
 }
 
 // Только ДТП с подтверждённым маршрутом (ROUTE_ID и ROUTE_NAME).
-// Ключ — ROUTE_ID в своей базе; одноимённые маршруты разных автоколонн
-// различаются подписью автоколонны
-export function rankRoutes(rows: AccidentRow[]): RouteAggregate[] {
+// Ключ — ROUTE_ID в своей базе. Если в строках несколько автоколонн,
+// к каждому маршруту дописывается его автоколонна
+export function rankRoutes(
+  rows: AccidentRow[],
+  motorcadeLabels?: Map<string, string>
+): RouteAggregate[] {
   const map = new Map<string, RouteAggregate & { motorcade: string }>()
 
   rows.forEach((row) => {
@@ -303,7 +306,7 @@ export function rankRoutes(rows: AccidentRow[]): RouteAggregate[] {
     map.set(key, {
       key,
       name: routeName,
-      motorcade: getMotorcadeName(row),
+      motorcade: motorcadeLabels?.get(getMotorcadeKey(row)) ?? getMotorcadeName(row),
       count: 1,
       sumDamage: damage,
       rows: [row],
@@ -311,13 +314,12 @@ export function rankRoutes(rows: AccidentRow[]): RouteAggregate[] {
   })
 
   const routes = Array.from(map.values())
-  const nameCounts = new Map<string, number>()
-  routes.forEach((route) => nameCounts.set(route.name, (nameCounts.get(route.name) ?? 0) + 1))
+  const motorcadeCount = new Set(routes.flatMap((route) => route.rows.map(getMotorcadeKey))).size
 
   return routes
     .map(({ motorcade, ...route }) => ({
       ...route,
-      name: (nameCounts.get(route.name) ?? 0) > 1 ? `${route.name} · ${motorcade}` : route.name,
+      name: motorcadeCount > 1 ? `${route.name} · ${motorcade}` : route.name,
     }))
     .sort(compareByCountThenDamage)
 }

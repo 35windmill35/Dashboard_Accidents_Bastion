@@ -110,18 +110,62 @@ describe('причины и виновники', () => {
 })
 
 describe('рейтинг маршрутов', () => {
-  it('одноимённые маршруты разных автоколонн не сливаются', () => {
+  it('при нескольких автоколоннах автоколонна подписана у каждого маршрута', () => {
     const ranking = rankRoutes([
-      row({ ACCIDENT_ID: 1, ROUTE_ID: 186, ROUTE_NAME: '№ 11', MOTORCADE_NAME: 'Актобе' }),
-      row({ ACCIDENT_ID: 2, ROUTE_ID: 186, ROUTE_NAME: '№ 11', MOTORCADE_NAME: 'Актобе' }),
-      row({ ACCIDENT_ID: 3, ROUTE_ID: 212, ROUTE_NAME: '№ 11', MOTORCADE_NAME: 'Экибастуз' }),
-      row({ ACCIDENT_ID: 4, ROUTE_ID: 200, ROUTE_NAME: '№ 2', MOTORCADE_NAME: 'Туркестан' }),
+      row({
+        ACCIDENT_ID: 1,
+        ROUTE_ID: 186,
+        ROUTE_NAME: '№ 11',
+        MOTORCADE_ID: 1,
+        MOTORCADE_NAME: 'Актобе',
+      }),
+      row({
+        ACCIDENT_ID: 2,
+        ROUTE_ID: 186,
+        ROUTE_NAME: '№ 11',
+        MOTORCADE_ID: 1,
+        MOTORCADE_NAME: 'Актобе',
+      }),
+      row({
+        ACCIDENT_ID: 3,
+        ROUTE_ID: 212,
+        ROUTE_NAME: '№ 11',
+        MOTORCADE_ID: 2,
+        MOTORCADE_NAME: 'Экибастуз',
+      }),
+      row({
+        ACCIDENT_ID: 4,
+        ROUTE_ID: 200,
+        ROUTE_NAME: '№ 2',
+        MOTORCADE_ID: 3,
+        MOTORCADE_NAME: 'Туркестан',
+      }),
     ])
     expect(ranking.map((r) => [r.name, r.count])).toEqual([
       ['№ 11 · Актобе', 2],
       ['№ 11 · Экибастуз', 1],
-      ['№ 2', 1],
+      ['№ 2 · Туркестан', 1],
     ])
+  })
+
+  it('в одной автоколонне подпись автоколонны не нужна', () => {
+    const ranking = rankRoutes([
+      row({
+        ACCIDENT_ID: 1,
+        ROUTE_ID: 186,
+        ROUTE_NAME: '№ 11',
+        MOTORCADE_ID: 1,
+        MOTORCADE_NAME: 'Актобе',
+      }),
+      row({
+        ACCIDENT_ID: 2,
+        ROUTE_ID: 189,
+        ROUTE_NAME: '№ 18',
+        MOTORCADE_ID: 1,
+        MOTORCADE_NAME: 'Актобе',
+      }),
+    ])
+    expect(ranking.map((r) => r.name)).toEqual(['№ 11', '№ 18'])
   })
 
   it('ДТП без маршрута в рейтинг не попадают', () => {

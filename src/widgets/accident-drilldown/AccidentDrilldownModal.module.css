@@ -261,13 +261,6 @@
   flex-direction: row-reverse;
 }
 
-.causeTag {
-  display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  color: var(--color-text-faint);
-}
-
 .status {
   display: inline-block;
   padding: 3px 9px;

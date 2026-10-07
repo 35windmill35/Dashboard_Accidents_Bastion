@@ -10,6 +10,7 @@ import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { t } from '@/shared/i18n'
 import type {
   AnalyticsData,
+  BreakdownComparisonRow,
   AnalyticsSide,
   SummaryRow,
 } from '@/pages/analytics/model/analyticsData'
@@ -33,7 +34,7 @@ import {
 import {
   buildReportFilename,
   formatCountAxis,
-  formatMonthAxisLabel,
+  splitMonthLabel,
   formatMoneyAxis,
   formatPdfCurrency,
 } from './pdfFormat'
@@ -146,30 +147,42 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
           doc,
           data.trendMonths.map((ym, index) => {
             const [primary, secondary] = pick(index)
-            return { label: formatMonthAxisLabel(ym), primary, secondary }
+            return { ...splitMonthLabel(ym), primary, secondary }
           }),
           {
             height: TREND_CHART_HEIGHT,
             colors: [COLOR_A, COLOR_B],
             formatTick,
-            labelLines: 1,
+            labelLines: 2,
           }
         ),
       })
   }
 
-  const causesTable: BlockFactory = (x, width) =>
-    tableCard(doc, x, width, {
-      title: t('roadAccidents.chart.causesComparison'),
-      columns: [
-        { header: t('roadAccidents.common.category'), ratio: 0.46 },
-        { header: a.name, ratio: 0.27, align: 'right', mono: true },
-        { header: b.name, ratio: 0.27, align: 'right', mono: true },
-      ],
-      rows: data.causeComparison.map((row) => ({
-        cells: [row.label, formatPercent(row.shareA), formatPercent(row.shareB)],
-      })),
-    })
+  const comparisonTable =
+    (title: string, column: string, rows: BreakdownComparisonRow[]): BlockFactory =>
+    (x, width) =>
+      tableCard(doc, x, width, {
+        title,
+        columns: [
+          { header: column, ratio: 0.46 },
+          { header: a.name, ratio: 0.27, align: 'right', mono: true },
+          { header: b.name, ratio: 0.27, align: 'right', mono: true },
+        ],
+        rows: rows.map((row) => ({
+          cells: [row.label, formatPercent(row.shareA), formatPercent(row.shareB)],
+        })),
+      })
+  const causesTable = comparisonTable(
+    t('roadAccidents.chart.causesComparison'),
+    t('roadAccidents.common.cause'),
+    data.causeComparison
+  )
+  const causersTable = comparisonTable(
+    t('roadAccidents.chart.causersComparison'),
+    t('roadAccidents.common.causer'),
+    data.causerComparison
+  )
 
   const averageCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
@@ -258,7 +271,12 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
         { header: t('roadAccidents.common.motorcade'), ratio: 0.2 },
         { header: t('roadAccidents.common.accidents'), ratio: 0.1, align: 'right', mono: true },
         { header: t('roadAccidents.common.damage'), ratio: 0.16, align: 'right', mono: true },
-        { header: t('roadAccidents.cause.driverFault'), ratio: 0.16, align: 'right', mono: true },
+        {
+          header: t('roadAccidents.table.driverFaultShare'),
+          ratio: 0.16,
+          align: 'right',
+          mono: true,
+        },
       ],
       rows: data.worstDrivers.map((row) => ({
         cells: [
@@ -288,7 +306,8 @@ function analyticsBlocks(doc: jsPDF, input: AnalyticsReportInput): BlockFactory[
     // Баннер сопоставимости скрыт по решению заказчика
     kpiRow(doc, sideCards(a, null)),
     kpiRow(doc, sideCards(b, a)),
-    columns([causesTable, damageCard], [0.55, 0.45]),
+    columns([causesTable, causersTable], [0.5, 0.5]),
+    damageCard,
     columns([averageCard, repeatDriversCard], [0.5, 0.5]),
     monthlyCard(
       t('roadAccidents.chart.accidentsTrend'),

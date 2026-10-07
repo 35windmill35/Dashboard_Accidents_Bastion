@@ -2,16 +2,16 @@ import type { AccidentRow } from '@/entities/accident/model/types'
 import { type Period, getTrendMonths } from '@/entities/accident/lib/period'
 import { computeAccidentScope, type AccidentScopeData } from '@/entities/accident/lib/scope'
 import {
-  buildCauseSlices,
-  causeCategoryShare,
+  causerShare,
+  OTHER_SLICE_KEY,
   compareByCountThenDamage,
   driversWithThreeOrMoreAccidents,
   monthlyTrend,
+  type BreakdownSlice,
   type DriverAggregate,
   type MonthlyAggregate,
 } from '@/entities/accident/lib/metrics'
 import { t } from '@/shared/i18n'
-import type { CauseCategory } from '@/shared/config/accidentCauses'
 
 export interface AnalyticsSide {
   key: string
@@ -33,8 +33,8 @@ export interface SummaryRow {
   comment: string
 }
 
-export interface CauseComparisonRow {
-  category: CauseCategory
+export interface BreakdownComparisonRow {
+  key: string
   label: string
   shareA: number | null
   shareB: number | null
@@ -60,7 +60,8 @@ export interface AnalyticsData {
   trendMonths: number[]
   monthlyA: MonthlyAggregate[]
   monthlyB: MonthlyAggregate[]
-  causeComparison: CauseComparisonRow[]
+  causeComparison: BreakdownComparisonRow[]
+  causerComparison: BreakdownComparisonRow[]
   summaryRows: SummaryRow[]
   worstDrivers: WorstDriverRow[]
   comparabilityWarnings: string[]
@@ -88,8 +89,7 @@ function buildSide(
 }
 
 function driverFaultShareOf(driver: DriverAggregate): number | null {
-  const slices = buildCauseSlices(driver.rows)
-  return causeCategoryShare(slices, driver.count, 'driverFault')
+  return causerShare(driver.rows, 'ownDriver')
 }
 
 // Без строки «Водитель не указан»
@@ -115,19 +115,64 @@ function buildWorstDrivers(a: AnalyticsSide, b: AnalyticsSide): WorstDriverRow[]
     }))
 }
 
-// Порядок категорий у обеих сторон одинаковый — сопоставляем по индексу
-function buildCauseComparison(a: AnalyticsSide, b: AnalyticsSide): CauseComparisonRow[] {
-  return a.scope.causeSlices.map((sliceA, index) => {
-    const sliceB = b.scope.causeSlices[index]
-    return {
-      category: sliceA.category,
-      label: sliceA.label,
-      shareA: causeCategoryShare(a.scope.causeSlices, a.scope.kpi.count, sliceA.category),
-      shareB: causeCategoryShare(b.scope.causeSlices, b.scope.kpi.count, sliceA.category),
-      rowsA: sliceA.rows,
-      rowsB: sliceB.rows,
+const COMPARISON_SLOTS = 6
+
+// Общий топ по сумме ДТП обеих сторон; хвост — в «Прочие»
+function buildBreakdownComparison(
+  slicesA: BreakdownSlice[],
+  slicesB: BreakdownSlice[],
+  totalA: number,
+  totalB: number
+): BreakdownComparisonRow[] {
+  const merged = new Map<string, BreakdownComparisonRow & { count: number; sumDamage: number }>()
+  const add = (slice: BreakdownSlice, side: 'rowsA' | 'rowsB') => {
+    const row = merged.get(slice.key) ?? {
+      key: slice.key,
+      label: slice.label,
+      shareA: null,
+      shareB: null,
+      rowsA: [],
+      rowsB: [],
+      count: 0,
+      sumDamage: 0,
     }
-  })
+    row[side] = slice.rows
+    row.count += slice.count
+    row.sumDamage += slice.sumDamage
+    merged.set(slice.key, row)
+  }
+  slicesA.forEach((slice) => add(slice, 'rowsA'))
+  slicesB.forEach((slice) => add(slice, 'rowsB'))
+
+  const ordered = Array.from(merged.values()).sort((x, y) =>
+    compareByCountThenDamage({ ...x, name: x.label }, { ...y, name: y.label })
+  )
+  const head = ordered.length > COMPARISON_SLOTS ? ordered.slice(0, COMPARISON_SLOTS - 1) : ordered
+  const tail = ordered.slice(head.length)
+  const rows: BreakdownComparisonRow[] = head.map(({ key, label, rowsA, rowsB }) => ({
+    key,
+    label,
+    shareA: null,
+    shareB: null,
+    rowsA,
+    rowsB,
+  }))
+  if (tail.length > 0) {
+    rows.push({
+      key: OTHER_SLICE_KEY,
+      label: t('roadAccidents.common.other'),
+      shareA: null,
+      shareB: null,
+      rowsA: tail.flatMap((row) => row.rowsA),
+      rowsB: tail.flatMap((row) => row.rowsB),
+    })
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    shareA: totalA > 0 ? row.rowsA.length / totalA : null,
+    shareB: totalB > 0 ? row.rowsB.length / totalB : null,
+  }))
 }
 
 // Размера парка и пробега в данных нет
@@ -265,7 +310,18 @@ export function computeAnalytics(
     trendMonths,
     monthlyA: monthlyTrend(rowsA, trendMonths),
     monthlyB: monthlyTrend(rowsB, trendMonths),
-    causeComparison: buildCauseComparison(a, b),
+    causeComparison: buildBreakdownComparison(
+      a.scope.causeSlices,
+      b.scope.causeSlices,
+      a.scope.kpi.count,
+      b.scope.kpi.count
+    ),
+    causerComparison: buildBreakdownComparison(
+      a.scope.causerSlices,
+      b.scope.causerSlices,
+      a.scope.kpi.count,
+      b.scope.kpi.count
+    ),
     summaryRows: buildSummaryRows(a, b),
     worstDrivers: buildWorstDrivers(a, b),
     comparabilityWarnings: buildComparabilityWarnings(a, b),

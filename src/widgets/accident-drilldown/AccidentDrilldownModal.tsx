@@ -4,7 +4,7 @@ import { drilldownStore } from './model/drilldownStore'
 import { authStore } from '@/entities/user/model/authStore'
 import type { AccidentRow } from '@/entities/accident/model/types'
 import { getMotorcadeName } from '@/entities/accident/lib/motorcade'
-import { getCauseCategory, CAUSE_CATEGORY_LABELS } from '@/shared/config/accidentCauses'
+import { displayName } from '@/shared/config/accidentCauses'
 import { formatCurrency, formatDate, formatTime } from '@/shared/lib/formatters'
 import { downloadCsv } from '@/shared/lib/csvExport'
 import { t } from '@/shared/i18n'
@@ -201,7 +201,6 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
       t('roadAccidents.common.driver'),
       ...optional.map((column) => column.label),
       t('roadAccidents.common.cause'),
-      t('roadAccidents.common.category'),
       t('roadAccidents.common.causer'),
       t('roadAccidents.common.damage'),
       t('roadAccidents.common.compensation'),
@@ -220,7 +219,6 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
         row.DRIVER_NAME || '',
         ...optional.map((column) => column.value(row) || ''),
         row.ACCIDENT_CAUSE_NAME || '',
-        CAUSE_CATEGORY_LABELS[getCauseCategory(row)],
         row.ACCIDENT_CAUSER_NAME || '',
         String(row.ACCIDENT_DAMAGE ?? 0),
         String(row.ACCIDENT_COMPENSATED_DAMAGE ?? 0),
@@ -430,13 +428,10 @@ export const AccidentDrilldownModal = observer(function AccidentDrilldownModal()
                             {row.ACCIDENT_ADDRESS || '—'}
                           </td>
                         )}
+                        <td>{row.ACCIDENT_CAUSE_NAME || '—'}</td>
                         <td>
-                          {row.ACCIDENT_CAUSE_NAME || '—'}
-                          <span className={styles.causeTag}>
-                            {CAUSE_CATEGORY_LABELS[getCauseCategory(row)]}
-                          </span>
+                          {row.ACCIDENT_CAUSER_NAME ? displayName(row.ACCIDENT_CAUSER_NAME) : '—'}
                         </td>
-                        <td>{row.ACCIDENT_CAUSER_NAME || '—'}</td>
                         <td className={styles.right}>{formatCurrency(row.ACCIDENT_DAMAGE)}</td>
                         <td className={`${styles.right} ${styles.muted}`}>
                           {formatCurrency(row.ACCIDENT_COMPENSATED_DAMAGE)}

@@ -176,15 +176,33 @@ function drawAxis(
   return { plotX, plotW, plotTop, baseline, scale }
 }
 
+const SLOT_LABEL_GAP = 4
+
 function drawSlotLabels(
   doc: jsPDF,
   items: { label: string; sublabel?: string }[],
   geometry: AxisGeometry,
   slot: number
 ): void {
+  // Подписи не влезают — показываем каждую n-ю, последнюю всегда
+  const baseStyle: TextStyle = { font: 'mono', size: 6, weight: 'bold' }
+  const widest = Math.max(
+    0,
+    ...items.map((item) =>
+      Math.max(
+        measureText(doc, item.label, baseStyle),
+        item.sublabel ? measureText(doc, item.sublabel, baseStyle) : 0
+      )
+    )
+  )
+  const step = Math.max(1, Math.ceil((widest + SLOT_LABEL_GAP) / slot))
+  const lastIndex = items.length - 1
+
   items.forEach((item, index) => {
+    const isLast = index === lastIndex
+    const onStep = index % step === 0 && lastIndex - index >= step
+    if (!isLast && !onStep) return
     const center = geometry.plotX + slot * index + slot / 2
-    const isLast = index === items.length - 1
     const style: TextStyle = {
       font: 'mono',
       size: 6,

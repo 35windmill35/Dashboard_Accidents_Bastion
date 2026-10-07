@@ -6,9 +6,9 @@ import {
   kpiDelta,
   type KpiKind,
 } from '@/shared/lib/formatters'
-import { NO_DAMAGE_CATEGORY_ENABLED } from '@/shared/config/accidentCauses'
 import { comparisonLabel, formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { t } from '@/shared/i18n'
+import { collapseSlices, type BreakdownSlice } from '@/entities/accident/lib/metrics'
 import type { MotorcadeData } from '@/pages/motorcade/model/motorcadeData'
 import { COLOR, PAGE, registerPdfFonts } from './pdfKit'
 import { columns, drawPageFooters, flowBlocks, type BlockFactory, type FlowResult } from './pdfFlow'
@@ -29,9 +29,8 @@ import {
 } from './pdfBlocks'
 import {
   buildReportFilename,
-  causesNote,
+  breakdownNote,
   formatCountAxis,
-  formatMonthAxisLabel,
   formatMoneyAxis,
   formatPdfCurrency,
   splitMonthLabel,
@@ -40,6 +39,7 @@ import {
 // Как в свёрнутых таблицах на экране
 const DRIVERS_TOP_N = 8
 const VEHICLES_TOP_N = 8
+const ROUTES_TOP_N = 8
 
 const TREND_CHART_HEIGHT = 102
 const DAMAGE_CHART_HEIGHT = 76
@@ -132,19 +132,6 @@ function kpiCards(data: MotorcadeData): KpiCardData[] {
     ),
   ]
 
-  // Правило «Без повреждения» не подтверждено
-  if (NO_DAMAGE_CATEGORY_ENABLED) {
-    cards.push(
-      build(
-        t('roadAccidents.kpi.noDamageShare'),
-        formatPercent(kpi.noDamageShare),
-        'percent',
-        kpi.noDamageShare,
-        previousKpi?.noDamageShare,
-        false
-      )
-    )
-  }
   return cards
 }
 
@@ -153,6 +140,7 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
   const periodLabel = formatPeriodLabel(period)
   const drivers = data.driversRanking.slice(0, DRIVERS_TOP_N)
   const vehicles = data.vehiclesRanking.slice(0, VEHICLES_TOP_N)
+  const routes = data.routesRanking.slice(0, ROUTES_TOP_N)
   const cards = kpiCards(data)
   const causeTotal = data.causeSlices.reduce(
     (acc, slice) => ({
@@ -162,10 +150,7 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
     }),
     { count: 0, sumDamage: 0, sumCompensated: 0 }
   )
-  const topCauseIndex = data.causeSlices.reduce(
-    (best, slice, index, all) => (slice.count > all[best].count ? index : best),
-    0
-  )
+  const causeChart = collapseSlices(data.causeSlices)
 
   const trendCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
@@ -186,21 +171,33 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
       ),
     })
 
-  const causesCard: BlockFactory = (x, width) =>
-    card(doc, x, width, {
-      title: t('roadAccidents.chart.causes'),
-      bodyHeight: data.causeSlices.length * DISTRIBUTION_ROW_HEIGHT,
-      note: causesNote(data.causeSlices, data.kpi.count),
-      drawBody: distributionBody(
-        doc,
-        data.causeSlices.map((slice) => ({
-          label: slice.label,
-          value: slice.count,
-          formatted: formatNumber(slice.count),
-        })),
-        COLOR.accent
-      ),
-    })
+  const distributionCard =
+    (title: string, slices: BreakdownSlice[], note: string): BlockFactory =>
+    (x, width) =>
+      card(doc, x, width, {
+        title,
+        bodyHeight: Math.max(slices.length, 1) * DISTRIBUTION_ROW_HEIGHT,
+        note,
+        drawBody: distributionBody(
+          doc,
+          slices.map((slice) => ({
+            label: slice.label,
+            value: slice.count,
+            formatted: formatNumber(slice.count),
+          })),
+          COLOR.accent
+        ),
+      })
+  const causesCard = distributionCard(
+    t('roadAccidents.chart.causes'),
+    causeChart,
+    breakdownNote(data.causeSlices, data.kpi.count, 'cause')
+  )
+  const causersCard = distributionCard(
+    t('roadAccidents.chart.causers'),
+    data.causerSlices,
+    breakdownNote(data.causerSlices, data.kpi.count, 'causer')
+  )
 
   const damageTrendCard: BlockFactory = (x, width) =>
     card(doc, x, width, {
@@ -213,7 +210,7 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
       drawBody: groupedBarChartBody(
         doc,
         data.monthlyCounts.map((item) => ({
-          label: formatMonthAxisLabel(item.ym),
+          ...splitMonthLabel(item.ym),
           primary: item.sumDamage,
           secondary: item.sumCompensated,
         })),
@@ -221,7 +218,7 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
           height: DAMAGE_CHART_HEIGHT,
           colors: [COLOR.accent, COLOR.compensation],
           formatTick: formatMoneyAxis,
-          labelLines: 1,
+          labelLines: 2,
         }
       ),
     })
@@ -266,11 +263,32 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
           : undefined,
     })
 
+  const routesTable: BlockFactory = (x, width) =>
+    tableCard(doc, x, width, {
+      title: t('roadAccidents.table.topRoutes', { count: ROUTES_TOP_N }),
+      columns: [
+        { header: t('roadAccidents.common.route'), ratio: 0.55 },
+        { header: t('roadAccidents.common.accidents'), ratio: 0.15, align: 'right', mono: true },
+        { header: t('roadAccidents.common.damage'), ratio: 0.3, align: 'right', mono: true },
+      ],
+      emptyText: t('roadAccidents.table.noRoutes'),
+      rows: routes.map((row) => ({
+        cells: [row.name, formatNumber(row.count), formatPdfCurrency(row.sumDamage)],
+      })),
+      note:
+        data.routesRanking.length > ROUTES_TOP_N
+          ? t('roadAccidents.pdf.note.truncated', {
+              shown: ROUTES_TOP_N,
+              total: formatNumber(data.routesRanking.length),
+            })
+          : undefined,
+    })
+
   const causesTable: BlockFactory = (x, width) =>
     tableCard(doc, x, width, {
       title: t('roadAccidents.chart.damageByCause'),
       columns: [
-        { header: t('roadAccidents.common.category'), ratio: 0.34 },
+        { header: t('roadAccidents.common.cause'), ratio: 0.34 },
         { header: t('roadAccidents.common.accidents'), ratio: 0.12, align: 'right', mono: true },
         { header: t('roadAccidents.common.damage'), ratio: 0.2, align: 'right', mono: true },
         { header: t('roadAccidents.common.compensation'), ratio: 0.2, align: 'right', mono: true },
@@ -290,7 +308,7 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
             formatPdfCurrency(slice.sumCompensated),
             slice.sumDamage > 0 ? formatPercent(slice.sumCompensated / slice.sumDamage) : '—',
           ],
-          highlighted: index === topCauseIndex && slice.count > 0,
+          highlighted: index === 0,
         })),
         {
           cells: [
@@ -317,9 +335,11 @@ function motorcadeBlocks(doc: jsPDF, input: MotorcadeReportInput): BlockFactory[
     }),
     kpiRow(doc, cards.slice(0, 4)),
     kpiRow(doc, cards.slice(4, 8), 4),
-    columns([trendCard, causesCard], [0.58, 0.42]),
+    trendCard,
+    columns([causesCard, causersCard], [0.5, 0.5]),
     damageTrendCard,
     columns([driversTable, vehiclesTable], [0.5, 0.5]),
+    columns([routesTable], [0.5]),
     causesTable,
   ]
 }

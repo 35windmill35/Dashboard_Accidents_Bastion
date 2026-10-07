@@ -1,12 +1,11 @@
 import { KpiCard } from '@/widgets/kpi-card/KpiCard'
 import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStore'
-import { NO_DAMAGE_CATEGORY_ENABLED } from '@/shared/config/accidentCauses'
 import { comparisonLabel, formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import {
-  groupByCauseCategory,
   rowsNotFullyCompensated,
   rowsWithCompensation,
   rowsWithDamage,
+  rowsByCauser,
 } from '@/entities/accident/lib/metrics'
 import { t } from '@/shared/i18n'
 import type { AccidentRow } from '@/entities/accident/model/types'
@@ -24,7 +23,6 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
 
   const open = (title: string, rows: AccidentRow[]) =>
     drilldownStore.open(`${title} — ${periodLabel}`, rows)
-  const byCause = groupByCauseCategory(periodRows)
   const deltaLabel = comparisonLabel(data.comparison)
   const prev = <K extends keyof MotorcadeKpi>(key: K) =>
     previousKpi ? previousKpi[key] : undefined
@@ -91,7 +89,9 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
         tooltip={t('roadAccidents.kpi.hint.driverFaultShare')}
-        onOpenList={() => open(t('roadAccidents.list.driverFault'), byCause.driverFault)}
+        onOpenList={() =>
+          open(t('roadAccidents.list.driverFault'), rowsByCauser(periodRows, 'ownDriver'))
+        }
       />
       <KpiCard
         label={t('roadAccidents.kpi.thirdPartyFaultShare')}
@@ -101,20 +101,10 @@ export function MotorcadeKpiRow({ data, period }: MotorcadeKpiRowProps) {
         deltaLabel={deltaLabel}
         deltaHigherIsBetter={false}
         tooltip={t('roadAccidents.kpi.hint.thirdPartyFaultShare')}
-        onOpenList={() => open(t('roadAccidents.list.thirdPartyFault'), byCause.thirdPartyFault)}
+        onOpenList={() =>
+          open(t('roadAccidents.list.thirdPartyFault'), rowsByCauser(periodRows, 'otherParty'))
+        }
       />
-      {NO_DAMAGE_CATEGORY_ENABLED && (
-        <KpiCard
-          label={t('roadAccidents.kpi.noDamageShare')}
-          value={kpi.noDamageShare}
-          kind="percent"
-          compareValue={prev('noDamageShare')}
-          deltaLabel={deltaLabel}
-          deltaHigherIsBetter={false}
-          tooltip={t('roadAccidents.kpi.hint.noDamageShare')}
-          onOpenList={() => open(t('roadAccidents.list.noDamage'), byCause.noDamage)}
-        />
-      )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { AccidentsTrendChart } from './charts/AccidentsTrendChart'
-import { CausesPieChart } from './charts/CausesPieChart'
+import { CausersDonutCard, CausesDonutCard } from '@/widgets/breakdown-chart/BreakdownDonutCard'
 import { MotorcadeCountChart } from './charts/MotorcadeCountChart'
 import { MotorcadeDamageChart } from './charts/MotorcadeDamageChart'
 import { CauseDamageChart } from './charts/CauseDamageChart'
@@ -17,10 +17,11 @@ export function OverviewCharts({ data, period }: OverviewChartsProps) {
   return (
     <div className={styles.grid}>
       <AccidentsTrendChart data={data} />
-      <CausesPieChart data={data} period={period} />
+      <CausesDonutCard slices={data.causeSlices} period={period} />
+      <CausersDonutCard slices={data.causerSlices} period={period} />
+      <CauseDamageChart data={data} period={period} />
       <MotorcadeCountChart data={data} period={period} />
       <MotorcadeDamageChart data={data} period={period} />
-      <CauseDamageChart data={data} period={period} />
       <DamageTrendChart data={data} />
     </div>
   )

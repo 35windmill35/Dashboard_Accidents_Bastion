@@ -18,46 +18,46 @@ import { COMPARISON_COLOR_A, COMPARISON_COLOR_B } from '@/shared/lib/chartColors
 import { formatPercent } from '@/shared/lib/formatters'
 import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import { t } from '@/shared/i18n'
-import type { AnalyticsData, CauseComparisonRow } from '../../model/analyticsData'
+import type { AnalyticsData, BreakdownComparisonRow } from '../../model/analyticsData'
 
 interface Props {
   data: AnalyticsData
   period: Period
 }
 
+interface ChartProps extends Props {
+  rows: BreakdownComparisonRow[]
+  title: string
+  subtitle: string
+  column: string
+}
+
 // Доли, а не абсолютные числа — сравнимо для автоколонн разного размера
-export function CausesComparisonChart({ data, period }: Props) {
+function BreakdownComparisonChart({ data, period, rows, title, subtitle, column }: ChartProps) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)
-  const chartData = data.causeComparison.filter(
-    (row) => row.rowsA.length > 0 || row.rowsB.length > 0
-  )
+  const chartData = rows
 
-  const openCause = (category: string, side: 'a' | 'b') => {
-    const row = chartData.find((r) => r.category === category)
+  const openSlice = (key: string, side: 'a' | 'b') => {
+    const row = chartData.find((r) => r.key === key)
     if (!row) return
     const name = side === 'a' ? data.a.name : data.b.name
     const rows = side === 'a' ? row.rowsA : row.rowsB
     drilldownStore.open(`${row.label} — ${name}, ${periodLabel}`, rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(
-    chartData.map((r) => r.label),
-    {
-      mirrorPadding: true,
-    }
-  )
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((r) => r.label))
 
   const table: ChartDataTable = {
-    columns: [t('roadAccidents.common.category'), data.a.name, data.b.name],
+    columns: [column, data.a.name, data.b.name],
     rows: chartData.map((r) => [r.label, formatPercent(r.shareA), formatPercent(r.shareB)]),
   }
 
   return (
     <ChartCard
       table={table}
-      title={t('roadAccidents.chart.causesComparison')}
-      subtitle={t('roadAccidents.chart.causesComparisonSubtitle')}
+      title={title}
+      subtitle={subtitle}
       legend={[
         { label: data.a.name, color: COMPARISON_COLOR_A },
         { label: data.b.name, color: COMPARISON_COLOR_B },
@@ -85,7 +85,7 @@ export function CausesComparisonChart({ data, period }: Props) {
               fill={`url(#${gradientId}-0)`}
               radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
-              onClick={(entry) => openCause(barPayload<CauseComparisonRow>(entry).category, 'a')}
+              onClick={(entry) => openSlice(barPayload<BreakdownComparisonRow>(entry).key, 'a')}
             />
             <Bar
               maxBarSize={BAR_SIZE_GROUPED}
@@ -95,11 +95,35 @@ export function CausesComparisonChart({ data, period }: Props) {
               fill={`url(#${gradientId}-1)`}
               radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
-              onClick={(entry) => openCause(barPayload<CauseComparisonRow>(entry).category, 'b')}
+              onClick={(entry) => openSlice(barPayload<BreakdownComparisonRow>(entry).key, 'b')}
             />
           </BarChart>
         </ResponsiveContainer>
       </div>
     </ChartCard>
+  )
+}
+
+export function CausesComparisonChart(props: Props) {
+  return (
+    <BreakdownComparisonChart
+      {...props}
+      rows={props.data.causeComparison}
+      title={t('roadAccidents.chart.causesComparison')}
+      subtitle={t('roadAccidents.chart.causesComparisonSubtitle')}
+      column={t('roadAccidents.common.cause')}
+    />
+  )
+}
+
+export function CausersComparisonChart(props: Props) {
+  return (
+    <BreakdownComparisonChart
+      {...props}
+      rows={props.data.causerComparison}
+      title={t('roadAccidents.chart.causersComparison')}
+      subtitle={t('roadAccidents.chart.causersComparisonSubtitle')}
+      column={t('roadAccidents.common.causer')}
+    />
   )
 }

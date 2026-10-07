@@ -5,7 +5,6 @@ import { accidentsStore } from '@/entities/accident/model/accidentsStore'
 import { filtersStore } from '@/entities/accident/model/filtersStore'
 import { formatNumber } from '@/shared/lib/formatters'
 import styles from './DataStatusBanner.module.css'
-import { CAUSE_CATEGORY_LABELS } from '@/shared/config/accidentCauses'
 import { t } from '@/shared/i18n'
 
 const warningIcon = (
@@ -47,7 +46,6 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
   const currencies = accidentsStore.currencyCodes
   const incomplete = accidentsStore.incompleteFirms
   const rejected = accidentsStore.rejectedFirms
-  const unknownCauses = accidentsStore.unknownCauseCount
   const linkMissing =
     (location.pathname === '/motorcade' && filtersStore.isLinkedMotorcadeMissing) ||
     (location.pathname === '/analytics' && filtersStore.isLinkedAnalyticsMissing)
@@ -57,7 +55,6 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
     stale.length === 0 &&
     incomplete.length === 0 &&
     rejected.length === 0 &&
-    unknownCauses === 0 &&
     !linkMissing &&
     !accidentsStore.hasMixedCurrencies
   ) {
@@ -152,18 +149,6 @@ export const DataStatusBanner = observer(function DataStatusBanner() {
                   })
                 )
                 .join('; '),
-            })}
-          </span>
-        </div>
-      )}
-
-      {unknownCauses > 0 && (
-        <div className={styles.banner} role="status">
-          {warningIcon}
-          <span className={styles.text}>
-            {t('roadAccidents.banner.unknownCauses', {
-              count: formatNumber(unknownCauses),
-              category: CAUSE_CATEGORY_LABELS.undetermined,
             })}
           </span>
         </div>

@@ -7,8 +7,6 @@ import {
   type AccidentScopeKpi,
 } from '@/entities/accident/lib/scope'
 
-export type { CauseSlice } from '@/entities/accident/lib/metrics'
-
 export type OverviewKpi = AccidentScopeKpi
 
 export interface OverviewData extends AccidentScopeData {

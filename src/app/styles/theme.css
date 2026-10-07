@@ -61,6 +61,7 @@
   --color-chart-4: #bd8217;
   --color-chart-5: #d9567e;
   --color-chart-compensation: #2ba67a;
+  --color-chart-other: #6b7a93;
 }
 
 [data-theme='light'] {
@@ -119,6 +120,7 @@
   --color-chart-4: #a86c0a;
   --color-chart-5: #c2386a;
   --color-chart-compensation: #0e8a5f;
+  --color-chart-other: #8a94a6;
 }
 
 :root {

@@ -5,6 +5,11 @@
   gap: var(--space-4);
 }
 
+/* Последняя карточка без пары — на всю ширину */
+.grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 960px) {
   .grid {
     grid-template-columns: minmax(0, 1fr);

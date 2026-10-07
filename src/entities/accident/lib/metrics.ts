@@ -1,9 +1,10 @@
 import type { AccidentRow } from '../model/types'
 import {
-  getCauseCategory,
-  CAUSE_CATEGORY_LABELS,
-  NO_DAMAGE_CATEGORY_ENABLED,
-  type CauseCategory,
+  displayName,
+  getCauserKind,
+  normalizeName,
+  OTHER_SLICE_KEY,
+  type CauserKind,
 } from '@/shared/config/accidentCauses'
 import { t } from '@/shared/i18n'
 import { getMotorcadeKey, getMotorcadeName } from './motorcade'
@@ -51,61 +52,6 @@ export function driversWithThreeOrMoreAccidents(rows: AccidentRow[]): number {
   return result
 }
 
-export function groupByCauseCategory(rows: AccidentRow[]): Record<CauseCategory, AccidentRow[]> {
-  const groups: Record<CauseCategory, AccidentRow[]> = {
-    underReview: [],
-    driverFault: [],
-    thirdPartyFault: [],
-    noDamage: [],
-    undetermined: [],
-  }
-
-  rows.forEach((row) => {
-    groups[getCauseCategory(row)].push(row)
-  })
-
-  return groups
-}
-
-export interface CauseSlice {
-  category: CauseCategory
-  label: string
-  count: number
-  sumDamage: number
-  sumCompensated: number
-  rows: AccidentRow[]
-}
-
-const CAUSE_ORDER: CauseCategory[] = (
-  ['driverFault', 'thirdPartyFault', 'noDamage', 'undetermined', 'underReview'] as const
-).filter((category) => category !== 'noDamage' || NO_DAMAGE_CATEGORY_ENABLED)
-
-export function buildCauseSlices(rows: AccidentRow[]): CauseSlice[] {
-  const grouped = groupByCauseCategory(rows)
-
-  return CAUSE_ORDER.map((category) => {
-    const categoryRows = grouped[category]
-    return {
-      category,
-      label: CAUSE_CATEGORY_LABELS[category],
-      count: categoryRows.length,
-      sumDamage: sumDamage(categoryRows),
-      sumCompensated: sumCompensated(categoryRows),
-      rows: categoryRows,
-    }
-  })
-}
-
-export function causeCategoryShare(
-  slices: CauseSlice[],
-  totalCount: number,
-  category: CauseCategory
-): number | null {
-  if (totalCount === 0) return null
-  const slice = slices.find((s) => s.category === category)
-  return (slice?.count ?? 0) / totalCount
-}
-
 // Порядок при равенстве: ущерб, имя, ключ
 interface Rankable {
   key: string
@@ -121,6 +67,96 @@ export function compareByCountThenDamage(a: Rankable, b: Rankable): number {
     a.name.localeCompare(b.name, 'ru') ||
     (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)
   )
+}
+
+// Разбивка по значению поля: причина, виновник
+export interface BreakdownSlice {
+  key: string
+  label: string
+  count: number
+  sumDamage: number
+  sumCompensated: number
+  rows: AccidentRow[]
+}
+
+export { OTHER_SLICE_KEY }
+const EMPTY_KEY = '__none'
+
+function groupByName(
+  rows: AccidentRow[],
+  nameOf: (row: AccidentRow) => string | null | undefined,
+  emptyLabel: string
+): BreakdownSlice[] {
+  const map = new Map<string, BreakdownSlice>()
+
+  rows.forEach((row) => {
+    const raw = nameOf(row)
+    const key = normalizeName(raw) || EMPTY_KEY
+    const damage = row.ACCIDENT_DAMAGE ?? 0
+    const compensated = row.ACCIDENT_COMPENSATED_DAMAGE ?? 0
+    const existing = map.get(key)
+
+    if (existing) {
+      existing.count += 1
+      existing.sumDamage += damage
+      existing.sumCompensated += compensated
+      existing.rows.push(row)
+      return
+    }
+
+    map.set(key, {
+      key,
+      label: key === EMPTY_KEY ? emptyLabel : displayName(raw ?? ''),
+      count: 1,
+      sumDamage: damage,
+      sumCompensated: compensated,
+      rows: [row],
+    })
+  })
+
+  return Array.from(map.values()).sort((a, b) =>
+    compareByCountThenDamage({ ...a, name: a.label }, { ...b, name: b.label })
+  )
+}
+
+export function groupByCause(rows: AccidentRow[]): BreakdownSlice[] {
+  return groupByName(rows, (row) => row.ACCIDENT_CAUSE_NAME, t('roadAccidents.cause.notSpecified'))
+}
+
+export function groupByCauser(rows: AccidentRow[]): BreakdownSlice[] {
+  return groupByName(
+    rows,
+    (row) => row.ACCIDENT_CAUSER_NAME,
+    t('roadAccidents.causer.notSpecified')
+  )
+}
+
+// Первые max - 1 срезов + «Прочие», если срезов больше max
+export function collapseSlices(slices: BreakdownSlice[], max = 6): BreakdownSlice[] {
+  if (slices.length <= max) return slices
+  const head = slices.slice(0, max - 1)
+  const rest = slices.slice(max - 1)
+  const rows = rest.flatMap((slice) => slice.rows)
+  return [
+    ...head,
+    {
+      key: OTHER_SLICE_KEY,
+      label: t('roadAccidents.common.other'),
+      count: rows.length,
+      sumDamage: rest.reduce((sum, slice) => sum + slice.sumDamage, 0),
+      sumCompensated: rest.reduce((sum, slice) => sum + slice.sumCompensated, 0),
+      rows,
+    },
+  ]
+}
+
+export function rowsByCauser(rows: AccidentRow[], kind: CauserKind): AccidentRow[] {
+  return rows.filter((row) => getCauserKind(row.ACCIDENT_CAUSER_NAME) === kind)
+}
+
+export function causerShare(rows: AccidentRow[], kind: CauserKind): number | null {
+  if (rows.length === 0) return null
+  return rowsByCauser(rows, kind).length / rows.length
 }
 
 export const UNKNOWN_DRIVER_NAME = t('roadAccidents.common.unknownDriver')
@@ -234,6 +270,56 @@ export function rankVehicles(rows: AccidentRow[]): VehicleAggregate[] {
   })
 
   return Array.from(map.values()).sort(compareByCountThenDamage)
+}
+
+export interface RouteAggregate {
+  key: string
+  name: string
+  count: number
+  sumDamage: number
+  rows: AccidentRow[]
+}
+
+// Только ДТП с подтверждённым маршрутом (ROUTE_ID и ROUTE_NAME).
+// Ключ — ROUTE_ID в своей базе; одноимённые маршруты разных автоколонн
+// различаются подписью автоколонны
+export function rankRoutes(rows: AccidentRow[]): RouteAggregate[] {
+  const map = new Map<string, RouteAggregate & { motorcade: string }>()
+
+  rows.forEach((row) => {
+    const routeName = row.ROUTE_NAME?.trim()
+    if (row.ROUTE_ID == null || !routeName) return
+    const key = `${row.DB_INDEX}:${row.ROUTE_ID}`
+    const existing = map.get(key)
+    const damage = row.ACCIDENT_DAMAGE ?? 0
+
+    if (existing) {
+      existing.count += 1
+      existing.sumDamage += damage
+      existing.rows.push(row)
+      return
+    }
+
+    map.set(key, {
+      key,
+      name: routeName,
+      motorcade: getMotorcadeName(row),
+      count: 1,
+      sumDamage: damage,
+      rows: [row],
+    })
+  })
+
+  const routes = Array.from(map.values())
+  const nameCounts = new Map<string, number>()
+  routes.forEach((route) => nameCounts.set(route.name, (nameCounts.get(route.name) ?? 0) + 1))
+
+  return routes
+    .map(({ motorcade, ...route }) => ({
+      ...route,
+      name: (nameCounts.get(route.name) ?? 0) > 1 ? `${route.name} · ${motorcade}` : route.name,
+    }))
+    .sort(compareByCountThenDamage)
 }
 
 export interface MonthlyAggregate {

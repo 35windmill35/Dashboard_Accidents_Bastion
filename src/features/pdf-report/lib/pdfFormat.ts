@@ -6,7 +6,7 @@ import {
 } from '@/shared/lib/formatters'
 import { formatMonthShortLabel, ymToYear, type Period } from '@/entities/accident/lib/period'
 import { t } from '@/shared/i18n'
-import type { CauseSlice } from '@/entities/accident/lib/metrics'
+import type { BreakdownSlice } from '@/entities/accident/lib/metrics'
 
 // Во встроенных шрифтах PDF есть только ₸ и $, для остальных валют — код
 const PDF_SAFE_SYMBOLS = new Set(['₸', '$'])
@@ -52,25 +52,29 @@ export function splitMonthLabel(ym: number): { label: string; sublabel: string }
   return { label: month, sublabel: String(ymToYear(ym) % 100) }
 }
 
-export function formatMonthAxisLabel(ym: number): string {
-  return formatMonthShortLabel(ym)
-}
-
 // Пересказ чисел с графика, без интерпретации
-export function causesNote(causeSlices: CauseSlice[], total: number): string {
+export function breakdownNote(
+  slices: BreakdownSlice[],
+  total: number,
+  kind: 'cause' | 'causer'
+): string {
   if (total === 0) return t('roadAccidents.pdf.insight.noAccidents')
 
-  const top = [...causeSlices].sort((a, b) => b.count - a.count)[0]
-  if (!top || top.count === 0) return t('roadAccidents.pdf.insight.causesUnclassified')
+  const top = slices[0]
   if (top.count === total) {
-    return t('roadAccidents.pdf.insight.singleCause', { category: top.label })
+    return kind === 'cause'
+      ? t('roadAccidents.pdf.insight.singleCause', { name: top.label })
+      : t('roadAccidents.pdf.insight.singleCauser', { name: top.label })
   }
-  return t('roadAccidents.pdf.insight.topCause', {
-    category: top.label,
+  const params = {
+    name: top.label,
     count: formatNumber(top.count),
     total: formatNumber(total),
     share: formatPercent(top.count / total),
-  })
+  }
+  return kind === 'cause'
+    ? t('roadAccidents.pdf.insight.topCause', params)
+    : t('roadAccidents.pdf.insight.topCauser', params)
 }
 
 // Без символов, проблемных для имён файлов в Windows

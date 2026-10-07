@@ -1,30 +1,21 @@
 import { useState } from 'react'
 import { Cell, Pie, PieChart } from 'recharts'
-import type { CauseSlice } from '@/entities/accident/lib/metrics'
-import { CAUSE_CATEGORY_COLORS } from '@/shared/lib/chartColors'
+import type { BreakdownSlice } from '@/entities/accident/lib/metrics'
 import { formatNumber, formatPercent } from '@/shared/lib/formatters'
 import { t } from '@/shared/i18n'
 import styles from './CauseDonut.module.css'
 
 interface CauseDonutProps {
-  slices: CauseSlice[]
-  onSelect: (slice: CauseSlice) => void
+  slices: BreakdownSlice[]
+  colorOf: (slice: BreakdownSlice, index: number) => string
+  onSelect: (slice: BreakdownSlice) => void
 }
 
 const RING_SIZE = 200
 const RING_THICKNESS = 14
 
-// Сокращения для центра кольца
-const SHORT_LABELS: Record<CauseSlice['category'], string> = {
-  driverFault: t('roadAccidents.cause.driverFault'),
-  thirdPartyFault: t('roadAccidents.cause.short.thirdPartyFault'),
-  noDamage: t('roadAccidents.cause.short.noDamage'),
-  undetermined: t('roadAccidents.cause.short.undetermined'),
-  underReview: t('roadAccidents.cause.underReview'),
-}
-
 // Список справа — и легенда, и подписи значений
-export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
+export function CauseDonut({ slices, colorOf, onSelect }: CauseDonutProps) {
   const [hovered, setHovered] = useState<number | null>(null)
   const total = slices.reduce((sum, slice) => sum + slice.count, 0)
   const active = hovered !== null ? slices[hovered] : null
@@ -66,8 +57,8 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
           >
             {slices.map((slice, index) => (
               <Cell
-                key={slice.category}
-                fill={CAUSE_CATEGORY_COLORS[slice.category]}
+                key={slice.key}
+                fill={colorOf(slice, index)}
                 opacity={hovered === null || hovered === index ? 1 : 0.3}
               />
             ))}
@@ -76,7 +67,7 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
 
         <div className={styles.center} aria-hidden="true">
           <span className={styles.centerCaption}>
-            {active ? SHORT_LABELS[active.category] : t('roadAccidents.common.totalShort')}
+            {active ? active.label : t('roadAccidents.common.totalShort')}
           </span>
           <span className={styles.centerValue}>
             {active
@@ -94,9 +85,9 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
       <ul className={styles.list}>
         {slices.map((slice, index) => {
           const share = total > 0 ? slice.count / total : 0
-          const color = CAUSE_CATEGORY_COLORS[slice.category]
+          const color = colorOf(slice, index)
           return (
-            <li key={slice.category}>
+            <li key={slice.key}>
               <button
                 type="button"
                 className={`${styles.item} ${hovered === index ? styles.itemActive : ''}`}
@@ -116,7 +107,9 @@ export function CauseDonut({ slices, onSelect }: CauseDonutProps) {
                     className={styles.dot}
                     style={{ background: color, boxShadow: `0 0 0 3px ${color}22` }}
                   />
-                  <span className={styles.itemName}>{slice.label}</span>
+                  <span className={styles.itemName} title={slice.label}>
+                    {slice.label}
+                  </span>
                   <span className={styles.itemShare}>{formatPercent(share, 1)}</span>
                   <span className={styles.itemCount}>{formatNumber(slice.count)}</span>
                 </span>

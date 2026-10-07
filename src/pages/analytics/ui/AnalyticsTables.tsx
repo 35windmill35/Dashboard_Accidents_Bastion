@@ -46,7 +46,7 @@ const worstDriverColumns: DataTableColumn<WorstDriverRow>[] = [
   },
   {
     key: 'driverFaultShare',
-    label: t('roadAccidents.cause.driverFault'),
+    label: t('roadAccidents.table.driverFaultShare'),
     align: 'right',
     render: (r) => formatPercent(r.driverFaultShare),
   },

@@ -162,6 +162,5 @@ describe('загрузка данных', () => {
     expect(accidentsStore.rejectedFirms).toEqual([
       { name: 'A', count: 1, details: 'некорректная дата — 1' },
     ])
-    expect(accidentsStore.unknownCauseCount).toBe(1)
   })
 })

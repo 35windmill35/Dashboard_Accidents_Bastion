@@ -3,7 +3,12 @@ import { drilldownStore } from '@/widgets/accident-drilldown/model/drilldownStor
 import { formatCurrency, formatNumber } from '@/shared/lib/formatters'
 import { formatPeriodLabel, type Period } from '@/entities/accident/lib/period'
 import { t } from '@/shared/i18n'
-import type { DriverAggregate, VehicleAggregate, CauseSlice } from '@/entities/accident/lib/metrics'
+import type {
+  DriverAggregate,
+  RouteAggregate,
+  VehicleAggregate,
+  BreakdownSlice,
+} from '@/entities/accident/lib/metrics'
 import type { MotorcadeData } from '../model/motorcadeData'
 import styles from './MotorcadeTables.module.css'
 
@@ -56,10 +61,32 @@ const vehicleColumns: DataTableColumn<VehicleAggregate>[] = [
   },
 ]
 
-const causeColumns: DataTableColumn<CauseSlice>[] = [
+const routeColumns: DataTableColumn<RouteAggregate>[] = [
+  {
+    key: 'name',
+    label: t('roadAccidents.common.route'),
+    grow: true,
+    render: (r) => r.name,
+    title: (r) => r.name,
+  },
+  {
+    key: 'count',
+    label: t('roadAccidents.common.accidents'),
+    align: 'right',
+    render: (r) => formatNumber(r.count),
+  },
+  {
+    key: 'sumDamage',
+    label: t('roadAccidents.common.damage'),
+    align: 'right',
+    render: (r) => formatCurrency(r.sumDamage),
+  },
+]
+
+const causeColumns: DataTableColumn<BreakdownSlice>[] = [
   {
     key: 'label',
-    label: t('roadAccidents.common.category'),
+    label: t('roadAccidents.common.cause'),
     grow: true,
     wrap: true,
     render: (r) => r.label,
@@ -105,12 +132,21 @@ export function MotorcadeTables({ data, period }: MotorcadeTablesProps) {
         showRank
         onRowClick={(r) => drilldownStore.open(`${r.name} — ${periodLabel}`, r.rows)}
       />
+      <DataTable
+        title={t('roadAccidents.table.topRoutes', { count: 8 })}
+        columns={routeColumns}
+        rows={data.routesRanking}
+        emptyText={t('roadAccidents.table.noRoutes')}
+        getRowKey={(r) => r.key}
+        showRank
+        onRowClick={(r) => drilldownStore.open(`${r.name} — ${periodLabel}`, r.rows)}
+      />
       <div className={styles.fullRow}>
         <DataTable
           title={t('roadAccidents.chart.damageByCause')}
           columns={causeColumns}
           rows={data.causeSlices}
-          getRowKey={(r) => r.category}
+          getRowKey={(r) => r.key}
           initialLimit={5}
           onRowClick={(r) => drilldownStore.open(`${r.label} — ${periodLabel}`, r.rows)}
         />

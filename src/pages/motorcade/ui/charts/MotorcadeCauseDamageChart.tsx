@@ -18,7 +18,7 @@ import { COLOR_DAMAGE, COLOR_COMPENSATION } from '@/shared/lib/chartColors'
 import { formatCurrency, formatCompactCurrency, withCurrencyUnit } from '@/shared/lib/formatters'
 import { CHART_MARGIN, barPayload, useCategoryXAxis } from '@/shared/lib/rechartsHelpers'
 import { t } from '@/shared/i18n'
-import type { CauseSlice } from '@/entities/accident/lib/metrics'
+import { collapseSlices, type BreakdownSlice } from '@/entities/accident/lib/metrics'
 import type { MotorcadeData } from '../../model/motorcadeData'
 
 interface Props {
@@ -29,27 +29,22 @@ interface Props {
 export function MotorcadeCauseDamageChart({ data, period }: Props) {
   const gradientId = useGradientId()
   const periodLabel = formatPeriodLabel(period)
-  const chartData = data.causeSlices.filter((s) => s.count > 0)
+  const chartData = collapseSlices(data.causeSlices)
 
-  const openCause = (category: string) => {
-    const slice = chartData.find((s) => s.category === category)
+  const openCause = (key: string) => {
+    const slice = chartData.find((s) => s.key === key)
     if (slice) drilldownStore.open(`${slice.label} — ${periodLabel}`, slice.rows)
   }
 
-  const { containerRef, xAxisProps } = useCategoryXAxis(
-    chartData.map((s) => s.label),
-    {
-      mirrorPadding: true,
-    }
-  )
+  const { containerRef, xAxisProps } = useCategoryXAxis(chartData.map((s) => s.label))
 
   const table: ChartDataTable = {
     columns: [
-      t('roadAccidents.common.category'),
+      t('roadAccidents.common.cause'),
       t('roadAccidents.common.damage'),
       t('roadAccidents.common.compensation'),
     ],
-    rows: chartData.map((s) => [
+    rows: data.causeSlices.map((s) => [
       s.label,
       formatCurrency(s.sumDamage),
       formatCurrency(s.sumCompensated),
@@ -88,7 +83,7 @@ export function MotorcadeCauseDamageChart({ data, period }: Props) {
               fill={`url(#${gradientId}-0)`}
               radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
-              onClick={(entry) => openCause(barPayload<CauseSlice>(entry).category)}
+              onClick={(entry) => openCause(barPayload<BreakdownSlice>(entry).key)}
             />
             <Bar
               maxBarSize={BAR_SIZE_GROUPED}
@@ -98,7 +93,7 @@ export function MotorcadeCauseDamageChart({ data, period }: Props) {
               fill={`url(#${gradientId}-1)`}
               radius={BAR_RADIUS}
               style={{ cursor: 'pointer' }}
-              onClick={(entry) => openCause(barPayload<CauseSlice>(entry).category)}
+              onClick={(entry) => openCause(barPayload<BreakdownSlice>(entry).key)}
             />
           </BarChart>
         </ResponsiveContainer>

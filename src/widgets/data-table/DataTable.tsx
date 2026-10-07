@@ -40,6 +40,7 @@ interface DataTableProps<T> {
   initialLimit?: number
   onRowClick?: (row: T) => void
   showRank?: boolean
+  emptyText?: string
 }
 
 const PAGE_SIZE = 20
@@ -57,6 +58,7 @@ export function DataTable<T>({
   initialLimit = 8,
   onRowClick,
   showRank = false,
+  emptyText = t('roadAccidents.common.noDataForPeriod'),
 }: DataTableProps<T>) {
   const [expanded, setExpanded] = useState(false)
   const [page, setPage] = useState(0)
@@ -96,7 +98,7 @@ export function DataTable<T>({
       </div>
 
       {rows.length === 0 ? (
-        <div className={styles.empty}>{t('roadAccidents.common.noDataForPeriod')}</div>
+        <div className={styles.empty}>{emptyText}</div>
       ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>

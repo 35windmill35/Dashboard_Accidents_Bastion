@@ -4,7 +4,6 @@ import type { AccidentRow } from './types'
 import { authStore } from '@/entities/user/model/authStore'
 import { mapWithConcurrencyLimit } from '@/shared/lib/concurrencyLimit'
 import { setCurrencyCode } from '@/shared/lib/formatters'
-import { isKnownCauseId } from '@/shared/config/accidentCauses'
 import { REJECT_REASON_LABELS, type RejectReason } from '../lib/parseRow'
 
 const DATA_LOAD_CONCURRENCY = 5
@@ -107,12 +106,6 @@ class AccidentsStore {
 
   get hasMixedCurrencies(): boolean {
     return this.currencyCodes.length > 1
-  }
-
-  get unknownCauseCount(): number {
-    return this.rows.filter(
-      (row) => row.ACCIDENT_CAUSE_ID != null && !isKnownCauseId(row.ACCIDENT_CAUSE_ID)
-    ).length
   }
 
   async load(): Promise<void> {

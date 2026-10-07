@@ -34,16 +34,28 @@ function measureLabelWidth(text: string, fontSize: number): number {
   return ctx.measureText(text).width
 }
 
-// Отступ слева под первую подпись, чтобы повёрнутый текст не обрезался
-function resolveLeftPadding(firstLabel: string | undefined): number {
-  if (!firstLabel) return 0
-  const width = measureLabelWidth(firstLabel, TICK_FONT_SIZE)
-  const angleRad = (LABEL_ANGLE_DEG * Math.PI) / 180
-  return Math.ceil(width * Math.cos(angleRad)) + 10
+// Длинные названия на оси обрезаются, полностью — в подсказке и таблице
+const MAX_TICK_CHARS = 16
+
+export function shortenTick(label: string): string {
+  const text = String(label)
+  return text.length > MAX_TICK_CHARS ? `${text.slice(0, MAX_TICK_CHARS - 1).trimEnd()}…` : text
 }
 
 // Общая ширина оси Y — чтобы оси соседних графиков стояли на одной линии
 export const Y_AXIS_WIDTH = 76
+
+// Отступ слева под первую подпись, чтобы повёрнутый текст не обрезался.
+// Половина ширины категории уже даёт место — вычитаем её.
+function resolveLeftPadding(firstLabel: string | undefined, width: number, count: number): number {
+  if (!firstLabel) return 0
+  const labelWidth = measureLabelWidth(shortenTick(firstLabel), TICK_FONT_SIZE)
+  const angleRad = (LABEL_ANGLE_DEG * Math.PI) / 180
+  const extent = Math.ceil(labelWidth * Math.cos(angleRad)) + 10
+  if (!width || count === 0) return extent
+  const halfBand = Math.max(width - Y_AXIS_WIDTH - extent, 0) / count / 2
+  return Math.max(Math.ceil(extent - halfBand), 0)
+}
 
 export const CHART_MARGIN = { top: 8, right: 4, left: 0, bottom: 0 } as const
 
@@ -57,6 +69,7 @@ export interface CategoryXAxisProps {
   height: number
   fontSize: number
   padding: { left: number; right: number }
+  tickFormatter: (label: string) => string
 }
 
 export interface UseCategoryXAxisOptions {
@@ -92,7 +105,7 @@ export function useCategoryXAxis(
     return () => observer.disconnect()
   }, [])
 
-  const leftPadding = resolveLeftPadding(labels[0])
+  const leftPadding = resolveLeftPadding(labels[0], width, labels.length)
 
   return {
     containerRef,
@@ -103,6 +116,7 @@ export function useCategoryXAxis(
       height: CATEGORY_AXIS_HEIGHT,
       fontSize: TICK_FONT_SIZE,
       padding: { left: leftPadding, right: options?.mirrorPadding ? leftPadding : 0 },
+      tickFormatter: shortenTick,
     },
   }
 }

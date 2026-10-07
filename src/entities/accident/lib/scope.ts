@@ -13,12 +13,14 @@ import {
   sumCompensated,
   compensationShare,
   averageDamagePerAccident,
-  buildCauseSlices,
-  causeCategoryShare,
+  groupByCause,
+  groupByCauser,
+  causerShare,
   rankDrivers,
   rankVehicles,
+  rankRoutes,
   monthlyTrend,
-  type CauseSlice,
+  type BreakdownSlice,
 } from './metrics'
 
 // Единый расчёт показателей для всех трёх экранов
@@ -30,7 +32,6 @@ export interface AccidentScopeKpi {
   averageDamage: number | null
   driverFaultShare: number | null
   thirdPartyFaultShare: number | null
-  noDamageShare: number | null
 }
 
 export interface AccidentScopeData {
@@ -39,24 +40,23 @@ export interface AccidentScopeData {
   // Для незавершённого периода — за то же число дней
   previousKpi: AccidentScopeKpi | null
   comparison: PeriodComparison
-  causeSlices: CauseSlice[]
+  causeSlices: BreakdownSlice[]
+  causerSlices: BreakdownSlice[]
   driversRanking: ReturnType<typeof rankDrivers>
   vehiclesRanking: ReturnType<typeof rankVehicles>
+  routesRanking: ReturnType<typeof rankRoutes>
   monthlyCounts: ReturnType<typeof monthlyTrend>
 }
 
-function buildScopeKpi(rows: AccidentRow[], slices: CauseSlice[]): AccidentScopeKpi {
-  const total = rows.length
-
+function buildScopeKpi(rows: AccidentRow[]): AccidentScopeKpi {
   return {
     count: countAccidents(rows),
     sumDamage: sumDamage(rows),
     sumCompensated: sumCompensated(rows),
     compensationShare: compensationShare(rows),
     averageDamage: averageDamagePerAccident(rows),
-    driverFaultShare: causeCategoryShare(slices, total, 'driverFault'),
-    thirdPartyFaultShare: causeCategoryShare(slices, total, 'thirdPartyFault'),
-    noDamageShare: causeCategoryShare(slices, total, 'noDamage'),
+    driverFaultShare: causerShare(rows, 'ownDriver'),
+    thirdPartyFaultShare: causerShare(rows, 'otherParty'),
   }
 }
 
@@ -67,7 +67,6 @@ export function computeAccidentScope(
   today: Date = new Date()
 ): AccidentScopeData {
   const periodRows = scopeRows.filter((row) => isInPeriod(row, period))
-  const causeSlices = buildCauseSlices(periodRows)
 
   const comparison = getPeriodComparison(period, today)
   const previousRows = comparison.previous
@@ -78,12 +77,14 @@ export function computeAccidentScope(
 
   return {
     periodRows,
-    kpi: buildScopeKpi(periodRows, causeSlices),
-    previousKpi: previousRows ? buildScopeKpi(previousRows, buildCauseSlices(previousRows)) : null,
+    kpi: buildScopeKpi(periodRows),
+    previousKpi: previousRows ? buildScopeKpi(previousRows) : null,
     comparison,
-    causeSlices,
+    causeSlices: groupByCause(periodRows),
+    causerSlices: groupByCauser(periodRows),
     driversRanking: rankDrivers(periodRows),
     vehiclesRanking: rankVehicles(periodRows),
+    routesRanking: rankRoutes(periodRows),
     monthlyCounts: monthlyTrend(scopeRows, trendMonths),
   }
 }

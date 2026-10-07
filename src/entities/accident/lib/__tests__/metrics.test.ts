@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { row } from '@/test/fixtures'
-import { rankDrivers, rankVehicles, sumDamage, UNKNOWN_DRIVER_NAME } from '../metrics'
+import {
+  collapseSlices,
+  groupByCause,
+  groupByCauser,
+  OTHER_SLICE_KEY,
+  rankDrivers,
+  rankRoutes,
+  rankVehicles,
+  sumDamage,
+  UNKNOWN_DRIVER_NAME,
+} from '../metrics'
 import { computeAccidentScope } from '../scope'
 import { disambiguateMotorcadeNames, getMotorcadeOptions } from '../motorcade'
 
@@ -39,14 +49,88 @@ describe('рейтинги', () => {
   })
 })
 
-describe('категории причин', () => {
-  it('«Без повреждения» не показывается, пока правило не подтверждено', () => {
-    const scope = computeAccidentScope(
-      [row({ ACCIDENT_CAUSE_ID: 5, ACCIDENT_DAMAGE: null })],
-      { mode: 'month', value: 202608 },
-      new Date(2026, 8, 28)
+describe('причины и виновники', () => {
+  const period = { mode: 'month', value: 202608 } as const
+  const today = new Date(2026, 8, 28)
+  const rows = [
+    row({
+      ACCIDENT_ID: 1,
+      ACCIDENT_CAUSE_ID: 13,
+      ACCIDENT_CAUSE_NAME: 'Несоблюдение дистанции',
+      ACCIDENT_CAUSER_NAME: 'Наш водитель',
+    }),
+    row({
+      ACCIDENT_ID: 2,
+      ACCIDENT_CAUSE_ID: 13,
+      ACCIDENT_CAUSE_NAME: 'Несоблюдение дистанции ',
+      ACCIDENT_CAUSER_NAME: 'Другой участник ДТП',
+    }),
+    row({
+      ACCIDENT_ID: 3,
+      ACCIDENT_CAUSE_ID: 22,
+      ACCIDENT_CAUSE_NAME: 'Метеорологические условия',
+      ACCIDENT_CAUSER_NAME: 'неизвестен',
+    }),
+    row({ ACCIDENT_ID: 4, ACCIDENT_CAUSE_NAME: null, ACCIDENT_CAUSER_NAME: 'Обоюдная вина' }),
+  ]
+
+  it('группирует по названию причины, а не по ID', () => {
+    const slices = groupByCause(rows)
+    expect(slices.map((s) => [s.label, s.count])).toEqual([
+      ['Несоблюдение дистанции', 2],
+      ['Метеорологические условия', 1],
+      ['Причина не указана', 1],
+    ])
+  })
+
+  it('группирует по виновнику и выравнивает регистр', () => {
+    const labels = groupByCauser(rows).map((s) => s.label)
+    expect(labels).toEqual(
+      expect.arrayContaining(['Наш водитель', 'Другой участник ДТП', 'Неизвестен', 'Обоюдная вина'])
     )
-    expect(scope.causeSlices.map((s) => s.category)).not.toContain('noDamage')
+  })
+
+  it('доли KPI считаются по виновнику', () => {
+    const scope = computeAccidentScope(rows, period, today)
+    expect(scope.kpi.driverFaultShare).toBe(0.25)
+    expect(scope.kpi.thirdPartyFaultShare).toBe(0.25)
+    expect(scope.causerSlices.reduce((sum, s) => sum + s.count, 0)).toBe(4)
+  })
+
+  it('хвост сворачивается в «Прочие» без потери ДТП', () => {
+    const many = Array.from({ length: 9 }, (_, i) =>
+      row({ ACCIDENT_ID: 100 + i, ACCIDENT_CAUSE_NAME: `Причина ${i}` })
+    )
+    const collapsed = collapseSlices(groupByCause(many))
+    expect(collapsed).toHaveLength(6)
+    expect(collapsed[5].key).toBe(OTHER_SLICE_KEY)
+    expect(collapsed[5].count).toBe(4)
+    expect(collapsed.reduce((sum, s) => sum + s.count, 0)).toBe(9)
+  })
+})
+
+describe('рейтинг маршрутов', () => {
+  it('одноимённые маршруты разных автоколонн не сливаются', () => {
+    const ranking = rankRoutes([
+      row({ ACCIDENT_ID: 1, ROUTE_ID: 186, ROUTE_NAME: '№ 11', MOTORCADE_NAME: 'Актобе' }),
+      row({ ACCIDENT_ID: 2, ROUTE_ID: 186, ROUTE_NAME: '№ 11', MOTORCADE_NAME: 'Актобе' }),
+      row({ ACCIDENT_ID: 3, ROUTE_ID: 212, ROUTE_NAME: '№ 11', MOTORCADE_NAME: 'Экибастуз' }),
+      row({ ACCIDENT_ID: 4, ROUTE_ID: 200, ROUTE_NAME: '№ 2', MOTORCADE_NAME: 'Туркестан' }),
+    ])
+    expect(ranking.map((r) => [r.name, r.count])).toEqual([
+      ['№ 11 · Актобе', 2],
+      ['№ 11 · Экибастуз', 1],
+      ['№ 2', 1],
+    ])
+  })
+
+  it('ДТП без маршрута в рейтинг не попадают', () => {
+    const ranking = rankRoutes([
+      row({ ACCIDENT_ID: 1, ROUTE_ID: null, ROUTE_NAME: null }),
+      row({ ACCIDENT_ID: 2, ROUTE_ID: 300, ROUTE_NAME: null }),
+      row({ ACCIDENT_ID: 3, ROUTE_ID: 301, ROUTE_NAME: '№ 4' }),
+    ])
+    expect(ranking.map((r) => [r.name, r.count])).toEqual([['№ 4', 1]])
   })
 })
 
